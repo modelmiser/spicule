@@ -1,0 +1,259 @@
+{
+  "version": 1,
+  "created": "2026-06-24T17:19:55+00:00",
+  "rounds": [
+    {
+      "round": 1,
+      "question": "Memory model \u2014 what replaces Rust's borrow checker (linear types, region inference, or something derived from the proof layer)?",
+      "revision": 0,
+      "proposal_excerpt": "## 1. THE DECISION\n\n**Ownership is not primitive. The primitive is a linear resource context whose atoms are typed by a *permission partial-commutative-monoid* (PCM). \"The borrow checker\" is recovered as biabductive frame-inference over the decidable symbolic-heap fragment of a fractional-permission separation logic. Borrows are fractions; lifetimes are lexically-scoped fraction splits; mutable-xor-shared is a *theorem* about the PCM, not a hardcoded rule.**\n\n### Core algebra\n\nA **permission algebra** is a PCM `(P, \u2295, 1)`: `\u2295` partial, commutative, associative; `1 \u2208 P` the unique/full element. The surface language desugars to the **fraction instance** `P_frac = (0,1]\u2229\u211a`, `p \u2295 q = p+q` defined iff `p+q \u2264 1`, full `= 1`. `P` is a *parameter* (see Attack 3).\n\nA resource atom is a points-to `\u2113 \u21a6{q} v`, `q \u2208 P`. The defining law, from which ownership discipline is derived:\n\n```\nSPLIT:   \u2113 \u21a6{p\u2295q} v  \u22a3\u22a2  \u2113 \u21a6{p} v  \u2217  \u2113 \u21a6{q} v        (when p\u2295q defined)\nWRITE:   {\u2113 \u21a6{1} v} *\u2113 := w {\u2113 \u21a6{1} w}                  (mutation needs the top element)\nREAD:    {\u2113 \u21a6{q} v} !\u2113 {\u2113 \u21a6{q} v \u2227 result = v}          (any q reads)\n```\n\n`q = 1` \u21d2 unique mutable (Rust `&mut`/owned). `q < 1` \u21d2 shared read (`&`). Mu",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Off-fragment path is Iris-grade proof authoring, not cheap unsafe; every distinctively-systems pattern lands there; async unaddressed.",
+          "strongest_point": "The repeated claim that the cliff is 'co-located with where Rust requires unsafe' equivocates 'needs unsafe' (cheap, trust-discharged) with 'needs a hand-written machine-checked proof term' (the ATS2 failure), and the entire systems inventory \u2014 intrusive lists, bespoke lock-free, arenas, async state machines, ISRs \u2014 falls on the proof side."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Per-thread-view 'rlx = view-bump' model is unsound for full relaxed memory (load-buffering/OOTA); contradicts 'verifies ARM/POWER/RISC-V'.",
+          "strongest_point": "The load-buffering litmus test with all-relaxed atomics is observable on ARM/POWER, but a monotone iGPS/Cosmo-style view model proves it impossible \u2014 the logic proves an invariant the emitted hardware code violates."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Sharing one location among runtime-many borrowers needs iterated-\u2217/\u03a3q_i=q; either banned recursive predicate (ergonomic cliff in safe code) or nonlinear q\u00b7n (undecidable).",
+          "strongest_point": "Distributing a shared & to n runtime-many readers (par_iter/thread::scope/collect::<Vec<&_>>) forces either a banned recursive predicate or a nonlinear sum-over-n permission constraint, breaking the decidable-and-zero-annotation common-path claim on ubiquitous safe Rust."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Points-to axioms assume non-volatile, sole-mutator memory; MMIO/DMA registers are unrepresentable without escaping the fragment and the protocol calculus.",
+          "strongest_point": "Bidirectional CPU\u2194device registers need the CPU to hold the full element 1 to write while the device also mutates, which no fraction or symbolic-heap PCM admits, and the atomics protocol calculus cannot model a token-less external hardware agent \u2014 so basic MMIO escapes the system entirely, contradicting the 'co-located with Rust unsafe' claim on mandatory bare-metal code."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "RustBelt formalized this exact thesis and rejected fractions for borrows; lexical fractions also contradict NLL.",
+          "strongest_point": "RustBelt \u2014 Rust ownership as separation-logic resource discipline \u2014 found fractional permissions insufficient for mutable borrows/reborrows and built a borrow modality plus lifetime logic instead, which has no automatic-inference precedent."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "genuine-flaw",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "genuine-flaw",
+          "attacker-expressiveness": "genuine-flaw",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Surviving kernel: sequential fractional SL (SPLIT/WRITE/READ+FRAME) with biabductive inference over a symbolic-heap+Presburger fragment is sound and well-precedented (Boyland/Bornat, Infer, Viper) \u2014 keep this, drop the over-claims.",
+          "Parametric/unbounded shared sharing needs counting permissions (a distinct named PCM), not the default fraction desugaring; inference for it must be specified, not assumed.",
+          "Weak-memory claim must retreat from 'verifies full ARM/POWER/RISC-V relaxed' to the release-acquire (no-OOTA) fragment the cited view logics actually support.",
+          "'unsafe-co-located' must be restated: off-fragment authoring is hand-written proof terms, categorically costlier than Rust's trust-discharged unsafe."
+        ],
+        "rationale": "Sequential core is sound and well-precedented, but four headline claims fail: RustBelt already rejected fractions for borrows; lexical splits contradict NLL; the view model is unsound for full relaxed; and MMIO/volatile plus async/proof-authoring cost falsify 'co-located with unsafe.'"
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.2751,
+      "timestamp": "2026-06-24T17:28:42+00:00"
+    },
+    {
+      "round": 2,
+      "question": "Memory model \u2014 what replaces Rust's borrow checker (linear types, region inference, or something derived from the proof layer)?",
+      "revision": 1,
+      "proposal_excerpt": "## 1. THE DECISION\n\nThe memory model is a **two-layer construction with a hard syntactic seam between them**, not a single separation logic.\n\n**Layer A \u2014 the decidable ownership core (Tier 0).** Ownership is a *graded affine capability discipline over places, resolved by region inference*, deliberately **not** a fractional-permission separation logic over a heap. This is the precise lesson taken from the RustBelt attack: fractions are abandoned as the borrow mechanism.\n\nPlaces and capabilities:\n\n```\nplace   p  ::= x | p.f | *p | p[_]\nregion  'r                      (region variables; partial order 'r \u2264 's = \"'r outlives 's\", inferred)\ncap     \u03ba  ::= own p            -- full: move, drop, mutate, freeze\n             | mut  p @ 'r      -- exclusive borrow, AFFINE, restores own p at close('r)\n             | read p @ 'r      -- shared read inside a frozen region\ncontext \u0393  ::= \u00b7 | \u0393, \u03ba | \u0393, ('r \u2264 's)\n```\n\nThe capabilities form a **finite lattice** `own \u2290 mut \u2290 read \u2290 \u22a5`; meet is constant-time. The only structural rules that matter:\n\n```\n                       \u0393 \u22a2 own p\n(FREEZE)  \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n          \u0393 \u22a2 freeze 'r. ( read p @ 'r  \u2297  thaw(p,'r) )\n\n      ",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "FREEZE needs `own`, so shared-reborrow of `&mut` and arena shared-graphs (safe in Rust) have no Tier-0 rule.",
+          "strongest_point": "`read` can only be minted by FREEZE-from-`own`, so borrowed/arena data can't be read-shared, and the lattice-subsumption fix breaks READ-DUP's soundness \u2014 forcing safe-Rust patterns down into `entrust`/SMT."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "DMA: a device retains a write-alias to a frozen owned buffer; freeze typechecks at Tier 0, hardware mutates it.",
+          "strongest_point": "Rely-guarantee covers only finite register state, so a device's retained DMA alias to an ownership-heap buffer is invisible, letting a pure-Tier-0 freeze of that buffer be accepted while hardware concurrently writes it."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Tier-1 QF-SMT cannot express its advertised invariants (intrusive-list acyclicity, ring-buffer quantified arrays); they require Tier-2, collapsing the amortization claim.",
+          "strongest_point": "Acyclicity/membership of an intrusive list is transitive closure \u2014 not FO-definable, hence inexpressible in the QF_LIA+arrays+EUF the Tier-1 discharge pass is confined to, forcing either unchecked `assume` or the Tier-2 cliff the proposal swore intrusive structures avoid."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "DMA/device-memory ordering falls between ownership, device, and atomics sorts with no composition rule; IMM excludes device memory.",
+          "strongest_point": "DMA buffers need a happens-before from device writes to CPU reads, but hb is minted only by the atomics sort under IMM (CPU-CPU only), while the buffer lives in ownership and the sync in the device sort \u2014 three islands with no bridge, so routine driver ordering is only writable via cross-sort `assume`."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Freeze/thaw inference claim contradicts Mezzo's and Cyclone's documented retreat from inferring duplicable/affine permissions over regions.",
+          "strongest_point": "Mezzo already built a duplicable-permission + frozen-region discipline and concluded inference does not scale, requiring manual annotation \u2014 the proposal's headline 'Datalog, no-proof, Rust-parity' Tier-0 claim is the exact thing that prior system could not deliver, uncited."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "genuine-flaw",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "tradeoff",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Tier-1 QF-SMT cannot express transitive-closure (intrusive-list shape) or quantified-array (ring-buffer) invariants; these degrade to unchecked `assume` (== today's unsafe) or escalate to Tier-2, so Tier-1 does not machine-verify the shape-safety of its named customers. QF_BV is NEXPTIME: decidable \u2260 tractable.",
+          "Device-memory ordering (DSB/DMB, nGnRnE, completion vs ordering) is outside IMM (a CPU-CPU model); DMA ordering requires cross-sort `assume` with no composition rule between ownership/device/atomics sorts \u2014 no checked help for the deadliest bare-metal ordering bugs.",
+          "Completeness (not merely soundness/termination/PTIME) of the freeze-token Datalog is unestablished against documented prior retreats (Mezzo abandoned duplicable-permission inference; Cyclone retreated to manual regions under uniqueness); must cite/distinguish these and demonstrate Rust-parity acceptance, plus credit freeze/thaw precedent (Wadler let!, DeLine Adoption-and-Focus, Pony recover)."
+        ],
+        "rationale": "Architecture and no-fractions freeze/thaw survive, but two genuine flaws force revision: shared-reborrow/arena reads have no Tier-0 rule (over-claim falsified), and a DMA buffer is freezable at pure Tier 0 while hardware writes it (READ-DUP invariant violated, no marker). Three real costs recorded."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.3243,
+      "timestamp": "2026-06-24T17:38:09+00:00"
+    },
+    {
+      "round": 3,
+      "question": "Memory model \u2014 what replaces Rust's borrow checker (linear types, region inference, or something derived from the proof layer)?",
+      "revision": 2,
+      "proposal_excerpt": "## 1. THE DECISION\n\n**Ownership is the decidable image of a single separation-logic permission algebra (PCM) under compile-time erasure.** There is no borrow checker; there is a permission-token discipline that is literally the Tier-0 (proof-free) fragment of the same Iris-style logic the proof layer uses. I deliberately reuse three *separately-proven-sound* Iris developments rather than invent a new soundness argument: **RustBelt's lifetime logic** (borrows/reborrows), **foreign/agent-held borrows**, and **Cosmo** (Iris for weak memory via views). Tier 0 is the syntactic shadow of their common fragment; `entrust` blocks drop into the full logic with no FFI seam.\n\n### 1.1 The permission algebra\n\nA partial commutative monoid `(P, \u2217, \u03b5)`. Memory typing context `\u03a3` is a separating conjunction of tokens. Lifetimes `\u03ba \u2208 Lft` carry an inclusion preorder; `\u03ba' \u2291 \u03ba` means \"\u03ba outlives \u03ba'\". Ghost tokens `[\u03ba]` (alive) and `[\u2020\u03ba]` (dead). Views `V : Loc \u21c0 Time` form a join-semilattice `V\u2081 \u2294 V\u2082 = \u03bb\u2113. max(V\u2081\u2113, V\u2082\u2113)` (the weak-memory component).\n\nMemory tokens:\n\n| token | meaning | caps |\n|---|---|---|\n| `\u2113 : own\u27e8V\u27e9 \u03c4` | full ownership, view `V` | read+write |\n| `\u2113 : &\u1d50\u1d58\u1d57 \u03ba\u27e8V\u27e9 \u03c4` | unique borrow fo",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "Shared atomics in lock-free code have no Tier-0 token; ownership transfer is runtime-indexed \u2014 both force entrust, gutting the headline weak-memory ergonomics claim.",
+          "strongest_point": "A concurrently-written atomic head pointer cannot be typed by any Tier-0 token (own/&mut are exclusive, &shr is read-only, and there is no interior-mutability/atomic-cell token), so every lock-free access requires an entrust invariant \u2014 making the motivating workload strictly less ergonomic than Rust, exactly contradicting answer C."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Central 'soundness inherited from RustBelt\u2297Cosmo, no seam' theorem is false; lifetimes-over-weak-memory needs its own unprovided proof.",
+          "strongest_point": "RustBelt's borrow/freeze rules are proven over an SC single-value heap while Cosmo uses a view-indexed history; T-Freeze/T-Share are new connectives over an unspecified combined model \u2014 combining them is the known-hard RustBelt-relaxed problem, not a free 'no-seam' inheritance."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Affine PCM-context merge at CFG joins/loops is SL frame inference (undecidable); the only PTIME escape reinstates the denied seam.",
+          "strongest_point": "Separating conjunction has no join, so the join-point/loop-back-edge merge of \u03a3 is bi-abduction/invariant inference \u2014 undecidable as the real PCM, and decidable only by a bit-vector abstraction that contradicts the no-seam claim (2)."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "MMIO device-register access (concurrent permanent program/device sharing) has no token; reclaim needs a dead device, so basic drivers are inexpressible.",
+          "strongest_point": "A UART status-bit poll is unrepresentable: own is unavailable (device holds a permanent share), &\u02e2\u02b0\u02b3 is unsound (device writes concurrently), frgn gives the program no caps, and reclaim requires [\u2020\u03ba_dev] which a live peripheral can never satisfy."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "The 'RustBelt \u2297 Cosmo' tensor is really iRC11/RustBelt-Relaxed \u2014 a full POPL re-derivation over a different memory model, not inherited soundness.",
+          "strongest_point": "The exact lifetime+weak-memory combination already exists as iRC11 (RustBelt-Relaxed, POPL 2020): it re-founded the lifetime logic over a relaxed operational semantics, cost years, found real Arc bugs, and uses a different model than the cited Cosmo \u2014 so 'soundness inherited via \u2297' is historically false."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "genuine-flaw",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "genuine-flaw",
+          "attacker-expressiveness": "genuine-flaw",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "DMA/foreign soundness holds only relative to a correct IOMMU/BSP spec (proposal's conceded residue)",
+          "Any decidable Tier-0 checker is incomplete (rejects some sound programs), per the NLL/Polonius precedent"
+        ],
+        "rationale": "Atomics (ergonomics) and MMIO registers (expressiveness) have no Tier-0 token \u2014 the menu omits interior mutability. Soundness and prior-art show 'inherited via RustBelt\u2297Cosmo, no seam' is really the iRC11 re-derivation; implementation shows the PTIME-image and no-seam claims are jointly incoherent."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.4304,
+      "timestamp": "2026-06-24T17:48:57+00:00"
+    },
+    {
+      "round": 4,
+      "question": "Memory model \u2014 what replaces Rust's borrow checker (linear types, region inference, or something derived from the proof layer)?",
+      "revision": 3,
+      "proposal_excerpt": "# THE DECISION\n\nThe memory model is a **certified two-layer capability system**: a finite, flow-sensitive *capability lattice* (the decidable surface that the compiler checks) that **elaborates definitionally** into the proof layer (the justification). Ownership is not a hardcoded checker; it is a *certified decision procedure for a fragment of the proof logic*. Weak memory is handled by **confinement, not inheritance**: the borrow discipline forces all nonatomic accesses to be race-free, so the bulk language lives in the SC/DRF world, and *all* relaxed-memory reasoning is quarantined inside a **closed, fixed primitive library** proven once.\n\n## Capabilities\n\nEach *place* `p` (a path, \u00e0 la NLL/Polonius) carries one capability `\u03ba` drawn from a finite per-place lattice:\n\n| \u03ba | rights | provenance | runtime |\n|---|---|---|---|\n| `\u22a5` | none (moved/consumed) | \u2014 | \u2014 |\n| `O \u03c4` | read/write, **destroy**, move | linear/affine owner | erased |\n| `U\u27e8\u03c1\u27e9 \u03c4` | read/write, **exclusive** | borrow, region \u03c1 | erased |\n| `S\u27e8\u03c1\u27e9 \u03c4` | read, **freely duplicable** | borrow, region \u03c1 | erased |\n| `A\u27e8\u03c1,\u03b8,I\u27e9 \u03c4` | **shared + atomic** read/write via fixed ops, ordering-class \u03b8, invariant I | shared cell | at",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Confines weak memory but inherits NLL's spatial-aliasing ceiling; intrusive/self-referential code falls into hand-written proofs Rust handles with no-proof unsafe.",
+          "strongest_point": "An intrusive doubly-linked list's mutably-aliased node fits no capability in the lattice (not O/U/S/A/D), so a single-threaded unlink \u2014 trivial unsafe in Rust \u2014 becomes an off-lattice hand-written separation-logic entailment."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "T-Atomicize's unbound region \u03c1 + duplicable A + erased owner-reclamation accepts a use-after-free.",
+          "strongest_point": "atomicize turns a scoped linear owner into a duplicable, region-unconstrained A; with no RC/GC its reclamation point is static while its live copies are not, so an accepted program reads freed storage."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "Join-point meet of A-capabilities (A\u2293A) is undefined; defining it needs invariant entailment \u2014 undecidable for QF nonlinear integer arithmetic, NP-hard for QF-BV.",
+          "strongest_point": "The 'finite-height \u27f9 fixpoint terminates' decidability proof collapses the I-indexed A family to one point; restoring the index makes loop-fixpoint stabilization require deciding I_{n+1}\u22a8I_n, which is Hilbert's 10th problem for quantifier-free integer invariants."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Closed relaxed library + value-cell D model can't express W1C/read-to-clear MMIO, LL/SC, DWCAS, HTM, NT-stores; extending re-incurs 'paid-once' cost.",
+          "strongest_point": "Side-effecting device registers (read-to-clear, write-1-to-clear) have no stable value-invariant `\u2203v.p\u21a6v\u2217I v` and mutate on a non-consuming load, so `D`'s 'one mode covers MMIO' fails on the device-driver common case, with no user-openable escape because relaxed reasoning is confined to an unextendable trusted layer."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "GPS/iRC11 show synchronizing acquire/release atomics need transferable invariants; proposal's free-vs-proof line is mislocated, breaking parity claim.",
+          "strongest_point": "Per GPS/iGPS/iRC11, every publishing acquire/release atomic (lazy-init, Once, Arc) needs a transferable invariant that the proposal's quantifier-free/opaque decidable fragment cannot express, so it drops to user proofs \u2014 refuting 'parity with safe Rust atomics' for the common case, not just reclamation."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "genuine-flaw",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "genuine-flaw",
+          "attacker-expressiveness": "genuine-flaw",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Dynamic-lifetime shared atomics require RC (like Rust's Arc), so 'no RC, zero-cost' holds only for 'static/scoped sharing \u2014 this must be stated, not hidden.",
+          "Content-invariant joins need a decidable theory + SMT cost; 'quantifier-free' must be replaced by an explicitly decidable invariant language.",
+          "New hardware primitives (LL/SC, DWCAS, HTM, NT-stores) cost an author-level relaxed-memory proof each; 'closed/paid-once' is really 'finitely extensible, paid per family.'",
+          "Spatial aliasing above the NLL ceiling (intrusive structures, self-reference) needs an escape; deciding proof-vs-unsafe-style primitive is a future decision."
+        ],
+        "rationale": "T-Atomicize admits a UAF; publishing atomics need transferable invariants outside the decidable fragment; A\u2293A is undefined and 'quantifier-free' isn't decidable; D can't model side-effecting MMIO; NLL's spatial ceiling forces proofs where Rust uses unsafe. Marquee claims are false as written."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.4538,
+      "timestamp": "2026-06-24T17:58:52+00:00"
+    }
+  ],
+  "settled": [],
+  "incompatibilities": [],
+  "blind_spot_flags": [],
+  "total_cost_usd": 9.4836
+}

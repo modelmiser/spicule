@@ -1,0 +1,15 @@
+# Meta/process files (per workspace CLAUDE.md conventions)
+TODO.md
+DEVLOG.md
+DEVLOG/
+INSIGHTS.md
+INSIGHTS/
+
+# Raw per-call transcripts — large, regenerable, noisy
+runs/
+
+# Python
+__pycache__/
+*.pyc
+
+# Keep design/ tracked — DESIGN.md + state.json are the payload.
