@@ -250,6 +250,1255 @@
       "outcome": "FAILED",
       "cost_usd": 2.4538,
       "timestamp": "2026-06-24T17:58:52+00:00"
+    },
+    {
+      "round": 5,
+      "question": "Sequential ownership core \u2014 for SINGLE-THREADED code only (no concurrency, atomics, or interior mutability), what move/borrow/lifetime discipline gives memory safety without GC, derived from the proof layer rather than a hardcoded borrow checker?",
+      "revision": 0,
+      "proposal_excerpt": "## 1. THE DECISION\n\nAdopt a **parametric affine capability calculus with leftover typing**. Ownership is not a built-in relation; it is *one registered capability signature* in a separation-logic \"capability prelude,\" and the borrow checker is the generic decision procedure for a syntactically-restricted fragment of that logic. Replacing the prelude's capability definitions changes the ownership discipline without touching the checker. That is the falsifiable content of \"derived, not hardcoded.\"\n\n### 1.1 Sorts (universes)\n\n```\nType   : runtime types        (erased to representation)\nCap    : separation resources (erased entirely \u2014 ghost)\nRegion : lifetime tokens       \u2291 partial order              (ghost)\nFrac   : \u211a \u2229 (0,1], partial commutative monoid (+, 0), per-location invariant \u03a3f \u2264 1   (ghost)\n```\n\nA *capability* is a `Cap`-sorted proposition. Connectives: separating conjunction `\u2297`, magic wand `\u2014\u2217`, and the only quantifiers allowed in the decidable fragment: `\u2203\u03c1:Region` introduced *exactly at* a lexical region block.\n\n### 1.2 The ownership capability signature (a prelude entry, not a primitive)\n\n```\nown  : Path \u2192 Type \u2192 Cap                          -- linear full ownership\nbor",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "Interior mutability (Cell/RefCell/Rc) \u2014 safe, ubiquitous, annotation-free in Rust \u2014 is excluded by the fraction-monoid theorem, forcing manual SL invariants.",
+          "strongest_point": "A safe, unsafe-free, annotation-free Rust pattern (Cell/RefCell-based cyclic arena graph, used in rustc itself) directly meets \u00a73.1's falsifier and refutes the claim that such structures are unsound in Rust."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "IF-JOIN meet silently discards must-discharge obligations on un-taken branch; well-typed program leaks a non-droppable resource.",
+          "strongest_point": "A handle closed in one if-arm but not the other type-checks because \u2293 errors only on `own`, not general non-droppable caps, so the leak-freedom invariant is violated by an accepted program."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "F's sole-quantifier rule (\u2203\u03c1 only) cannot type borrow-returning/recursive functions; repair forces non-terminating inlining or NP-hard fraction joins.",
+          "strongest_point": "Lifetime-polymorphic signatures need \u2200\u03c1, which F explicitly forbids, so modular capability elaboration is impossible and recursive functions over references force non-terminating context-sensitive inlining."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Escape hatch is a false floor: allocators/FFI/MMIO need undecidable SL or undefined raw-unsafe, not checkable Cap proofs.",
+          "strongest_point": "The patterns that leave F (arena allocators, aliasing FFI, MMIO, intrusive cyclic structures) require non-lexical wands and aliased mutation that live in undecidable full SL F explicitly bans, so expressing them forces either the prover-seam \u00a72 denies or untracked raw pointers the proposal never defines."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Mezzo already built parametric permission-threading; its join-point merge (your IF-JOIN \u2293) was heuristic/incomplete, contradicting the decidability claim.",
+          "strongest_point": "The join operator is decidable 'identical to Rust' only by hardcoding Rust's discipline; parametric capabilities make merge Mezzo's heuristic merge, so \u00a73.2 (derived) and \u00a73.3 (decidable join) cannot both hold."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "genuine-flaw",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Interior mutability (Cell/RefCell/Rc) is unhandled; the \u00a73.1 'cyclic structures are unsound in Rust' claim is false and must be retracted, and the 'better floor/same cliff location' claim narrowed \u2014 though interior mutability is explicitly out of scope this round.",
+          "The escape hatch's checking story is unspecified: out-of-F patterns (arena allocators, aliasing FFI, MMIO) need non-lexical wands/invariants in undecidable SL or an undefined raw-unsafe fallback; a future decision must define this escape (and whether it admits the prover seam \u00a72.2 denies).",
+          "Fractional-permission recombination (reassembling bor 1 to fire a reclaimer wand) needs provenance tracking the proposal never addresses (Bornat counting-permissions precedent); concrete fractions are historically more verbose than abstract permissions (Chalice/Viper)."
+        ],
+        "headline": "Ownership as one instance of a parametric affine-capability calculus with leftover typing.",
+        "rationale": "Three attackers independently break the IF-JOIN join: it is unsound for non-droppable caps (soundness), non-decidable once parametric, contradicting 'derived' (Mezzo/prior-art), and F cannot type borrow-returning functions since \u00a71.1 forbids \u2200\u03c1 (implementation). Must revise."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.8571,
+      "timestamp": "2026-06-24T18:47:46+00:00"
+    },
+    {
+      "round": 6,
+      "question": "Sequential ownership core \u2014 for SINGLE-THREADED code only (no concurrency, atomics, or interior mutability), what move/borrow/lifetime discipline gives memory safety without GC, derived from the proof layer rather than a hardcoded borrow checker?",
+      "revision": 1,
+      "proposal_excerpt": "## 1. THE DECISION\n\nThe sequential ownership core is an **affine sequent calculus with a region-indexed modality `Frozen[\u03c1]`**, flow-checked over a capability context. \"Ownership,\" \"move,\" and \"borrow\" are not primitives of a hardcoded checker \u2014 they are, respectively, the affine-weakening law, linear-consumption, and the introduction/elimination rules of `Frozen[\u03c1]`. The \"borrow checker\" is proof search in one decidable fragment: a least-fixpoint solve over outlives constraints.\n\n### 1.1 Sorts (the sequential core is non-dependent \u2014 this matters for decidability)\n\n- Types `\u03c4 ::= Prim | &\u03c1 \u03c4 | &mut \u03c1 \u03c4 | Box \u03c4 | D\u27e8\u03c4\u0304\u27e9 | \u2026` (no type-level computation, no refinement indices \u2014 those live in a later layer, not here).\n- Regions `\u03c1` \u2014 a **separate sort**, interpreted as sets of program points.\n- Capabilities (propositions of the affine logic): `\u03ba ::= Own \u03c4 @ x | Shr[\u03c1] \u03c4 @ x | Uniq[\u03c1] \u03c4 @ x | Frozen[\u03c1] \u03ba | \u03ba \u2297 \u03ba`.\n- `Frozen[\u03c1] \u03ba` is a **guarded modality**: the elimination rule for the wrapped `\u03ba` is disabled until `\u03c1` is discharged. Borrowing = wrapping; thaw = unwrapping. This modality is what *derives* the borrow discipline; replacing its rule set yields a different ownership disciplin",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Syntactic-equality join rejects conditional borrow of distinct sources (`if c {&a} else {&b}`), which Rust accepts; the no-worse-than-Rust defense is false.",
+          "strongest_point": "Borrow freezes only the named variable per arm, so the search-free canonical-equality join cannot merge `Frozen[\u03c1](Own@a)` against `Own@a`, rejecting a pervasive pattern Rust accepts\u2014and the only fix re-introduces the merge-as-search they forbade to claim decidability."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "&mut \u03c1 \u03c4 classified Triv (=Copy/duplicable) lets USE-COPY duplicate unique borrows, enabling mutable aliasing and use-after-free.",
+          "strongest_point": "USE-COPY fires on dc(\u03c4)=Triv alone, and &mut \u03c1 \u03c4 is declared Triv, so a unique mutable borrow can be freely copied \u2014 two live Uniq[\u03c1] aliases to one owner, violating the very uniqueness the modality claims to enforce."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Branch-join uses syntactic capability equality, not the region solver; rejects asymmetric-borrow joins Rust accepts.",
+          "strongest_point": "`let r = if b {&x} else {&y};` leaves Frozen[\u03c1](Own@x)/Own@y vs Own@x/Frozen[\u03c1](Own@y); syntactic join condition 2 rejects it though Rust's solver reconciles it, so 'syntactic join' and 'no worse than Rust' cannot both hold."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "No raw pointers, no unsafe, no aliasing \u2014 bare-metal target can't express MMIO, FFI, allocators, or even its own cited Vec.",
+          "strongest_point": "The grammar offers no raw pointer and no unsafe escape, so split_at_mut/custom allocators/MMIO/FFI are unrepresentable and Vec \u2014 which the proposal assumes exists \u2014 cannot be implemented in the language."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Lin class hits Austral's linear-types-vs-unwinding wall; 'no worse than Rust' defense invalid since Rust has no linear types.",
+          "strongest_point": "The headline Lin power coexisting with RAII destructors is exactly what Austral proved impossible without abort-only semantics, and the leak-freedom theorem says nothing about panic/early-exit/unwind paths."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "genuine-flaw",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "genuine-flaw",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Ownership core covers ONLY safe code: a trusted sublanguage (raw pointers, MMIO, FFI, allocator/Vec/Box internals) with a defined trust boundary is a required, undesigned adjacent decision; the (5)/(6) 'bare-metal zero-cost common case' claim is overstated since the bare-metal common case has no expression or escape hatch.",
+          "The Lin class commits the language to pinned control-flow semantics (no unwinding, or abort-on-unwind-through-Lin, per Austral); it forfeits ?-propagation through Lin handles, and 'no worse than Rust' is not a valid ergonomic baseline for Lin (compare ATS/Austral)."
+        ],
+        "headline": "Affine Frozen[\u03c1] calculus deriving borrow discipline \u2014 but unsound (&mut is Copy) and sub-Rust joins.",
+        "rationale": "Fatal: dc(&mut)=Triv lets USE-COPY duplicate unique borrows \u2192 use-after-free; the 3-point lattice can't express affine-not-Copy. Syntactic join rejects `if c {&a} else {&b}`, which Rust accepts, falsifying the load-bearing 'no worse than Rust' defense; closure joins are GI-hard and incomplete. Must revise."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.084,
+      "timestamp": "2026-06-24T18:56:16+00:00"
+    },
+    {
+      "round": 7,
+      "question": "Sequential ownership core \u2014 for SINGLE-THREADED code only (no concurrency, atomics, or interior mutability), what move/borrow/lifetime discipline gives memory safety without GC, derived from the proof layer rather than a hardcoded borrow checker?",
+      "revision": 2,
+      "proposal_excerpt": "## 1. THE DECISION\n\nThe sequential ownership core is the **decidable affine fragment of an executable separation-logic resource calculus**. Ownership is not a borrow checker bolted on; it is type checking in a substructural calculus whose contexts hold *capability resources* drawn from a partial commutative monoid (PCM). The \"borrow checker\" is the monotone least-fixpoint solver for that calculus restricted to a finite origin domain. Three primitives, stated formally below, replace the defeated `Frozen[\u03c1]`/`dc`/canonical-equality design.\n\n### 1.1 Places, loans, regions\n\n- **Place** `p` = access path: root variable + projections (`.field`, `[*]` summarizes all indices, `*` deref). Finite per function.\n- **Loan origin** `\u2113` = a unique token minted at each borrow site. Finite per function.\n- **Region** `\u03c1` = a *set* of loan origins (Polonius-style provenance), constrained by `\u03c1 \u2287 {\u2113}` and `\u03c1 \u2287 \u03c1'`. **Freezing is never a stamp on a type.** It is a *derived predicate* `frozen(p) := \u2203\u2113 \u2208 live-loans rooted at p`.\n\nThis single change kills attacks 1 and 3 at the root: there is no `Frozen[\u03c1](Own@a)` token to fail canonical-equality against `Own@a`.\n\n### 1.2 Place-state lattice (the join)\n\nE",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Decidability forces `[*]` index-summarizing, exiling allocators/slabs/ring-buffers/split_at_mut to a deferred proof layer with no cheap unsafe escape.",
+          "strongest_point": "A slab allocator handing out two live `&mut` to distinct slots is unexpressible in the decidable fragment, and the only escape is a deferred separation-logic Disjoint proof \u2014 strictly heavier than Rust's audited 5-line unsafe block."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Meet table is non-associative; a Moved third path masks a Shared/MutLent conflict, accepting aliased mut+shared access.",
+          "strongest_point": "(Shared\u2293MutLent)\u2293Moved=Conflict but Shared\u2293(MutLent\u2293Moved)=Moved, so a fold order exists that dissolves a real conflict to Moved and accepts simultaneous live &x and &mut x."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Meet table isn't a meet: Conflict is unplaced; literal table makes Moved absorb Conflict, laundering real aliasing conflicts into acceptance.",
+          "strongest_point": "A 3-path CFG (borrow-shared \u2225 borrow-mut \u2192 Conflict, then merge with a moved path) yields Conflict \u2293 Moved = Moved, so the genuine Shared/MutLent violation is silently accepted by any checker faithful to the published table."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "No origination axiom and no unsafe escape: can't form a pointer to a hardware address, FFI, or type-pun \u2014 bare-metal target unmet.",
+          "strongest_point": "Every reference derives from an already-owned root place; nothing mints ownership over a fixed physical address or foreign pointer, and there is no unsafe hatch, so MMIO/FFI/type-punning are simply inexpressible despite the claimed bare-metal target."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Target-3 claim (rules derived from resource logic, no seam) is RustBelt's Fundamental Theorem \u2014 proven, but undecidable manual meta-proof; region core is Polonius.",
+          "strongest_point": "RustBelt already proved every borrow rule is a derived lemma of an Iris/PCM resource logic, and that derivation is undecidable manual Coq \u2014 so the proposal cannot have derivability, decidability, and one seamless logic for user proofs at once without showing a complete proof procedure for the logic that RustBelt and Polonius both lack."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "genuine-flaw",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "[*] index-summarization exiles disjoint-slot code (allocators, ring buffers, split_at_mut) to the deferred Disjoint layer with no unsafe-equivalent escape",
+          "No-drop-flag policy pushes conditional-move cases into user-level Option/.take(), a hand-rolled runtime drop flag",
+          "Bare-metal requires an origination/foreign-memory axiom and unsafe analog that are unspecified and unnamed; the bare-metal claim must be qualified to the cost model"
+        ],
+        "headline": "Flow-sensitive substructural typestate + Polonius regions as the sequential ownership core \u2014 fails as written.",
+        "rationale": "The meet table is non-associative and leaves Conflict unplaced, laundering real Shared/MutLent conflicts into accepted Moved (soundness + implementation). The 'derived, no-seam' target-3 claim is refuted by RustBelt: derivability is an undecidable meta-theorem = a seam. All fixable; proposer must revise."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.0936,
+      "timestamp": "2026-06-24T19:05:05+00:00"
+    },
+    {
+      "round": 8,
+      "question": "Sequential ownership core \u2014 for SINGLE-THREADED code only (no concurrency, atomics, or interior mutability), what move/borrow/lifetime discipline gives memory safety without GC, derived from the proof layer rather than a hardcoded borrow checker?",
+      "revision": 3,
+      "proposal_excerpt": "## 1. THE DECISION\n\nReplace the permission **lattice** (the source of all three defeats) with a **fractional-permission partial commutative monoid (PCM)** and a propositional affine separation logic over it \u2014 call it **AFCL**. The \"borrow checker\" is not a pass; it is the decision procedure for AFCL entailment. Conflict is never a *stored, mergeable value* \u2014 it is the *partiality/invalidity* of resource composition, detected by a closed-form predicate over a summed multiset. That structural change is what kills the fold-order and CFG-merge attacks at the root.\n\n### 1.1 The resource algebra (this is the whole proof layer for the sequential core)\n\n- **Locations** `\u2113 \u2208 Loc` = program bindings + finitely many heap-region symbols emitted by region inference (finite per function).\n- **Fractions** `q \u2208 \u211a \u2229 [0,1]`. `q=1` = exclusive/writable, `0<q<1` = shared/readable, `q=0` = moved-out or fully lent.\n- **Permission map** `\u03c0 : Loc \u2192 \u211a\u22650`, finite support.\n- **Composition** `\u03c0\u2081 \u2022 \u03c0\u2082 = \u03bb\u2113. \u03c0\u2081(\u2113)+\u03c0\u2082(\u2113)` (pointwise sum).\n- **Validity** `valid(\u03c0) \u27fa \u2200\u2113. \u03c0(\u2113) \u2264 1`.\n\n`(Perm, \u2022)` is associative, commutative, cancellative \u2014 these are *algebraic laws of \u211a-addition*, not entries in a hand-written table",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "Allocators, iter_mut, intrusive lists all fall outside the no-proof fragment; escape is induction proofs, not cheap unsafe.",
+          "strongest_point": "Fractional permissions model read-sharing not disjoint-mutable partition, so every allocator and every iter_mut needs inductive AFCL proofs\u2014the 'no seam' design makes the escape maximally expensive, reproducing the ATS2 unusability."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Termination unproven: min over \u211a\u2229[0,1] lacks DCC, loops unhandled, no widening; affine leak gives an infinite descending chain.",
+          "strongest_point": "Their own affine leak (Attack A) yields a loop whose header fixpoint \u0393_h=min(1,\u0393_h\u2212p) has no solution, and the dense min-semilattice has no descending-chain condition and no widening, so DECIDE does not terminate as specified."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Region pass falsely claimed O(V+E) acyclicity; higher-ranked lifetimes make it quantified-outlives entailment, not topological sort.",
+          "strongest_point": "A borrowing closure (`for<'a> Fn(&'a mut T)`) turns region satisfiability into universally-quantified outlives entailment \u2014 the incomplete/heuristic regime, not the O(V+E) DAG sort \u00a71.5 claims \u2014 and no monomorphization erases a genuine `for<'a>`."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "Scalar fractions can't express disjoint mutable slices, allocators, or MMIO; escape hatch reuses same \u03a3\u22641 PCM and also fails.",
+          "strongest_point": "split_at_mut splitting writable q=1 yields two readers, not two disjoint writers \u2014 and no first-order proof over the same atomic-location/\u03a3\u22641 PCM can ever recover two simultaneous writers, so the 'bare-metal, no-seam, one-logic' claim is false for sequential std-level code."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Reinvents Viper/Chalice/IDF permission masks + LP fraction inference uncited; their documented costs (non-principal modular inference, data-structure scaling) are the conceded gaps.",
+          "strongest_point": "Viper's permission model (Loc\u2192[0,1]\u2229\u211a, additive, \u22641) plus Ferrara-M\u00fcller LP fraction inference plus Viper's one-logic/named-boundary design already instantiate the exact 'novel triple,' and prior art shows that fraction inference isn't principal across boundaries and that recursive/scaled permissions exit both LP and soundness."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "genuine-flaw",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "genuine-flaw",
+          "attacker-expressiveness": "genuine-flaw",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Sequential type-safety core (read/write exclusion, min-merge non-laundering, T1/T2) is sound and survives \u2014 preserve it across revision.",
+          "Revision must record: disjoint-mutable subdivision requires a richer PCM whose runtime indices forfeit the QF_LRA decidability triple \u2014 make that boundary explicit.",
+          "Modular fraction inference is non-principal across call boundaries (Heule et al.); signatures must carry abstract read permissions \u2014 contradicting 'no fractions surfaced'.",
+          "Novelty must be restated against Viper/Chalice/IDF, not RustBelt/Polonius."
+        ],
+        "headline": "Sequentially sound, but scalar-fraction PCM can't express disjoint mutable memory; loops, HRTB, novelty unestablished.",
+        "rationale": "Core type-safety holds, but five distinct genuine defects stand: fractions model read-sharing not disjoint-mutable partition (allocators/iter_mut/conditional borrows out-of-fragment), DECIDE termination unproven for loops, \u00a71.5's O(V+E) false for higher-ranked lifetimes, and the 'novel triple' plus its costs are anticipated by uncited Viper/IDF."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.7642,
+      "timestamp": "2026-06-24T19:16:36+00:00"
+    },
+    {
+      "round": 9,
+      "question": "Decidability boundary \u2014 precisely which fragment of dependent types is admitted, with the formal argument that it is decidable?",
+      "revision": 0,
+      "proposal_excerpt": "# THE DECISION\n\nAdmit dependent types **only in a stratified, index-erased refinement discipline** (call it the **IR-core**). Type dependency is confined to a separate *index sort* whose constraint theory is fixed and decidable; the program (computation) layer is Turing-complete but **never evaluated during type checking**. The bridge is singletons + existential index packing (the Dependent ML / Liquid discipline), not full conversion over program terms.\n\n## Syntax (two strata)\n\n```\nIndex sorts      \u03b3  ::= int | rat | bool | addr | \u03b3\u2192\u03b3 | \u03b4        (\u03b4 = reflected ADT sort)\nIndex terms      i  ::= a | n | i+i | n\u00b7i | f(i\u2026) | sel(i,i) | upd(i,i,i) | c(i\u2026)\nPropositions     P  ::= \u22a4 | \u22a5 | i = i | i \u2264 i | is_c(i) | P\u2227P | P\u2228P | \u00acP\n                       | \u2200a:\u03b3. (G(a) \u21d2 P)      -- guarded, see \u00a7Theory\nConstraint ctx   \u03a6  ::= \u00b7 | \u03a6, a:\u03b3 | \u03a6, P\nProgram types    \u03c4  ::= b\u27e8i\u27e9                    -- base type indexed by i  (e.g. int\u27e85\u27e9)\n                       | {x:b | P}              -- refinement\n                       | \u03a0a:\u03b3. \u03c4                -- dependent fn over an INDEX\n                       | x:\u03c4\u2081 \u2192 \u03c4\u2082              -- value fn; \u03c4\u2082 may mention only x's index\n                       | \u2203a:\u03b3. \u03c4  ",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Reachability/separation/ordering invariants of canonical systems structures fall outside T, forcing ATS2-style hand-inducted lemmas as the common case, not a rare tail.",
+          "strongest_point": "A textbook intrusive freelist needs transitive-closure reachability and no-double-free invariants that escape QF-LIA+EUF+arrays, forcing exactly the structural-recursion proof fragment the proposal cites as the ATS2 failure \u2014 with Rust demanding zero such proof."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Permissions-as-propositions in a duplicable entailment context can't track linear resources; double-free/race accepted by the rules.",
+          "strongest_point": "\u03a6 is monotone with contraction, so perm(x)=1 is never consumed \u2014 `free x; free x` type-checks via reflexive Sub-Refine at both sites, defeating the derived-ownership and erased-fence claims."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Decidability proof's L3 wrongly treats subtyping as a T-leaf; \u03bc + indexed \u03a0 gives a divergent non-regular-recursive-type conversion.",
+          "strongest_point": "The well-foundedness measure is on program AST size, but the subtyping/conversion pass recurses on type structure and unfolds size-increasing recursive types, so for a depth-indexed non-regular datatype the leaf judgement never terminates \u2014 contradicting the stated theorem."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Bare-metal target unserved: no bitvector theory, array axioms false for MMIO; systems code expressible only via constant escape.",
+          "strongest_point": "Variable\u2013variable bitwise ops are automatic-but-not-Presburger and MMIO violates the array read-over-write axiom, so the bit-level/device invariants of the explicitly-targeted systems workload cannot be expressed in T without falling out to opaque EUF+lemmas on nearly every line."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Decidability theorem over combined T repeats Chalice/Viper history; arrays+quantified permissions are provably undecidable (Bradley-Manna-Sipma), not a decision procedure.",
+          "strongest_point": "Ownership feature (3) needs guarded permission-quantifiers over array addresses, which lands at/past the array-property-fragment boundary Bradley-Manna-Sipma proved undecidable \u2014 so L3's 'every leaf returns yes/no' is false for the configuration the proposal actually requires."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "genuine-flaw",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Lemma/escape fragment is the default path for reachability/separation/ordering invariants in pointer-heavy systems code (ATS2-level burden); the Rust-level common case holds only for arithmetic-shaped code.",
+          "T has no bitvector theory and the single extensional-array heap is unsound/wrong for MMIO; bit-level and device invariants need pervasive escape, and there is no unsafe-aliasing escape for legitimately overlapping mutable views."
+        ],
+        "headline": "Stratified index-erased refinement core over a fixed NO theory T, claimed fully decidable.",
+        "rationale": "Decidability theorem's leaf lemma L3 fails twice \u2014 non-regular recursive-type subtyping diverges (type-size unbounded), and arrays+quantified-permissions exceed the array-property fragment while NO is quantifier-free only. Separately, permissions as duplicable \u03a6-facts accept double-free. Ergonomics and bit/device expressiveness are recorded tradeoffs."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.1444,
+      "timestamp": "2026-06-24T19:25:20+00:00"
+    },
+    {
+      "round": 10,
+      "question": "Decidability boundary \u2014 precisely which fragment of dependent types is admitted, with the formal argument that it is decidable?",
+      "revision": 1,
+      "proposal_excerpt": "# THE DECISION\n\nAdmit exactly the fragment of a **Stratified Quantitative Type Theory with a Symbolic-Heap capability layer (SQTT)**. The core move that answers all three landed attacks: **three orthogonal decision procedures, none of which quantifies into another's domain**, composed only by bidirectional checking. The prior proposal failed because it folded ownership into a monotone refinement logic (attack 1), conflated the type-checker's termination measure with the conversion checker's (attack 2), and let ownership reach into quantified array theory (attack 3). SQTT physically separates these.\n\n## Contexts and judgements\n\nTwo contexts, with deliberately different structural rules:\n\n- **\u0393** \u2014 intuitionistic: types, index variables, and *0-multiplicity* (erased) variables. Admits weakening **and** contraction.\n- **\u03a3** \u2014 a **separating capability context**: a symbolic heap `H ::= emp | pt(a,q,v) | arr(b,n,q) | H \u2217 H`, with `q \u2208 \u211a \u2229 (0,1]`. Admits **neither** weakening nor contraction. Structural rules on \u03a3 are exactly: `\u2217`-assoc/comm, and the frame rule (extend by *disjoint* state).\n\nTyping is bidirectional and **state-transforming**:\n\n```\n\u0393 ; \u03a3 \u22a2 e \u21d2 A ; \u03a3'      (synthesize)\n\u0393 ;",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "Fixed signature {emp,pt,arr,\u2217} cannot express any linked/recursive heap structure; all fall to manual \u03c9-proofs \u2014 the ATS2 cliff.",
+          "strongest_point": "Decidability of Engine C is bought by forbidding recursive spatial predicates, which makes linked lists, free lists, intrusive collections, and lock-free structures inexpressible without dropping to hand-written separation-logic proofs."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Engine A's node-count measure provably increases under whnf duplication; Engine C cites IRS decidability for a fractional algebra it doesn't cover.",
+          "strongest_point": "conv recursing on D ((\u03bbx.C x x) BIG) re-runs whnf on the argument, producing C BIG BIG whose node count exceeds the parent \u2014 so the asserted independent structural measure increases, reviving attack 2's measure-conflation."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Engine C needs abduction (frame synthesis), not entailment; folding fractured arr ownership back forces \u2200-index exact-cover plus k! ordering case-splits \u2014 the array reasoning the proposal claims to avoid.",
+          "strongest_point": "Returning whole-array ownership after touching k cells requires proving symbolic fragments exactly tile [0,n), a \u2200-index formula over k! ordering branches that {split,focus,frac} cannot express and the cited IRS entailment result never covers."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "Fixed signature {emp,pt,arr,\u2217} with no recursive predicates and no \u2200-index ownership can't type linked structures or even Vec<Box<T>>.",
+          "strongest_point": "Freeing an array of owning pointers requires \u229b_{i<n} pt(arr[i],1,_) \u2014 the exact \u2200-index ownership the proposal bans for decidability \u2014 so {split,focus,frac} provably cannot express it, hitting the proposal's own falsification target."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Engine C's decidable fractional-permission frame inference is exactly what Steel/Viper/RefinedC met and declined to make a decider.",
+          "strongest_point": "The split/frac rules couple permission arithmetic to spatial matching, defeating the claimed Nelson\u2013Oppen purity separation that the IRS-based decidability theorem depends on."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "genuine-flaw",
+          "attacker-expressiveness": "genuine-flaw",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "The decidable fragment excludes recursive/linked heap structures and concurrent-mutation (lock-free) patterns; they fall to the \u03c9-proof fragment (an ATS2-style cost), so the unqualified 'Rust-parity' claim must be narrowed to dense-array code.",
+          "Definitional equality is deliberately coarser than arithmetic truth (nonlinear facts need user lemmas) \u2014 a legitimate, proposal-acknowledged boundary, recorded but not fatal."
+        ],
+        "headline": "A three-engine fragment whose Engine-C decidability proof and array-ownership recombination are unsound and over-narrow.",
+        "rationale": "Engine A's node-count measure provably increases (reviving measure-conflation); Engine C does abduction, not the cited IRS entailment, and couples fractional permissions to spatial matching, defeating Nelson\u2013Oppen. The fragment meets its own break condition: Vec<Box<T>> and in-place swap force the banned \u2200-index ownership."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.4089,
+      "timestamp": "2026-06-24T19:34:57+00:00"
+    },
+    {
+      "round": 11,
+      "question": "Decidability boundary \u2014 precisely which fragment of dependent types is admitted, with the formal argument that it is decidable?",
+      "revision": 2,
+      "proposal_excerpt": "# DECISION: The decidable fragment is **predicative MLTT with certificate-gated structural recursion, opaque value-level `fix`, and typed Normalization-by-Evaluation conversion** \u2014 with ownership expressed as ordinary total type families, not as a separation-logic decision procedure.\n\nI am abandoning the previous round's two fatal commitments: (i) the claim of an *independent structural measure* for conversion, and (ii) the existence of an automatic *separation-logic entailment* procedure ({split, focus, frac}). Both are replaced below.\n\n---\n\n## 1. THE DECISION\n\n### 1.1 The core calculus \u03bb_\u03c0 and its phase gate\n\nTerms are stratified by a **decidable syntactic predicate `pure(t)`**, not by a separate type system. The hierarchy is predicative and cumulative: `U\u2080 : U\u2081 : \u2026`, `U\u1d62 \u2286 U\u1d62\u208a\u2081`. Constructors: `\u03a0(x:A).B`, `\u03bb`, application, the universes, indexed inductive families with their **structural eliminators**, and one value-level operator `fix_c f` carrying a termination certificate `c`.\n\n```\npure(x)              = true\npure(\u03a0(x:A).B)       = pure(A) \u2227 pure(B)\npure(\u03bbx.t)           = pure(t)\npure(f a)            = pure(f) \u2227 pure(a)\npure(U\u1d62)             = true\npure(Elim_I \u2026)       = \u2227 pur",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Systems core (allocators, intrusive lists, executors) sits in the proof-required region; Rust's unsafe floor demands no proofs, this demands per-op witnesses.",
+          "strongest_point": "Because ownership IS types with no unsafe-equivalent floor, the data structures that live below Rust's no-proof cliff (slab free lists, executor ready-queues, lock-free queues) require a hand-proved ownership algebra plus per-operation permutation witnesses \u2014 the ATS2 failure exactly."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "Ownership-as-ordinary-MLTT-type-family is freely duplicable (contraction); two-line well-typed program double-frees an array.",
+          "strongest_point": "Predicative MLTT has admissible contraction, so an `Owned n arr` witness can be used twice \u2014 `freeAll n arr own >> freeAll n arr own` type-checks and double-frees, defeating the very ownership invariant the system claims to enforce."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Conversion-by-NBE is decidable but non-elementary (Statman/Mairson); proposal never addresses complexity, defeating its Rust-ergonomics/spec-is-compiler claims.",
+          "strongest_point": "\u03bb_\u03c0^\u03c4 contains STLC, so its mandatory NBE conversion pass inherits Statman's non-elementary lower bound, and an index-tower type like T(tower 5) forces it on a tiny input \u2014 with no fuel possible without breaking the completeness story."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Fractional pt(p,e,v) presumes value stability; MMIO registers and aliasing C FFI violate it, and no escape hatch exists.",
+          "strongest_point": "A hardware register has no stable owned value, so pt(p,e,v) is false for it, yet the design offers no volatile/raw/untracked primitive to express drivers \u2014 defeating the bare-metal goal it claims."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Headline novelty (sized-fix-in-spec SN) is exactly Agda's documented multi-year unsoundness; everything else is prior art (DML, Zombie, Steel, Boyland).",
+          "strongest_point": "The one distinctive claim \u2014 certificate-gated sized fix in spec position with an SN guarantee under cumulativity + indexed inductives \u2014 is precisely the configuration Agda's own docs mark as inconsistent and disable under --safe, so the cited 'settled' SN result does not cover it."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "genuine-flaw",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "tradeoff",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Decidable \u2260 tractable: NBE conversion is non-elementary (Statman/Mairson) on the contained STLC fragment, descent-check PSPACE, Presburger 2-EXP; ergonomics/spec-is-compiler/AI-legibility claims must be qualified and no fuel mechanism exists.",
+          "MMIO registers and aliasing C FFI break fractional-pt value-stability; expressing drivers requires an untracked/volatile/axiomatized primitive that reinstates the FFI/unsafe trust seam goal 2 claims to abolish.",
+          "Dyadic-only permissions cannot represent 1/3 shares and recombine order-sensitively (cf. Dockins\u2013Hobor\u2013Appel tree shares); automatic SL fragment is narrower than Smallfoot/Steel prior art."
+        ],
+        "headline": "Decidable MLTT conversion, but non-linear ownership-as-type-family is unsound and overclaims SN and Rust-parity.",
+        "rationale": "Fatal: structural MLTT has admissible contraction, so an Owned witness duplicates \u2014 freeAll own >> freeAll own type-checks and double-frees. Plus the novel sized-fix SN is unproven (Agda precedent is inconsistent) and the systems core needs proofs Rust's unsafe floor waives."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.1883,
+      "timestamp": "2026-06-24T19:44:31+00:00"
+    },
+    {
+      "round": 12,
+      "question": "Decidability boundary \u2014 precisely which fragment of dependent types is admitted, with the formal argument that it is decidable?",
+      "revision": 3,
+      "proposal_excerpt": "## 1. THE DECISION\n\nAdmit exactly the **Quantitative\u2013DML fragment** (`Q-DML`): DML/Liquid-style *index dependency over a fixed decidable theory*, layered with `{0,1,\u03c9}` Quantitative Type Theory grading, with a separation-algebra index theory for ownership. This is a deliberate retreat from \"dependent types as type-level computation.\" There is **no type-level recursion, no sized fix, no cumulativity-driven normalization argument anywhere in the checker.** Decidability rests on a fixed background theory, not on strong normalization of a dependent calculus.\n\n### Three strata (phase distinction is load-bearing)\n\n- **Stratum 0 \u2014 runtime terms.** Turing-complete, general recursion permitted, fully erased of proof/index content. The checker *never reduces* a Stratum-0 term (the phase distinction guarantees indices cannot mention runtime terms except through the singleton bridge below). So SN of the term language is irrelevant to termination of checking \u2014 this is the structural reason the prior-art attack cannot re-land.\n\n- **Stratum 1 \u2014 index theory `T` (fixed, decidable).** Many-sorted FOL. Sorts: `\u2124, \u211a, \ud835\udd39, Loc, Res`. Components:\n  - Presburger / QF_LIA over `\u2124` (lengths, capacities, ind",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Interval-only footprint algebra can't express pointer-linked structures; intrusive lists/trees fall wholesale to the unsafe floor, refuting the ready-queue claim.",
+          "strongest_point": "A doubly-linked list's footprint is an unbounded set of non-contiguous heap-addressed intervals requiring the excluded inductive predicates, so the standard intrusive ready-queue \u2014 which the proposal claims is measure-expressible \u2014 is entirely outside the automatic fragment and lands in the unsafety-bearing trusted floor."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "A trusted footprint equation s = s\u2295s licenses split into two full linear tokens \u2192 double-free, refuting \u00a73-A directly.",
+          "strongest_point": "Token splitting is licensed by a T-equation, and trusted can forge T-equations, so a footprint (non-multiplicity) assertion manufactures a duplicated linear token exactly as \u00a73-A swore was impossible."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Measure/higher-rank invariants put VCs in quantified UFLIA (Presburger+uninterpreted fns) \u2014 undecidable; Nelson-Oppen only combines QF theories.",
+          "strongest_point": "Proving preservation of any measure invariant like \u2200i<count. slot(fl,i)<cap across push forces an assumed \u2200-over-LIA-plus-uninterpreted-function hypothesis that cannot be skolemized \u2014 Halpern-undecidable, falsifying decidability-theorem step (ii)."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Slab/linked-freelist ownership needs non-convex, runtime-unbounded footprints; interval-only separation can't express them, forcing per-operation trusted asserts.",
+          "strongest_point": "After k alloc/frees a slab's retained footprint is the array minus k runtime-placed holes \u2014 non-convex and unbounded, hence inexpressible as interval tokens, and the 'measure' trick only captures distinct index *values*, not the iterated separating conjunction over *memory* that memory safety actually requires."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Device C's footprint disjointness is implicit-dynamic-frames/array-separation-logic, NP-complete and quantified \u2014 outside the declared QF_LIA+QF_LRA+EUF fragment.",
+          "strongest_point": "A slab freelist's 'all free slots disjoint' invariant is an unbounded separating conjunction the proposal explicitly excludes, and the arithmetic version is NP-complete (array separation logic, Brotherston et al.), so the basic slab allocator \u2014 not an exotic deque \u2014 already falls to the trusted floor, falsifying the central claim."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "genuine-flaw",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "genuine-flaw",
+          "attacker-expressiveness": "genuine-flaw",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Even after repair, the convex-interval footprint fragment inherently excludes pointer-linked structures (lists/trees/graphs/chained maps), reproducing the ATS2 'heaviest where it stops applying' cost \u2014 must be stated as the explicit scope, not hidden.",
+          "Fraction inference for nested borrows is an unspecified search problem; without it annotation budget exceeds Rust for borrow-heavy code."
+        ],
+        "headline": "A narrow QF interval-footprint DML+QTT fragment whose decidability and soundness proofs both fail as written.",
+        "rationale": "Soundness: a trusted footprint equation s=s\u2295s mints duplicate linear tokens, refuting \u00a73-A on an accepted program. Decidability: assumed measure invariants yield Halpern-undecidable quantified UFLIA, not Nelson-Oppen QF. The slab/ready-queue coverage claim is refuted as array-SL/IDF, NP-complete and excluded."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.3433,
+      "timestamp": "2026-06-24T19:54:44+00:00"
+    },
+    {
+      "round": 13,
+      "question": "Proof erasure \u2014 how are proof witnesses eliminated at compile time with a formal guarantee they leave no runtime trace?",
+      "revision": 0,
+      "proposal_excerpt": "## 1. THE DECISION\n\n**Erasure is governed by a quantity semiring attached to every binder, and is defined as a syntactic source-to-core translation that runs *before* code generation. The \"no runtime trace\" guarantee is three separate, mechanizable theorems \u2014 non-occurrence, erasure-invariance, and operational simulation \u2014 not a backend optimization.**\n\nI adopt a Quantitative Type Theory (QTT, McBride/Atkey) substrate because its semiring gives erasure *and* ownership from one mechanism, directly serving targets 3 and 6 with a single construct.\n\n### 1.1 The semiring\n\nLet `R = ({0, 1, \u03c9}, +, \u00b7, 0, 1)` with `1+1 = 1+\u03c9 = \u03c9+_ = \u03c9`, `0\u00b7x = 0`, `\u03c9\u00b7\u03c9 = \u03c9`, `1\u00b7x = x`. Read:\n\n- `0` = **erased / computationally irrelevant** (proofs, type indices, ghost state),\n- `1` = **owned / linear** (the ownership-without-GC fragment),\n- `\u03c9` = **shared / unrestricted**.\n\nErasure is the `0` story; ownership is the `1` story; they are *the same annotation pass*.\n\n### 1.2 Judgement and core syntax\n\nContexts carry usage: `\u0393 ::= \u00b7 | \u0393, x :^\u03c1 A` with `\u03c1 \u2208 R`. Functions record the quantity at which the argument is consumed:\n\n```\nA ::= (x :^\u03c1 A) \u2192 B  |  (x :^\u03c1 A) \u2297 B  |  ...\nM ::= x | \u03bb^\u03c1 x. M | M @^\u03c1 N | (M ,^\u03c1",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Multiplicity is not borrowing; {0,1,\u03c9} forces linear threading or unsound \u03c9-aliasing for ordinary owned-data access.",
+          "strongest_point": "A use-counting semiring has no region/lifetime, so aliased shared borrows (slab/arena/intrusive-list) are either unsound at \u03c9 or require ATS2-style explicit threading that quantity inference cannot remove."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "Quantity-0 indices + 'definitionally equal without inspecting them' collapses indexed types: well-typed head of empty vector.",
+          "strongest_point": "The \u00a71.5 rule that any two 0-quantity terms of a type are definitionally equal without inspection makes 0 \u2261 S n at type Nat, so Vec A 0 \u2261 Vec A (S n) and `head (nil)` type-checks then reads out of bounds."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Conversion over their terminating index language is non-elementary (Statman/System-T), not tractable; O(1) claim covers only the wrong fragment.",
+          "strongest_point": "Their decidable index sub-language is System-T-equivalent, so the conversion pass type-checking must run is TOWER-hard, triggered by ordinary type-level recursion like Vec (tower n) A."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Usage-counting semiring can't express borrow-reclaim or disjoint mutable aliasing; no unsafe/region escape hatch exists for split_at_mut, allocators, aliasing FFI.",
+          "strongest_point": "QTT's `1` counts uses, not memory ownership: once a value is shared (\u03c9) no semiring operation recovers unique mutability, so scoped borrowing and disjoint mutable splitting are inexpressible \u2014 and the design provides no unsafe or region escape to recover them."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "QTT-0 gives erasure, not definitional irrelevance (\u00a71.5 decidability) nor borrowing (\u00a73 ownership); Idris 2 already shipped this with UB bugs.",
+          "strongest_point": "The \u00a71.5 termination argument depends on definitional proof irrelevance, but the cited QTT semiring (Atkey/McBride; Agda keeps @0 and irrelevance separate by design) does not provide it \u2014 that property is SProp, with SProp's restrictions and metatheory cost."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "genuine-flaw",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "tradeoff",
+          "attacker-expressiveness": "genuine-flaw",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Even after the soundness fix, worst-case conversion over the terminating index language is non-elementary (Statman/System-T); the O(1)/almost-linear complexity claims cover only the 0-fragment and constraint solve, not relevant index normalization \u2014 must be bounded or disclosed."
+        ],
+        "headline": "Erasure as quantity-0 translation, but \u00a71.5 irrelevance is unsound and ownership-unification is unbacked",
+        "rationale": "\u00a71.5's 'equal without inspection' makes 0\u2261S n, type-checking head[] (fatal). Independently, {0,1,\u03c9} use-counting is not borrowing and offers no region/escape hatch, so target-3 ownership-from-same-mechanism is false. Erasure spine T1\u2013T4 survives but must be resubmitted decoupled."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 1.8365,
+      "timestamp": "2026-06-24T20:01:55+00:00"
+    },
+    {
+      "round": 14,
+      "question": "Proof erasure \u2014 how are proof witnesses eliminated at compile time with a formal guarantee they leave no runtime trace?",
+      "revision": 1,
+      "proposal_excerpt": "## 1. THE DECISION\n\n**Erasure is an operational, type-directed phase translation governed by a *binary relevance modality* `q \u2208 {0,1}`, kept rigorously disjoint from definitional equality and from any ownership/uniqueness discipline. There is no definitional proof irrelevance anywhere in the metatheory. Witnesses are deleted by a terminating syntactic translation `\u2308\u00b7\u2309`, and \"no runtime trace\" is a theorem stated against an event-instrumented operational semantics.**\n\nThis is the EPTS / ICC\\* / Idris-2-forcing lineage (Mishra-Linger & Sheard; Barras & Bernardo; Teji\u0161\u010d\u00e1k's *A dependently typed calculus with pattern matching and erasure*; Brady's forcing/detagging), **not** SProp. That choice is the direct answer to the prior-art and soundness defeats.\n\n### 1.1 Calculus\n\nContexts annotate each hypothesis with relevance, and the turnstile carries an **ambient relevance** `\u03c3 \u2208 {0,1}` (`0` = we are elaborating something destined for erasure \u2014 a type, an index, a ghost; `1` = runtime-present code):\n\n```\n\u0393 ::= \u00b7 | \u0393, x :^q A          q \u2208 {0,1}\nJudgement:  \u0393 \u22a2^\u03c3 t : A\n```\n\nCore rules (`\u2293` is min; `q \u2265 \u03c3` means \"if \u03c3=1 then q=1\"):\n\n```\n (x :^q A) \u2208 \u0393      q \u2265 \u03c3\n \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 V",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "\"Rust-level annotation\" is false for the dependent layer that justifies the language; transport burden reintroduces ATS2 authoring pain.",
+          "strongest_point": "Inference erases proofs but does not author them \u2014 a dependently-typed ring-buffer enqueue still requires hand-written Agda-level subst/transport boilerplate that no-definitional-irrelevance actively maximizes, which is exactly the ATS2 failure mode the proposal claims to avoid."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "Conversion ignoring q collapses (x:^1 A)\u2192B \u2261 (x:^0 A)\u2192B; Conv then erases a runtime-live argument, miscompiling.",
+          "strongest_point": "Since App reads q off the function's type and \u00a71.2's \u2261 erases q 'from consideration,' Conv coerces a relevant \u03a0 to an irrelevant one, so \u2308(\u03bb^1 x.x+1) 5\u2309 = \u03bbx.x+1 instead of 6 \u2014 falsifying the convergence-reflection and simulation clauses of the \u00a71.5 theorem."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "C2 forcing check's 'recoverable'/'derivable' are higher-order unification and the word problem \u2014 undecidable, not 'syntactic'.",
+          "strongest_point": "Admitting a ghost-into-present elimination via C2 requires synthesizing an index-recovery term (Huet-undecidable HOU) and deciding tag-equality entailment under hypotheses (uniform word problem), so the 'decidable forcing condition' has no decision procedure \u2014 and restricting it to be decidable destroys the \u00a73 escape hatch."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "No quantity/relevance polymorphism: one generic type/combinator can't span erased and present uses without duplication or a non-modular global relevance tax.",
+          "strongest_point": "The poster-child `Vec A n` cannot simultaneously support zero-cost erased length and a runtime `length : Vec A n \u2192 Nat`, because `q` is committed in every constructor/Pi type and there is no quantification over it."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "No-trace theorem is GraD/DDC (uncited); C2 forcing is Idris-1's abandoned mechanism reintroduced without solving its modularity failure.",
+          "strongest_point": "C2 reintroduces Brady forcing that Idris 2 deliberately replaced with QTT annotations for being unpredictable and non-modular, yet the no-trace theorem is discharged through C2 \u2014 so either expressiveness collapses or modular soundness is unproven."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "genuine-flaw",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Authoring cost of the dependent layer is much-less-than-Coq, NOT Rust-level; transport/coherence boilerplate remains and irr does not make subst compute \u2014 the ergonomic claim must be rescoped and transport tooling owed.",
+          "Binary modality has no quantity/relevance polymorphism: generic types/combinators (Vec, \u03a3, compose) must be monomorphized by quantity or accept non-modular zero-cost under program-wide inference; quantity polymorphism is a needed future composing extension."
+        ],
+        "headline": "Type-directed binary-relevance erasure with an event-traced no-trace theorem \u2014 but unsound as specified.",
+        "rationale": "\u00a71.2's 'q invisible to \u2261' makes (x:^1 A)\u2192B \u2261 (x:^0 A)\u2192B, so Conv+App erase a live argument \u2014 a concrete miscompile falsifying the \u00a71.5 theorem. C2's 'recoverable/derivable' are undecidable, not syntactic, and \u00a71.5 rediscovers uncited GraD/DDC. Proposer must revise."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.2333,
+      "timestamp": "2026-06-24T20:10:05+00:00"
+    },
+    {
+      "round": 15,
+      "question": "Proof erasure \u2014 how are proof witnesses eliminated at compile time with a formal guarantee they leave no runtime trace?",
+      "revision": 2,
+      "proposal_excerpt": "## 1. THE DECISION\n\n**Erasure is keyed to the *sort* of a term's type, never to an annotation on a binder. The relevant/irrelevant boundary is a universe boundary that conversion provably cannot cross. Ownership (multiplicity) is a second, orthogonal axis that is never erased.** This dissolves the q-mechanism that the previous round's attacks exploited: there is no quantity on the \u03a0 for `Conv` to coerce.\n\n### 1.1 Universes (the decidable fragment)\n\nTwo universe families, disjoint, **no cumulativity between them in either direction**:\n\n- `Type_i` (`i \u2208 \u2115`, predicative, cumulative within the family) \u2014 *relevant*. Inhabitants are KEPT.\n- `sProp` (impredicative, definitionally proof-irrelevant) \u2014 *irrelevant*. Inhabitants are ERASED.\n\nSorting judgement `\u0393 \u22a2 A : s`, `s \u2208 {Type_i} \u222a {sProp}`. Formation: `sProp : Type_0`; `Type_i : Type_{i+1}`. \u03a0-formation is sort-directed in the codomain:\n```\n\u0393 \u22a2 A : s_A      \u0393, x:A \u22a2 B : sProp\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500  (\u03a0-Prop, impredicative)\n\u0393 \u22a2 (x:A) \u2192 B : sProp\n\n\u0393 \u22a2 A : Type_i   \u0393, x:A \u22a2 B : Type_j\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500  (\u03a0-Type, predicative)\n\u0393 \u22a2 (x:A) \u2192 B : Type_{max(i,j)}\n```\nThe domain `A` may itself be in `sProp` ",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "No lifetime/borrow axis and no proof automation; 'same as Rust borrows' is false, aliased/lock-free code unwritable without hand proofs.",
+          "strongest_point": "Linear/affine multiplicities are not Rust borrows \u2014 with no lifetime/region axis and no unsafe hatch, aliased structures (intrusive lists, MPSC queues, pinned futures) are either unwritable or buried in Iris-scale sProp proofs the language gives no tool to discharge."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "A linear resource consumed only inside an sProp proof is erased by E-Irrel: statically used once, dynamically zero times \u2014 leak.",
+          "strongest_point": "The sort and multiplicity axes are not orthogonal: E-Irrel deletes a relevant linear use embedded in a proof, discharging the exactly-once obligation with no runtime effect."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Cast's repr-equality either rejects the flagship Vec example or makes it memory-unsafe; Acc-Fix can't reduce under definitional irrelevance.",
+          "strongest_point": "repr keeps relevant indices, so the headline cast Vec(n+m)\u2194Vec(m+n) reduces to deciding n+m \u2261 m+n definitionally \u2014 which is false \u2014 so the proposal's own side-condition rejects its centerpiece, unless repr erases indices, which reopens a zero-trace out-of-bounds cast."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "No unsafe/transmute; Cast needs a propositional Id that distinct same-repr types lack, so type-punning/MMIO-overlays/allocator-views are inexpressible.",
+          "strongest_point": "Representation reinterpretation (transmute, MMIO struct overlays, aliased allocator views) has no encoding: Cast demands an Id A B proof that punned types cannot have, and the design provides no unsafe escape, forcing a missing feature, a reintroduced soundness hole, or a postulated false axiom."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Sort-keyed erasure abolishes QTT's 0-quantity: runtime-erased-but-type-relevant data (e.g. erased Vec/Fin indices) becomes inexpressible.",
+          "strongest_point": "By keying erasure to the universe, value-carrying data needed only for typechecking can be neither Type (kept at runtime) nor sProp (all values collapse), losing exactly the erased-relevant capability QTT's 0, GraD's grade-0, and Rocq RFC #32 ('Disentangling erasure and proof irrelevance') were built to provide."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "genuine-flaw",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "genuine-flaw",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "No unsafe/transmute/overlay: representation reinterpretation (type-punning, MMIO struct overlays, aliased two-type allocator/union views) is inexpressible without a false axiom or repr-only Cast; only monomorphic value-punning has an opaque-primitive workaround."
+        ],
+        "headline": "Sort-keyed sProp/Type erasure with definitional irrelevance; drops the q-quantity entirely.",
+        "rationale": "Borrowed sProp kernel is sound, but added mechanisms break: E-Irrel deletes linear uses inside proofs (leak), repr is self-contradictory (rejects flagship Vec or enables zero-trace OOB), Acc-Fix won't reduce under irrelevance, and erased-relevant data (QTT's 0) is inexpressible despite being required."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.7754,
+      "timestamp": "2026-06-24T20:20:30+00:00"
+    },
+    {
+      "round": 16,
+      "question": "Proof erasure \u2014 how are proof witnesses eliminated at compile time with a formal guarantee they leave no runtime trace?",
+      "revision": 3,
+      "proposal_excerpt": "## 1. THE DECISION\n\n**Erasure is keyed to a *quantity* annotation `q=0`, computed by usage accounting that is the single source of truth for both linearity checking and deletion. It is NOT keyed to sort/universe, and not to proof-irrelevance.** This is a three-axis split, and erasure lives on only one of them:\n\n| axis | values | governs | erased? |\n|---|---|---|---|\n| **quantity** `q` | semiring `R={0,1,\u03c9}` | usage accounting **and** runtime deletion | `q=0` \u21d2 deleted |\n| **sort** `s` | `Type`, `SProp` | definitional equality only | never (by itself) |\n| **region** `\u03c1` | lifetime labels | borrow/alias discipline | never (compile-time only, separate pass) |\n\nA `Type`-valued binder at `q=0` is **erased-relevant** (QTT-0 / GraD grade-0 / Rocq RFC #32): present for typechecking, gone at runtime. `SProp` does **not** imply erased. This is the disentanglement attack-prior-art demanded.\n\n### Judgements\n\nQTT-style. Contexts carry quantities; `\u03c0\u00b7\u0393` scales, `\u0393\u2081+\u0393\u2082` adds pointwise in `R`.\n\n```\n\u0393 \u22a2 e : A            -- e consumes the resources recorded in \u0393\n0\u00b7\u0393 \u22a2 A : s          -- types are checked at quantity 0 (usage-free)\n```\n\nApplication splits and scales the argument context by the binder'",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "admit hatch can't unblock aliasing: it discharges SProp, but aliasing is the orthogonal region pass \u2014 contradiction either way",
+          "strongest_point": "For every aliased structure (slab/MPSC/intrusive list), the offered escape `admit:(P:SProp)\u2192P` either targets the wrong axis (region rejects, no proof hole to plug) or implies aliasing-is-SProp, landing the programmer in Iris-scale proofs or globally-unsound uncontained `admit` \u2014 worse than scoped Rust `unsafe`."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Large elimination on a q=0 scrutinee: erasure is undefined, or selects a branch and breaks simulation.",
+          "strongest_point": "A well-typed program that case-splits a q=0 value into runtime-distinct branches has no sound erasure \u2014 `\u21dd` is either partial (stuck back-end) or violates Theorem (b), and no rule forbids it."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Advertised Presburger auto-discharge pass is undecidable on nonlinear index arithmetic (reshape/matmul), doubly-exponential even when linear.",
+          "strongest_point": "The q=0 obligation-discharge pass it sells as a terminating decision procedure is undecidable (Hilbert's 10th) precisely on the nonlinear shape arithmetic of its own Vec/matrix target domain."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Memory-ordering selector is listed as q=0/erased, but it selects the instruction (ldar vs ldr); Theorem (c) proves codegen can't distinguish them.",
+          "strongest_point": "The flagship weak-memory example erases the very argument that chooses ldar/stlr/dmb, and Independence (Thm c) guarantees acquire and relaxed atomics produce byte-identical erased terms the back-end cannot disambiguate."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Simulation theorem assumes totality QTT provided but the systems target removes; F*/Coq required a ghost-purity restriction the proposal omits.",
+          "strongest_point": "F*/Low*'s Ghost effect and Coq extraction prove erasure simulation needs q=0 code to be total and effect-free, yet this bare-metal proposal allows divergent/effectful q=0 subterms while asserting Theorem (b) unconditionally."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "tradeoff",
+          "attacker-expressiveness": "genuine-flaw",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "admit (SProp inhabitant) cannot discharge aliasing/region obligations; 'Rust-level annotation' covers only indexed-array code, and admit stays globally uncontained \u2014 to fix alongside the region axis next round",
+          "q=0 obligation auto-discharge is an incomplete heuristic: Presburger decides only linear obligations (i<n, comm), nonlinear shape arithmetic (reshape/matmul, a*b=c*d) is undecidable and needs user proofs; even linear Presburger is up to 2-EXP"
+        ],
+        "headline": "QTT q=0 as single source of truth for usage counting and runtime deletion",
+        "rationale": "Erasure-soundness core (single-q double-free refutation) is sound, but three central-theorem flaws stand: missing eliminator restriction breaks totality/simulation on large elimination over q=0 scrutinees; the erased ordering selector makes ldar/ldr indistinguishable by Theorem (c); and simulation needs an unstated ghost-totality restriction the bare-metal target removes."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.106,
+      "timestamp": "2026-06-24T20:29:29+00:00"
+    },
+    {
+      "round": 17,
+      "question": "Unsafe boundary \u2014 what does 'unsafe' mean here, and which invariants does crossing it break and then restore?",
+      "revision": 0,
+      "proposal_excerpt": "## 1. THE DECISION\n\n**`unsafe` is not a mode that disables a checker. It is a term former that switches the *discharge method* for one specific proposition \u2014 the machine well-formedness invariant `WF` \u2014 from the total decision procedure to an arbitrary (possibly user-written, possibly axiomatic) proof term, while quarantining the temporarily-broken state behind the linear resource discipline so it cannot leak.**\n\nConcretely, three things are first-class *in the object logic*, not built into the compiler:\n\n```\nWF : Machine \u2192 Prop\nWF(\u03c3)  \u225c  AliasWF(\u03c3) \u2227 InitWF(\u03c3) \u2227 OrderWF(\u03c3)\n```\n\n- `AliasWF`: ownership map is functional \u2014 no location has two full-permission owners.\n- `InitWF`: every typed, readable location holds a value inhabiting its type (no poison).\n- `OrderWF`: every shared access is justified by a happens-before edge in the target's axiomatic memory model `M \u2208 {ARMv8, POWER, RISC-V-WMM, \u2026}` (the model is a `Prop`-valued relation, a parameter, not a hardcode).\n\nThe \"borrow checker\" is *defined* as the decision procedure `dec : (\u03c3) \u2192 Proved(WF \u03c3) | Unknown`. Safe code is exactly the code for which `dec` returns `Proved` everywhere. There is no separate unsafe checker.\n\n### The b",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Intrusive/lock-free structures need inductive predicates, falling off dec's fragment into proof-or-viral-taint; ATS2 cliff hits the motivating cases.",
+          "strongest_point": "Reunifying a traversed raw pointer to sound ownership requires discharging AliasWF via the structure's inductive invariant, so every in-place method of an intrusive list demands a mechanized proof or a call-graph-poisoning `assume` \u2014 exactly where Rust ships clean-typed, proof-free code."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "raw_read returns poison as an uncolored value, not a \u21e3 resource; it escapes the seam check into safe code",
+          "strongest_point": "The soundness color tags heap resources, but raw_read's poison lives in a return value with no \u21e3 token, so the exit check \u0394'\u2291WF passes and poison enters safe code, breaking InitWF with no trust block in scope."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "OrderWF discharge is weak-memory verification: undecidable (ARM/POWER), quantified over reads-from \u2014 not the claimed SAT-encodable fragment.",
+          "strongest_point": "Proving OrderWF for any lock-free retry loop requires \u2200-over-reads-from acyclicity of the axiomatic ob relation \u2014 co-NP-hard bounded, undecidable unbounded \u2014 so the 'single-instruction atomics auto-discharge, zero proof text' claim is false exactly for the concurrency idioms weak-memory support exists to serve."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "MMIO/DMA, uninit allocators, and intrusive structures can't cross the seam; all forced into transitive `assume` taint.",
+          "strongest_point": "OrderWF's thread memory model `M` has no vocabulary for device/DMA ordering, so no proof term can discharge a driver's seam \u2014 forcing every device driver into propagating `assume` taint, and `\u21a6`'s exclusive-ownership semantics make volatile MMIO unsound to export at all."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Architecture is RustBelt+Lithium+Verus recombined; their measured annotation cost and cliff refute the zero-proof-text claim.",
+          "strongest_point": "RefinedC already implements `dec : Proved|Unknown` over a chosen SL fragment and still demands substantial per-function ownership/refinement annotations, directly contradicting the proposal's 'annotation cost equals Rust unsafe{}, zero proof text' claim."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "tradeoff",
+          "attacker-expressiveness": "genuine-flaw",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Auto-discharge is Rust-parity only on the local/non-inductive tail; intrusive lists, freelists, lock-free queues need inductive predicates and force per-method mechanized proof OR viral `assume` taint \u2014 retract 'never worse on annotation'.",
+          "OrderWF/Mpre for lock-free loops is forall-reads-from ob-acyclicity (co-NP-hard bounded, undecidable unbounded), NOT 'finite, SAT-encodable'; retract that and the 'atomics auto-discharge ordering, zero proof text' claim.",
+          "The differentiating zero-proof-text/Rust-parity claim must be backed by measured coverage data and reconciled with cited prior art (RefinedC's annotation burden, Verus's unclosed cliff); the thread-local `\u21e3` quarantine needs an explicit account against concurrent observers under weak memory."
+        ],
+        "headline": "Defines unsafe as discharging WF behind a linear quarantine \u2014 but poison values and device memory escape it.",
+        "rationale": "Soundness is decisive: raw_read returns poison as an uncolored value, slipping past the location-indexed seam check into safe code (the cast/raw_read asymmetry confirms the gap). Expressiveness independently fails: \u21a6/\u21e3 cannot name MMIO/volatile or uninit memory, and device ordering isn't in M, so trust-by-p can't help."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 1.9137,
+      "timestamp": "2026-06-24T20:38:09+00:00"
+    },
+    {
+      "round": 18,
+      "question": "Unsafe boundary \u2014 what does 'unsafe' mean here, and which invariants does crossing it break and then restore?",
+      "revision": 1,
+      "proposal_excerpt": "# THE DECISION\n\n**`unsafe` is not a checker-off switch. It is a `trust\u27e8C\u27e9{\u2026}` *frame* that grants a finite set of capability axioms `C`, where every invariant a capability breaks is recorded *in the grade of the value it returns*, and the frame's exit rule refuses to export any value whose grade is non-empty.** Poison is value-level, not heap-level. MMIO is a non-`\u21a6` resource modality. Device ordering is first-class in the model.\n\n## 1. The invariant lattice and graded types\n\nFix the structural invariants tracked by the whole language:\n\n```\n\ud835\udcd8 = { I  (Init:  every readable value is initialized)\n      A  (Alias: ownership/aliasing discipline holds)\n      O  (Order: accesses respect the memory model) }\n```\n\nA **grade** `g \u2208 2^\ud835\udcd8` names the invariants *not currently guaranteed* for a value. Ordered by `\u2286`, join `\u222a`, bottom `\u2205` (\"clean\"). Every type is graded: `\u03c4 @ g`, with the abbreviation `\u03c4 \u2261 \u03c4 @ \u2205`. Safe code is, by definition, the fragment that only ever binds `\u03c4 @ \u2205`.\n\nJudgement form (note: it is *joint* over the value world \u0393 and the resource world \u0394 \u2014 this is the structural fix to the prior soundness break):\n\n```\n\u03a3 ; \u0393 ; \u0394 \u22a2 e : \u03c4 @ g \u22a3 \u0394'\n```\n\n- `\u03a3` \u2014 model/capability context: g",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Alias grade {A} has no usable discharge; aliased data structures stay permanently poisoned and can't exit trust frames",
+          "strongest_point": "Seal-A's only discharge is a linear-ownership lookup in \u0394, which is definitionally unsatisfiable for the aliased data (intrusive lists, slab free-lists, lock-free handoff) that produced the {A} grade in the first place."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "raw_read/raw_write carry no {O}, so CPU reads of DMA'd normal memory export as clean despite missing coherence barriers.",
+          "strongest_point": "The proposal's own axiom raw_read : ptr \u03b1 \u22b8 \u03b1 @ {I} attaches no Order grade, so a device DMA into normal cacheable memory followed by an in-frame-initialized raw_read discharges {I} by definite-assignment and exports incoherent, unordered data as \u03c4 @ \u2205."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Frame-exit and Seal-A discharge over \u0394 are separation-logic entailment; undecidable once \u0394 holds unbounded grade-decorated heap structures.",
+          "strongest_point": "A2's grade-in-content-type commitment turns the trust-frame exit check `g=\u2205` into a grade-refined spatial entailment ('every node of this inductive predicate is clean'), which is undecidable for the unbounded heap structures a systems language must own, not the finite-lattice dataflow the proposal advertises."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Lattice {I,A,O} omits representation validity; the only cast-poison discharge (Owned) proves the wrong proposition, laundering invalid bit patterns into safe code.",
+          "strongest_point": "An auto-discharged `cast 2u8\u2192bool` exports a clean invalid `bool`, because `{A}`'s sole seal proves ownership, which says nothing about representation validity \u2014 a punning invariant the closed lattice cannot express."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Grade/seal machinery is IFC declassification; Taint rule is data-flow-only, so implicit flows launder poison past the g=\u2205 exit gate.",
+          "strongest_point": "A bool@{I} from raw_read, branched into u8@\u2205 literals, exports out of the trust frame with grade \u2205 \u2014 the classic implicit-flow hole IFC solved with pc-labels, which this design lacks."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "genuine-flaw",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "tradeoff",
+          "attacker-expressiveness": "genuine-flaw",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Frame-exit/Seal-A entailment over unbounded grade-decorated heap is undecidable; requires bounding \u0394 to a decidable spatial fragment, forfeiting return of unbounded owned structures from trust frames (dents targets 5/6) and pushing exported MMIO barrier obligations into the same restricted fragment."
+        ],
+        "headline": "Graded trust-frame unsafe with value-level poison over a {I,A,O} lattice",
+        "rationale": "Four genuine flaws, three with accepted-unsound counterexamples: implicit-flow laundering past g=\u2205, cast 2u8\u2192bool exporting clean invalid bool, DMA-normal-memory missing {O}; plus {A} has no usable discharge for the aliased data that is unsafe's core purpose."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.1719,
+      "timestamp": "2026-06-24T20:46:08+00:00"
+    },
+    {
+      "round": 19,
+      "question": "Unsafe boundary \u2014 what does 'unsafe' mean here, and which invariants does crossing it break and then restore?",
+      "revision": 2,
+      "proposal_excerpt": "## 1. THE DECISION\n\n**`unsafe` is not a checker-off switch and not a single seal. It is the elimination form for a *debt-typed* value, where \"debt\" is a multiset over a fixed kernel of four orthogonal obligation axes, each with its own discharge judgement.** Crossing the boundary breaks exactly the four invariants the kernel names; the frame cannot *close* until each is independently restored. The previous design failed because it had one seal (`{A}`, ownership) standing in for four invariants. Here they are split, and three of the four no longer route through linear-ownership lookup.\n\n### Judgement form\n\n```\n\u0394 ; \u0393 \u22a2_pc  e : \u03c4 ! D\n```\n\n- `\u0394` \u2014 linear/region/permission context (ownership tokens, `RegionWitness`, fractional perms `perm q`, q\u2208\u211a\u2229(0,1]).\n- `\u0393` \u2014 ordinary context.\n- `pc` \u2014 a **program-counter flow label**, lattice element (the IFC fix).\n- `D` \u2014 an **obligation multiset** over the kernel axes. `\u03c4 ! \u2205` \u2261 `\u03c4`. A debted value may not be **stored, returned, or branched-on** while it carries debt on the axis that operation reads (branch reads Flow; store reads Order\u2227Valid\u2227Alias; export reads all four).\n\n### The four kernel axes (each its own small decidable lattice)\n\n| Axis | ",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Order/Valid orthogonality forces an undischargeable per-load validity proof on every non-scalar lock-free handoff \u2014 the proposal's own flagship case.",
+          "strongest_point": "A correct acquire discharges Order but transfers no validity resource, so the consumer owes a Valid_T proof its frame cannot construct and must admit as an axiom \u2014 more ceremony than Rust and still trusted, not checked."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "Store excludes Flow and raw_read emits none; heap round-trip strips labels, breaking non-interference.",
+          "strongest_point": "Memory carries no IFC label, store does not read Flow, and raw_read emits no Flow, so a store/read round-trip launders a secret to a Low export in a sealing frame."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Automatic Valid-discharge requires deciding guard\u27f9valid; undecidable for the niche-enum/aggregate case the proposal champions, co-NP-hard even in QF_BV.",
+          "strongest_point": "`valid : Bits \u2192 Prop` is syntactically unrestricted, so the zero-proof Valid-entailment pass must decide quantified array+bitvector implication for the exact niche-optimized-enum/packed-aggregate reads the proposal advertises \u2014 an undecidable query with no specified fragment boundary."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Pointer dereferenceability/liveness isn't a bit-pattern predicate and has no axis or trusted-assertion escape; raw/FFI deref can't seal.",
+          "strongest_point": "`Valid : Bits \u2192 Prop` cannot express heap-dependent dereferenceability, and unlike `assume_coherent` for Order there is no `assume_valid`, so the commonest unsafe op \u2014 turning a foreign address into a typed deref \u2014 emits an undischargeable debt."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Four-axis split is the coeffect/graded-modal program (Granule); Alias mechanism is Vault focus/Pony recover/Mezzo adoption \u2014 uncited, with their costs unaddressed.",
+          "strongest_point": "The Alias re-acquisition discharge is Vault's focus / Mezzo's adoption-and-abandon, which were bounded by lexical scoping and a runtime check \u2014 the latter contradicting the proposal's 'compiler inserts nothing' claim \u2014 and its branch-based refcount narrowing couples Alias to Flow, defeating the orthogonality the whole design rests on."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "genuine-flaw",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "tradeoff",
+          "attacker-expressiveness": "genuine-flaw",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Valid automatic discharge needs a precise syntactic fragment for `valid:Bits\u2192Prop` plus a membership decision procedure; even within QF_BV it is SMT-cost, not linear \u2014 the 'zero-proof, cheap' claim holds only inside an unspecified fragment.",
+          "Design must be situated against coeffects (Granule), focus/recover (Vault/Pony) and adoption-abandon (Mezzo), and must demonstrate decidability of cross-axis composition rather than asserting per-axis decidability."
+        ],
+        "headline": "Four-axis unsafe kernel: leaks via heap, can't discharge validity on concurrent/FFI loads.",
+        "rationale": "Store excludes Flow and memory is unlabeled, so a heap round-trip launders secrets past a sealing frame (non-interference broken). Order/Valid orthogonality forces admitted axioms on the flagship lock-free case, and bit-pattern Valid plus no assume_valid leaves raw/FFI deref undischargeable. Fatal as specified."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.0021,
+      "timestamp": "2026-06-24T20:52:30+00:00"
+    },
+    {
+      "round": 20,
+      "question": "Unsafe boundary \u2014 what does 'unsafe' mean here, and which invariants does crossing it break and then restore?",
+      "revision": 3,
+      "proposal_excerpt": "## 1. THE DECISION\n\n**`unsafe` is exactly one capability: the right to invoke `assume P`, where `P` ranges over single-trace *safety* propositions only. It is never the right to relax a relational (2-safety) obligation, and it is never the right to skip label propagation.** Crossing the boundary suspends the *machine-checked maintenance* of spatial/temporal resources (you may fabricate them); it does **not** suspend the informational lattice, which is enforced unconditionally by the well-formedness gate on `assume` itself.\n\n### Judgement and resource algebra\n\nTyping is Hoare-style over a separation-logic resource context (this is where ownership-without-GC lives \u2014 `\u0394` *is* the ownership state, not a bolted-on borrow checker):\n\n```\n\u0393 ; \u0394 \u22a2 e : \u03c4 \u22a3 \u0394'          read: {\u0394} e : \u03c4 {\u0394'}\n```\n\n`\u0393` intuitionistic (pure facts, copyable); `\u0394`, `\u0394'` linear resources in a partial commutative monoid `(Res, \u2217, emp)`. Core resources:\n\n```\na \u21a6[\u03c4, \u2113] v        cell at a holds v : \u03c4 at label \u2113      -- heap-dependent VALIDITY, with label\nCoh(a, t)          coherence/timestamp token at a         -- weak-memory ordering\nOwn(p)             full linear capability on path p\n```\n\n`\u2113` is a term of a **fixed fin",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Rust-parity holds only for safe glue; unsafe primitives force hand-authored SL assertions plus linear accounting \u2014 the ATS2 experience relocated to the highest-value code.",
+          "strongest_point": "Concurrent ownership-transfer (lock-free queue) and overlapping intrusive multi-list nodes provably fall outside the decidable symbolic-heap fragment, collapsing to hand-written `assume` assertions that biabduction cannot author, so the marketed Rust-parity ergonomics fail exactly where systems programmers actually work."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "Safe fragment leaks secrets via implicit control flow; no pc-label exists, falsifying unconditional noninterference claim.",
+          "strongest_point": "A High-guarded if/else storing Low constants into a Low cell typechecks with no assume and no ledger entry, yet the loaded-back Low value equals the secret \u2014 a direct NI violation the rules accept."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "wf/SAT gates become undecidable inductive-SL-with-data entailment exactly where the label invariant needs aggregates; decidable fragment can't express it.",
+          "strongest_point": "The decidable symbolic-heap fragment is structure-only, but I4's noninterference lives in cell-payload labels over inductive structures\u2014so decidability and expressiveness of the security invariant are mutually exclusive, forcing every labeled array/list into the trust ledger."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Banning Rel from assume makes label-correct FFI inexpressible; foreign-output labeling silently launders or forces constant declassify.",
+          "strongest_point": "Correct FFI label-propagation is a relational (Rel) postcondition, which assume cannot carry \u2014 so the human hand-labels opaque foreign output, and a label-dropping but SAT-satisfiable spec relaxes I4 with one innocuous ledger line the gates cannot detect."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Memory-safety escapes are implicit declassification; a false-alias assume launders Secret to Low, invisible to wf+SAT.",
+          "strongest_point": "A satisfiable Safety-only `assume_pointsto a Low` over an address physically overlapping a High cell launders secrets after label erasure, exactly the leak Hansen-Larsen-Askarov (2025) prove memory unsafety always enables, contradicting the table's claim that I4 is independent of I1/I2."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "tradeoff",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Unsafe-core ergonomics (lock-free concurrency, overlapping intrusive structures) require hand-authored SL assumptions plus full linear accounting; the Rust-parity/biabduction story holds only for safe glue, and weak-memory ordering authoring cost is unpriced.",
+          "wf/SAT decidability and biabduction completeness hold only for a restricted homogeneous-label / structure-only / finite-conjunction fragment; data-dependent per-element label invariants, loop-invariant synthesis, and the finite-lattice Nelson-Oppen combination need explicit restriction or ledgered fallback. 'wf is a pure scan' and 'infers all frames' must be corrected.",
+          "Banning Rel from assume makes flow-dependent FFI label-propagation inexpressible; foreign-output labeling is trusted hand-chosen labeling that the gates cannot validate, raising declassify pressure \u2014 'no FFI seam' is false for the informational lattice."
+        ],
+        "headline": "Defines unsafe as safety-only assume minting, but safe-fragment NI and I4-independence both fail.",
+        "rationale": "Implicit control flow leaks secrets in the safe fragment with no assume and empty ledger, falsifying unconditional-NI. A false-alias assume launders Secret to Low after erasure, refuting the table's I4-independent-of-memory-safety claim. Both genuine; ergonomics, decidability, and FFI-expressiveness costs recorded."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.2815,
+      "timestamp": "2026-06-24T21:02:35+00:00"
+    },
+    {
+      "round": 21,
+      "question": "Interior mutability & weak memory \u2014 how are shared-mutable cells, atomics, MMIO/device registers (read-to-clear, write-1-to-clear), and ARM/POWER/RISC-V memory ordering typed, given the sequential ownership core cannot express them?",
+      "revision": 0,
+      "proposal_excerpt": "# THE DECISION\n\nInterior mutability, atomics, MMIO, and weak ordering are **not new core constructs**. They are all expressed in one **permission/resource algebra** (a partial commutative monoid, the \"proof layer\") plus a **thread-local view**. The sequential ownership core is the special case of this algebra restricted to full, non-shared, view-independent permissions. There is exactly one new primitive type \u2014 `Atomic<\u03c4, \u03a6>` \u2014 and one new heap object \u2014 a location with a declared **protocol**. Everything else is library combinators whose proofs are pre-discharged.\n\n## 1.1 The resource algebra (RA)\n\nResources `r \u2208 RA` compose with a partial `\u00b7`, unit `\u03b5`. Generators:\n\n- `\u2113 \u21a6_q v` \u2014 **fractional points-to**, `q \u2208 (0,1] \u2229 \u211a`. `\u2113\u21a6_{q\u2081}v \u00b7 \u2113\u21a6_{q\u2082}v = \u2113\u21a6_{q\u2081+q\u2082}v` iff same `v` and `q\u2081+q\u2082 \u2264 1`. `q=1` is exclusive (mutable); `q<1` is read-shared (immutable). **This generator alone is the sequential ownership core.** `&mut` = full `\u21a6_1`; `&` = a borrowed fraction; the \"borrow checker\" is the *derived* decision procedure that splits and rejoins fractions \u2014 not a hardcoded pass.\n- `Inv(\u03b9, I)` \u2014 a **duplicable** invariant token (`Inv\u00b7Inv = Inv`) guarding a resource satisfying assertion `I`. Th",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "No agent for interrupts; affine Reg token can't model ISR-shared peripherals; no unsafe escape hatch for allocators",
+          "strongest_point": "The affine, non-duplicable Reg MMIO token cannot be shared between main thread and an interrupt handler \u2014 the defining bare-metal pattern \u2014 making interrupt-driven drivers either inexpressible or dependent on interrupt-masking critical sections that void the zero-cost/hard-real-time claim."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "?",
+          "severity": "?",
+          "summary": "",
+          "strongest_point": ""
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Cell::open's non-reentrancy check on duplicable invariant tokens is mask/alias inference, not the affine fraction core, and is outside the claimed decidable fragment.",
+          "strongest_point": "Exclusivity of affine \u21a6_1 is free by linearity, but Inv is duplicable, so checking non-reentrant interior lending requires pointer-disequality (alias analysis) \u2014 a pass absent from the enumerated decidable fragment, which is exactly why Rust's equivalent (RefCell) pays a runtime flag."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "No FFI/assume primitive and no reinterpret generator; opaque C calls and type-punning are inexpressible without the unsafe seam they claim to abolish.",
+          "strongest_point": "Calling an opaque vendor ROM blob or linking libc requires assuming an unverifiable protocol \u2014 an axiom injection that is exactly the unsafe/FFI seam the proposal claims to have eliminated."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "This is GPS + iRC11 renamed; its decidability claim ignores the impredicative invariants / later-modality those papers needed for generic Mutex/Once/Atomic.",
+          "strongest_point": "A generic Mutex<T>/Atomic<\u03c4,\u03a6> requires impredicative invariants (Iris's later modality), which is exactly what takes iRC11 out of the first-order Smallfoot-decidable fragment the proposal claims those libraries live in."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "genuine-flaw",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "ISR-shared MMIO needs interrupt-masking critical sections; model lacks an interrupt-as-resource-agent abstraction, qualifying the static/zero-cost-ordering claim",
+          "An explicit trusted-axiom/assume/FFI boundary is required for opaque external code (vendor ROM, libc), replacing the untenable 'no seam' framing",
+          "No array points-to or reinterpret/type-punning generator in the core; allocators and DMA aliasing have no escape hatch",
+          "Per-register STS DSL cannot express cross-register relational protocols (index/data, FIFO), narrowing the 'all MMIO below the cliff' bet"
+        ],
+        "headline": "Unify cells/atomics/MMIO/weak-memory in one GPS+iRC11 resource algebra with a claimed decidable, proof-free common case",
+        "rationale": "Acquire rule is the naive unsound message-passing rule (duplicable Atom duplicates exclusive ownership); Cell::open non-reentrancy is alias analysis, not the affine core; and the decidability bet ignores the impredicative invariants/later-modality generic Mutex/Once/Atomic require."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 1.9819,
+      "timestamp": "2026-06-24T21:10:48+00:00"
+    },
+    {
+      "round": 22,
+      "question": "Interior mutability & weak memory \u2014 how are shared-mutable cells, atomics, MMIO/device registers (read-to-clear, write-1-to-clear), and ARM/POWER/RISC-V memory ordering typed, given the sequential ownership core cannot express them?",
+      "revision": 1,
+      "proposal_excerpt": "# THE DECISION\n\nInterior mutability, atomics, and MMIO are **not** modeled as \"shared reference + interior exclusivity.\" That framing is what forced the previous design into duplicable invariants (\u21d2 alias analysis) and impredicative invariants (\u21d2 later modality). I replace it wholesale with **protocol-tokened regions**.\n\nEvery shared-mutable resource splits at creation into two artifacts with disjoint kinds:\n\n- a **duplicable handle** `Cell<\u03c1, \u03c4, \u03a0>` \u2014 the raw runtime pointer, freely copyable, **carrying no permission whatsoever**;\n- a **linear permission token** `tok \u03c1@s` \u2014 zero-sized, affine-and-relevant (must-use, cannot-duplicate), carrying the entire right to act.\n\n`\u03c1` is a singleton region name (gensym'd, existentially packed). `\u03a0 = (S, s\u2080, \u2192)` is a **finite deterministic automaton**: states `S` finite, edges labeled `op[transfer]`. Every operation on the cell is an automaton *transition*, typed to consume `tok \u03c1@s` and produce `tok \u03c1@s'`.\n\n### Typing (contexts split as `\u0393 = \u0393_dup ; \u0393_lin`; only `\u0393_lin` is partitioned by `\u22c8`)\n\n```\n\u03c1 fresh     \u03a0 wf (finite, deterministic)     rank-strat(carry(\u03c1))\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500  (New)\n\u0393 ;",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "CAS-on-sentinel-only acquire excludes acquire-load token transfer; SPSC/DMA rings fall to the undecidable proof layer despite being cited as 0-proof.",
+          "strongest_point": "Real SPSC/MPSC rings and publish-consume idioms synchronize via acquire-LOADS of streaming indices, which the proposal's RMW-on-sentinel-only acquire rule cannot carry tokens across, so the headline '0-proof' common case actually lands in the undecidable proof layer or an inflexible Copy-only library generic."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "CAS-Acq mints T from observing the sentinel, but nothing forbids the atomic's initial value being that sentinel without sealing T \u2014 token duplicated ex nihilo.",
+          "strongest_point": "A type-checked program creates an atomic initialized to the acquire-sentinel and CASes it, duplicating the unique linear token with no release ever executed."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "\"Finite\" conflates set-finiteness with tractable representation; W1C/counter-product protocols are 2^k-state, making wf/rank-strat checks exponential or PSPACE-hard in k.",
+          "strongest_point": "The (New) rule's `rank-strat(carry(\u03c1))` must enumerate \u03a0's edges, but the proposal's own k-bit W1C and j-factor counter protocols have 2^k / n^j states, so the advertised 'polynomial' check is exponential (or PSPACE-hard over compact product factors) in register width / monoid arity."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Token transfer has no construct for interrupt-masking critical sections or concurrent MMIO reads \u2014 the core embedded patterns the proposal claims as zero-proof.",
+          "strongest_point": "An ISR sharing state with main via interrupt masking can never obtain its linear token \u2014 hardware preemption is not a CAS/store edge, so the handler body either cannot type-check or must fabricate a token outside the rules, on essentially every interrupt-driven program."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Recombines GPS, RSL, Alias Types, and Vault uncited; the no-later fragment was already tried and abandoned for being too weak.",
+          "strongest_point": "Your central claim \u2014 finite-state protocols transferring tokens along synchronizes-with, decidable, no later modality, proved once per memory model \u2014 is exactly GPS/RSL (2013\u201314), whose documented sequel was reintroducing step-indexing (iGPS/iRC11) because that fragment couldn't express the lock-free tail you wave off."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "genuine-flaw",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "tradeoff",
+          "attacker-expressiveness": "genuine-flaw",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Polynomial checking holds only for factored protocols; entangled finite protocols with cross-component guards are exponential/PSPACE and exit \ud835\udd07 (record on item 4).",
+          "Core is GPS/RSL/Alias-Types/Vault recombined: must cite, inherit their focus/adopt patches, and accept the documented GPS-too-weak\u2192iGPS/iRC11 expressiveness ceiling on the lock-free tail."
+        ],
+        "headline": "Protocol-tokened regions: linear typestate tokens + finite automata, no later modality, proof-block escape.",
+        "rationale": "Unsound as written (atomic init = sentinel duplicates the unique token; no creation/sealing rule). The 0-proof embedded claim fails on its own targets: ISR-masking and concurrent reads have no token-transfer construct; acquire-load streaming/DMA rings get no help. Strong core, but must revise."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.4482,
+      "timestamp": "2026-06-24T21:21:06+00:00"
+    },
+    {
+      "round": 23,
+      "question": "Interior mutability & weak memory \u2014 how are shared-mutable cells, atomics, MMIO/device registers (read-to-clear, write-1-to-clear), and ARM/POWER/RISC-V memory ordering typed, given the sequential ownership core cannot express them?",
+      "revision": 2,
+      "proposal_excerpt": "## 1. THE DECISION\n\n**One mechanism, four instantiations.** Every access to state that the sequential core cannot own outright is mediated by a *capability* that carries a **ghost resource drawn from a per-location partial commutative monoid (PCM) protocol**. The sequential borrow checker is not a separate subsystem \u2014 it is the *degenerate protocol* `Owned` (single abstract state, exclusive monoid). Interior mutability, atomics, MMIO, and interrupt sharing are the *same* judgment with richer monoids. This is what makes target (3) hold: ownership is *derived* from the protocol/PCM layer, not hardcoded.\n\n### 1.1 Protocol, formally\n\nA location `\u2113` is typed by a protocol `P = \u27e8A, M, \u03b9, \u03b4, J\u27e9`:\n\n- **A** \u2014 finite abstract-state space, decidable equality. (For monotone protocols, `(A, \u2291)` is a finite lattice.)\n- **M** \u2014 a PCM `(M, \u00b7, \u03b5, \u2713)` of *transferable ghost resources*. `|M| \u2286 M` is its duplicable core (`x \u2208 |M| \u27f9 x\u00b7x = x`).\n- **\u03b9 \u2208 M** \u2014 resources minted *once* by the constructor `new`.\n- **\u03b4** \u2014 for each op `o \u2208 {ld\u27e8m\u27e9, st\u27e8m\u27e9, cas\u27e8m\u27e9, faa\u27e8m\u27e9}` (m = memory ordering), a relation\n  `\u03b4_o \u2286 (A\u00d7Val) \u00d7 (A\u00d7Val) \u00d7 (M \u21c0 M)`, i.e. `(a,v) \u2192 (a',v'), \u03b3` where `\u03b3 = (\u03b3_pre, \u03b3_post)` is a **frame-",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Slab allocator and intrusive lists need authored recursive-predicate proofs; no unsafe valve to ship past them.",
+          "strongest_point": "The free-list allocator\u2014the most basic bare-metal idiom\u2014has an unbounded recursive invariant that cannot be a finite registered protocol, and with no `unsafe` escape valve the only compiling path is an ATS2-grade separation-logic proof."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Per-use frame-preserving-update check over infinite, runtime-value-indexed monoids is not finite-FSM; decidability claim fails on the flagship SPSC example.",
+          "strongest_point": "The SPSC monoid Filled:\u2115\u21c0Excl with grant range [k,n) keyed by a loaded runtime value n makes the per-use FPU check a value-dependent arithmetic obligation, not 'finite-FSM, linear' as \u00a71.2/\u00a71.8 assert \u2014 so either decidability is unproven or the headline example is rejected."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Flagship SPSC ring's per-use check is SL-with-arithmetic frame inference over an unbounded \u2115-indexed PCM, not finite-FSM reachability; needs loop invariants.",
+          "strongest_point": "The indexed `Filled : \u2115\u21c0Excl` resource makes every consume/produce loop require an inductive separation-logic+arithmetic invariant (range disjointness, k\u2264i<n), so the headline 0-proof case is either not proof-free or not decidable \u2014 and \u00a71.3 re-couples the byte-value to ghost indices that \u00a71.4 swore to decouple."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "Non-coherent DMA: region mutated by a non-RC11 device agent via cache-maintenance ops, outside the op set, lowering table, and Sound(P) model entirely.",
+          "strongest_point": "Sound(P) is defined as an RC11 view-shift, but RC11 models no device agent and no cache-maintenance instructions, so a DMA buffer protocol's correctness is not even a statable proposition \u2014 and DMA is the most common bare-metal idiom."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Mechanism is GPS/iGPS/iRC11/RustBelt verbatim; the one new claim (decidable proof-free use) is contradicted by its own infinite-index SPSC example.",
+          "strongest_point": "The headline zero-proof SPSC ring uses an unbounded \u2115-indexed monotone monoid, violating \u00a71.8's finite-lattice decidability premise \u2014 and GPS/iGPS needed interactive induction to discharge exactly that protocol's use, the cost this proposal pretends it doesn't owe."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "genuine-flaw",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "genuine-flaw",
+          "attacker-expressiveness": "genuine-flaw",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "ISR/ceiling delivers the same SRP guarantee as incumbent RTIC but leaks access/ceiling effects onto public signatures \u2014 more annotation than the whole-program incumbent (proposal concedes this in Attack B)",
+          "Core mechanism is GPS/iGPS/iRC11/RustBelt verbatim; only the decidable-proof-free-use claim is novel, and it is the one that fails",
+          "'Closed under composition (product of PCMs)' must re-discharge the non-compositional no-thin-air law S2; it is not free",
+          "RCU/hazard-pointer/epoch and any recursive-invariant idiom (allocators, intrusive lists) require large authored proofs with no unsafe-grade escape valve between registered and authored modes"
+        ],
+        "headline": "Decidable proof-free protocol use over a per-location PCM weak-memory calculus",
+        "rationale": "The lone novel claim \u2014 decidable, proof-free use \u2014 is contradicted by the proposal's own SPSC example: infinite runtime-indexed PCM makes per-use checking SL-with-arithmetic, and loops need invariants. Separately, RC11 cannot even state non-coherent DMA correctness. Mechanism sound; claims and model coverage overreach."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.1363,
+      "timestamp": "2026-06-24T21:30:17+00:00"
+    },
+    {
+      "round": 24,
+      "question": "Interior mutability & weak memory \u2014 how are shared-mutable cells, atomics, MMIO/device registers (read-to-clear, write-1-to-clear), and ARM/POWER/RISC-V memory ordering typed, given the sequential ownership core cannot express them?",
+      "revision": 3,
+      "proposal_excerpt": "## 1. THE DECISION\n\nInterior mutability is introduced by exactly one primitive \u2014 a **shared cell governed by a finite register protocol** \u2014 and weak-memory soundness is checked against a **device-aware axiomatic model `M[arch]`**, not RC11. The sequential ownership core is recovered as the *degenerate* single-state protocol, so there is no FFI seam between owned and shared data.\n\n### 1.1 The protocol object (this is the fix for attacks 2, 3, 5)\n\nA protocol is a **finite** register automaton:\n\n```\nP = \u27e8 Q, q\u2080, R, \u03a3, \u03b4, I, Agents \u27e9\n  Q       finite set of abstract states (typestates)\n  R       finite set of ghost registers, each of a STATICALLY-BOUNDED sort\n            sort(r) \u2208 { Bool, BV[w], Fin(n) }   \u2014 w, n type-level constants\n  \u03a3       finite alphabet of operations (the cell's API)\n  \u03b4 : Q \u00d7 \u03a3 \u21c0 Q \u00d7 OrdLab \u00d7 Upd      partial transition fn\n  I : Q \u2192 \u03c6        where \u03c6 \u2208 QF_BV \u222a QF_LIA over R     (quantifier-free)\n  Agents  finite declared set \u2286 Cores \u228e Devices \u228e {DMA}\n```\n\nThe defeated proposal used `Filled : \u2115 \u21c0 Excl`, an **unbounded \u2115-indexed monoid** with a runtime-loaded bound `n`. That is deleted. Ghost state is now a **fixed finite tuple of registers** (`R`), and capacities ",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Unbounded sharing (Arc), runtime-sized buffers, and bitmap allocators all exit the fragment into axiom blocks costing more annotation than Rust's unsafe.",
+          "strongest_point": "Deleting the unbounded \u2115-indexed monoid structurally excludes Arc/unbounded-clone sharing \u2014 the backbone of real concurrent code \u2014 forcing it into 20-line unverified axiom protocols heavier than `unsafe { }`."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "\u22641-in-flight cutoff assumes multi-copy atomicity; IRIW under acq/rel accepts a protocol POWER/ARMv7 violate.",
+          "strongest_point": "IRIW is neither load-buffering nor thin-air, so \u00a73.A's restriction doesn't exclude it, yet the per-agent finite closure can't witness it and the checker certifies a consensus invariant that POWER's own supplied axioms allow to fail."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Invariant-synthesis/closure pass is PSPACE in register width and EXPTIME in agent count; 'decidable' conflated with 'zero-proof tractable'.",
+          "strongest_point": "\u00a71.5 costs the concurrent closure as a product |Q|\u00b7|valuations(R)|\u00b7|Agents| when it is actually (|Q|\u00b72^|R|)^|Agents| \u2014 exponential in both agent count and register bit-width (BV[64] MMIO, K-core barriers), so the promised zero-proof fixpoint is super-polynomial on the very examples advertised."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "FFI to aliasing/concurrent C introduces undeclared agents/aliases that violate D1/D4, non-locally poisoning the zero-proof fragment's soundness; the axiom valve can't even represent it.",
+          "strongest_point": "Any memory shared with opaque or concurrency-creating C breaks the static-Agents/affine-alias premises the cutoff theorem rests on, so 'proven' in-language protocols over that memory become unsound \u2014 and the model literally cannot formulate the assumption to audit it."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Protocol object is GPS; cutoff is parameterized-RA verification, which is PSPACE/NEXPTIME/undecidable with CAS \u2014 not cheap/zero-proof.",
+          "strongest_point": "Parameterized release-acquire safety (PODC'22, arXiv 2101.12123) is intractable with CAS and only PSPACE-complete when CAS-free/loop-free, directly refuting \u00a71.5's 'SMT-decidable, Rust-annotation-cost' cutoff for protocols built on atomic RMW."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "genuine-flaw",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Zero-proof fragment excludes unbounded/dynamic sharing (Arc, wakers, runtime-sized channels) and large bitmap allocators; the axiom escape valve is more verbose than Rust's unsafe and triggers more often \u2014 'common case' is overstated.",
+          "FFI to concurrent/aliasing C is a non-local conditional-soundness trust boundary, not a seamless unified layer; the agent-completeness assumption is not representable for audit unless an explicit FFI-boundary marker is added.",
+          "Device/peer-determined discriminant ('mode') registers require a value-refinement typing rule or fall to axiom; data-dependent typestate is currently unexpressible by design."
+        ],
+        "headline": "Finite-protocol interior mutability with device-aware memory model; cutoff theorem unsound on POWER, intractable with CAS.",
+        "rationale": "Self-declared load-bearing cutoff is unsound on advertised POWER/ARMv7 (IRIW under acq/rel certifies a consensus invariant POWER allows to fail) and its zero-proof fixpoint is intractable: cost formula is (states)^K not a product, NEXPTIME with the CAS its atomics require. Must revise."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.5121,
+      "timestamp": "2026-06-24T21:40:10+00:00"
     }
   ],
   "settled": [],
@@ -270,8 +1519,93 @@
         "Ownership semantics without GC, derived from the proof layer"
       ],
       "timestamp": "2026-06-24T18:21:04+00:00"
+    },
+    {
+      "between": [
+        "Ownership semantics without GC, derived from the proof layer (not a hardcoded borrow checker)",
+        "Decidable type checking (common case needs no user-written proofs)"
+      ],
+      "severity": "hard",
+      "property_at_risk": "Ownership semantics without GC, derived from the proof layer (not a hardcoded borrow checker), Decidable type checking (common case needs no user-written proofs), Unified proof/systems layer (no FFI seam between proof-land and systems-land)",
+      "description": "Derived ownership and decidable, Rust-cheap checking collide at the control-flow merge point \u2014 To DERIVE ownership instead of hardcoding it, capabilities must be first-class/parametric (\u2200\u03c1, fractions, PCM resources); merging two such states at a CFG join is then entailment in a general resource logic \u2014 Mezzo-heuristic, Iris/RustBelt-undecidable, or Viper-non-principal \u2014 i.e. undecidable or proof-demanding. The only merge that is decidable and annotation-free is a fixed syntactic join, which IS the hardcoded borrow checker and still rejects programs Rust accepts. Every finite-lattice compromise fails to encode the needed distinctions (affine-not-Copy, disjoint-mutable partition, non-droppable caps), losing soundness or completeness \u2014 exposed concretely by `let r = if b {&x} else {&y}`, split_at_mut yielding two writers, and the loop-header fixpoint with no solution. RustBelt makes the dual explicit: derivability-from-resource-logic is itself an undecidable meta-theorem, i.e. the very seam the design forbids.",
+      "source": "revision-exhaustion",
+      "from_question": "Sequential ownership core \u2014 for SINGLE-THREADED code only (no concurrency, atomics, or interior mutability), what move/borrow/lifetime discipline gives memory safety without GC, derived from the proof layer rather than a hardcoded borrow checker?",
+      "properties_in_tension": [
+        "Ownership semantics without GC, derived from the proof layer (not a hardcoded borrow checker)",
+        "Decidable type checking (common case needs no user-written proofs)",
+        "Unified proof/systems layer (no FFI seam between proof-land and systems-land)"
+      ],
+      "timestamp": "2026-06-24T19:17:27+00:00"
+    },
+    {
+      "between": [
+        "Ownership semantics without GC, derived from the proof layer (not a hardcoded borrow checker)",
+        "Decidable type checking (common case needs no user-written proofs)"
+      ],
+      "severity": "hard",
+      "property_at_risk": "Ownership semantics without GC, derived from the proof layer (not a hardcoded borrow checker), Decidable type checking (common case needs no user-written proofs), Unified proof/systems layer (no FFI seam between proof-land and systems-land)",
+      "description": "Derived sound ownership and decidable proof-free checking collide on real data structures \u2014 Sound ownership-without-GC requires a substructural, heap-address-quantified separation logic: linear permissions (no contraction, or `free x; free x` type-checks) carrying unbounded \u2200-index footprints `\u229b_{i<n} pt(arr[i],1,_)` for slab free lists, Vec<Box<T>>, and intrusive ready-queues. But the layer that makes checking decidable with no user proofs is necessarily contraction-admitting and quantifier-free \u2014 so it both duplicates ownership witnesses (double-free) and cannot express those footprints, which sit in the provably undecidable array-property fragment (Bradley\u2013Manna\u2013Sipma) / NP-complete array separation logic (Brotherston). Because the unified layer has no FFI seam or unsafe floor to quarantine the assertion, the obligation cannot be hidden: it must surface as either non-terminating type checking or the ATS2 hand-proof cliff. Mechanically, decidable proof-free checking gives \u2014 every revision's decidability lemma died on exactly this configuration.",
+      "source": "revision-exhaustion",
+      "from_question": "Decidability boundary \u2014 precisely which fragment of dependent types is admitted, with the formal argument that it is decidable?",
+      "properties_in_tension": [
+        "Ownership semantics without GC, derived from the proof layer (not a hardcoded borrow checker)",
+        "Decidable type checking (common case needs no user-written proofs)",
+        "Unified proof/systems layer (no FFI seam between proof-land and systems-land)"
+      ],
+      "timestamp": "2026-06-24T19:55:55+00:00"
+    },
+    {
+      "between": [
+        "Zero-cost abstractions (the proof layer erases at compile time)",
+        "Decidable type checking (common case needs no user-written proofs)"
+      ],
+      "severity": "hard",
+      "property_at_risk": "Zero-cost abstractions (the proof layer erases at compile time), Decidable type checking (common case needs no user-written proofs), Unified proof/systems layer (no FFI seam between proof-land and systems-land)",
+      "description": "Zero-cost erasure needs irrelevant-to-equality witnesses; decidable seam-free checking needs those same witnesses relevant. \u2014 A no-trace erasure theorem holds only if erased witnesses are irrelevant to computation, and the sole lever that makes this decidable is definitional proof irrelevance. But in a unified, seam-free language where the spec IS the type system, that same witness is fed to the kernel's equality decision \u2014 so making it erasable collapses runtime-distinct values (0\u2261S n, acquire\u2261relaxed atomics, Vec n\u2261Vec m), while keeping it relevant either retains it at runtime (non-zero-cost) or demands undecidable equality (n+m\u2261m+n). The recurring pattern is index/ownership/weak-memory-ordering data that must be erased for cost yet decides runtime behavior; a single erasure axis (multiplicity, universe, or grade) cannot host it, which is exactly why QTT-0, GraD grade-0, and Rocq RFC #32 split erasure from irrelevance into two orthogonal axes the unification requirement forbids.",
+      "source": "revision-exhaustion",
+      "from_question": "Proof erasure \u2014 how are proof witnesses eliminated at compile time with a formal guarantee they leave no runtime trace?",
+      "properties_in_tension": [
+        "Zero-cost abstractions (the proof layer erases at compile time)",
+        "Decidable type checking (common case needs no user-written proofs)",
+        "Unified proof/systems layer (no FFI seam between proof-land and systems-land)"
+      ],
+      "timestamp": "2026-06-24T20:30:50+00:00"
+    },
+    {
+      "between": [
+        "Decidable type checking (common case needs no user-written proofs)",
+        "Unified proof/systems layer (no FFI seam between proof-land and systems-land)"
+      ],
+      "severity": "hard",
+      "property_at_risk": "Decidable type checking (common case needs no user-written proofs), Unified proof/systems layer (no FFI seam between proof-land and systems-land), Zero-cost abstractions (the proof layer erases at compile time)",
+      "description": "Decidable auto-discharged seam can't restore the open, entangled invariant set soundness demands \u2014 A proof-free decidable seam forces unsafe to be a finite, closed lattice of erasable per-location grades, since auto-discharge means looking up a grade. But the invariants crossing unsafe must restore \u2014 non-interference, representation validity, dereferenceability, memory coherence \u2014 are flow- and value-dependent and provably non-orthogonal (Hansen-Larsen-Askarov: a false-alias assume in the memory dimension discharges a flow obligation), so they cannot be partitioned into independent erasable grades. Concretely, each revision added one grade (Order, then Init/Own, then Valid, then an IFC label) and the next attack rode the invariant still outside the lattice past the seam ungraded \u2014 the laundering surviving erasure precisely because zero-cost demands the labels vanish.",
+      "source": "revision-exhaustion",
+      "from_question": "Unsafe boundary \u2014 what does 'unsafe' mean here, and which invariants does crossing it break and then restore?",
+      "properties_in_tension": [
+        "Decidable type checking (common case needs no user-written proofs)",
+        "Unified proof/systems layer (no FFI seam between proof-land and systems-land)",
+        "Zero-cost abstractions (the proof layer erases at compile time)"
+      ],
+      "timestamp": "2026-06-24T21:03:29+00:00"
+    },
+    {
+      "between": [
+        "Decidable type checking (common case needs no user-written proofs)",
+        "Unified proof/systems layer (no FFI seam between proof-land and systems-land)"
+      ],
+      "severity": "hard",
+      "property_at_risk": "Decidable type checking (common case needs no user-written proofs), Unified proof/systems layer (no FFI seam between proof-land and systems-land), Zero-cost abstractions (the proof layer erases at compile time)",
+      "description": "Decidable proof-free checking collides with sound, zero-cost typing of shared-mutable/weak-memory state \u2014 Linear ownership makes exclusivity decidable and erasable for free, but every shared-mutable or weak-memory idiom needs an invariant that carries runtime data into itself: pointer disequality for non-reentrancy, impredicative/later-modality protocols for generic Mutex/Atomic, unbounded value-indexed resources for SPSC/free-list loops, and per-agent view closures for IRIW. These are mechanically outside any finite first-order decidable fragment, so forcing the check to stay decidable and proof-free collapses the invariant to a finite lattice that is provably unsound (an atomic initialized to the acquire-sentinel duplicates the unique token; finite per-agent closure certifies a consensus invariant POWER permits to fail) or too weak to pass a token across an acquire-load, an interrupt mask, or a DMA boundary. The only sound, expressive repairs reintroduce a runtime witness flag (breaking zero-cost) or an interactive separation-logic+induction proof (breaking proof-free decidability) \u2014 so decidability is the property that must give.",
+      "source": "revision-exhaustion",
+      "from_question": "Interior mutability & weak memory \u2014 how are shared-mutable cells, atomics, MMIO/device registers (read-to-clear, write-1-to-clear), and ARM/POWER/RISC-V memory ordering typed, given the sequential ownership core cannot express them?",
+      "properties_in_tension": [
+        "Decidable type checking (common case needs no user-written proofs)",
+        "Unified proof/systems layer (no FFI seam between proof-land and systems-land)",
+        "Zero-cost abstractions (the proof layer erases at compile time)"
+      ],
+      "timestamp": "2026-06-24T21:41:10+00:00"
     }
   ],
   "blind_spot_flags": [],
-  "total_cost_usd": 9.4836
+  "total_cost_usd": 54.7663
 }
