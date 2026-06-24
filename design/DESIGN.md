@@ -8,7 +8,10 @@ This document is rendered from `state.json`; edit the process, not this file.
 
 *Section 8 of the seed: the combinations of target properties proven incompatible by survived challenge, not asserted.*
 
-*None recorded yet. (Expected until ≥2 decisions are settled — the first recorded incompatibility is the signal the process is doing real work.)*
+- **[HARD] Decidable type checking (common case needs no user-written proofs) ✕ Unified proof/systems layer (no FFI seam between proof-land and systems-land)**  <sub>(within failed question)</sub>
+  - property at risk: *Decidable type checking (common case needs no user-written proofs), Unified proof/systems layer (no FFI seam between proof-land and systems-land), Ownership semantics without GC, derived from the proof layer*
+  - surfaced by: Memory model — what replaces Rust's borrow checker (linear types, region inference, or something derived from the proof layer)?
+  - Decidable proof-free checking collides with a seamless ownership layer over weak-memory aliasing — The mandatory bare-metal domain — lock-free/publishing atomics, MMIO, DMA, n-reader sharing — has ownership that is dynamic or externally driven, not structural, so typing it soundly under weak memory requires transferable protocol invariants (the RustBelt/GPS/iRC11 machinery). Such invariants cannot be inferred inside a decidable, zero-annotation, finite-height/quantifier-free fragment: the moment the lattice is expressive enough to name them, the join-point/loop merge of the heap becomes bi-abduction (Hilbert's 10th), and reclaiming dynamically-shared state without GC reintroduces UAF. The no-seam constraint is the binding force — it forbids quarantining that hard relaxed/aliased reasoning behind a trusted boundary, so it must live in the auto-checked fragment where it is undecidable. Every revision re-exposed the same two holes (a concurrently-written atomic head with no Tier-0 token; a device/DMA register the heap model cannot name), confirming the collision rather than a fixable gap.
 
 ## Settled Decisions
 
