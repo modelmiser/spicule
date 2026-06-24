@@ -265,6 +265,58 @@ def build_proposer_prompt(
     return "\n".join(parts)
 
 
+def build_proposer_strengthen_prompt(question: str, current_proposal: str) -> str:
+    """Self-critique pass: let the proposer harden its draft before attackers see it.
+    Tests whether a STRONGER proposer settles questions a one-shot proposer cannot."""
+    return (
+        f"DESIGN QUESTION:\n  {question}\n\n"
+        "Here is your current draft proposal. Five cold expert attackers are about to "
+        "try to break it on soundness, decidability, implementability, expressiveness, "
+        "and prior art. BEFORE they see it, find its 2-3 most dangerous holes yourself "
+        "and produce a STRENGTHENED proposal that closes them — add the missing rule, "
+        "tighten the fragment, fix the unsound case, or honestly narrow the claim. Do "
+        "not merely restate it; make it materially harder to break. Keep it concrete "
+        "and formal.\n\n"
+        "=== CURRENT DRAFT ===\n" + current_proposal + "\n=== END DRAFT ===\n\n"
+        "Output the full strengthened proposal (same structure: THE DECISION / HOW IT "
+        "SERVES THE TARGET / ANTICIPATED ATTACKS)."
+    )
+
+
+ROLE_SYSTEM["meta-synthesizer"] = textwrap.dedent("""\
+    You are the META-SYNTHESIZER. You are given several property-incompatibilities,
+    each already proven by survived adversarial challenge, found while trying to
+    design one language. Your job: decide whether they are N independent findings or
+    N facets of ONE underlying theorem. If one theorem, state it precisely — the
+    single structural reason, the property that is universally implicated, and the
+    minimal claim — and show how each listed incompatibility follows from it. If they
+    are genuinely independent, say so and do not force a false unification.
+    End with EXACTLY one fenced json block:
+    ```json
+    {"one_theorem": true,
+     "universal_property": "<the target property implicated in all of them>",
+     "statement": "<the single theorem, stated precisely in one or two sentences>",
+     "facets": [{"incompat": "<short label>", "how_it_follows": "<one sentence>"}]}
+    ```""")
+
+
+def build_meta_synthesizer_prompt(incompatibilities: list[dict]) -> str:
+    blocks = []
+    for i, ic in enumerate(incompatibilities, 1):
+        blocks.append(
+            f"{i}. [{ic.get('severity','?')}] {ic['between'][0]} ✕ {ic['between'][1]}\n"
+            f"   {ic.get('description','')}"
+        )
+    return (
+        _properties_block()
+        + "\n\nThe following incompatibilities were each proven by survived "
+        "adversarial challenge while trying to design ONE language with all the "
+        "target properties above:\n\n"
+        + "\n\n".join(blocks)
+        + "\n\nAre these one theorem or several? If one, state it."
+    )
+
+
 def build_attacker_prompt(proposal_text: str, web: bool = False) -> str:
     # Cold: the proposal and the output contract, nothing else.
     tool_line = (

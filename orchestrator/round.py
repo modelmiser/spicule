@@ -173,9 +173,13 @@ def synthesize_failed_question(hist: Historian, question: str,
 
 def run_round(hist: Historian, question: str, runs_dir: Path,
               max_revisions: int = 3, survivals: int = 3,
-              prior_art_web: bool = False) -> dict:
+              prior_art_web: bool = False, proposer_shots: int = 1) -> dict:
     """Drive one question: propose → (survive `survivals` cold gauntlets) → settle,
-    revising on any FAILED up to `max_revisions`; synthesize on exhaustion."""
+    revising on any FAILED up to `max_revisions`; synthesize on exhaustion.
+
+    proposer_shots > 1 runs that many self-strengthening passes before each gauntlet
+    — a stronger proposer, to test whether one-shot weakness (not structure) caused
+    a question to fail."""
     runs_dir.mkdir(parents=True, exist_ok=True)
     prior_attacks: list[dict] | None = None
     revision = hist.revisions_for(question)
@@ -189,6 +193,14 @@ def run_round(hist: Historian, question: str, runs_dir: Path,
             label=f"proposer (rev{revision})",
         )
         proposal_text = prop.text
+        for shot in range(1, proposer_shots):
+            _log(f"  proposer self-strengthen pass {shot}/{proposer_shots-1}")
+            prop = call(
+                roles.build_proposer_strengthen_prompt(question, proposal_text),
+                roles.ROLE_SYSTEM["proposer"],
+                label=f"proposer strengthen {shot} (rev{revision})",
+            )
+            proposal_text = prop.text
         (runs_dir / f"proposal_rev{revision}_r{len(hist.state['rounds'])+1}.md"
          ).write_text(proposal_text)
 

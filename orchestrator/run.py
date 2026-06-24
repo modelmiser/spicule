@@ -16,11 +16,15 @@ Output: design/state.json + design/DESIGN.md; raw transcripts in runs/.
 from __future__ import annotations
 
 import argparse
+import re
 import sys
+import tempfile
 from pathlib import Path
 
+from . import roles
+from .claude_cli import call
 from .historian import Historian
-from .round import run_round, synthesize_failed_question
+from .round import extract_json_block, run_round, synthesize_failed_question
 
 # Design questions in dependency order. The original Section-7 memory-model
 # question bundled four concerns and proved unsettleable (round 1); it is split:
@@ -67,6 +71,33 @@ def _failed_unsettled_questions(hist: Historian) -> list[str]:
     return out
 
 
+def meta_synthesize(hist: Historian) -> None:
+    """Ask whether the recorded incompatibilities are facets of one theorem."""
+    incs = hist.state["incompatibilities"]
+    if not incs:
+        print("No incompatibilities to meta-synthesize.")
+        return
+    r = call(roles.build_meta_synthesizer_prompt(incs),
+             roles.ROLE_SYSTEM["meta-synthesizer"], label="meta-synthesizer")
+    parsed = extract_json_block(r.text) or {}
+    out = DESIGN_DIR / "THEOREM.md"
+    body = ["# Meta-Synthesis — are the incompatibilities one theorem?", "",
+            f"*Over {len(incs)} recorded incompatibilities.*", ""]
+    if parsed.get("one_theorem"):
+        body += [f"## One theorem (universal property: {parsed.get('universal_property','?')})",
+                 "", f"> {parsed.get('statement','')}", "", "## How each follows", ""]
+        for f in parsed.get("facets", []):
+            body.append(f"- **{f.get('incompat','?')}** — {f.get('how_it_follows','')}")
+    else:
+        body += ["## Not one theorem", "", parsed.get("statement", "(independent findings)")]
+    body += ["", "---", "", "## Full reasoning", "", r.text.strip()]
+    out.write_text("\n".join(body))
+    print(f"\nMeta-synthesis → {out}")
+    if parsed.get("one_theorem"):
+        print(f"  ONE THEOREM ({parsed.get('universal_property','?')}): "
+              f"{parsed.get('statement','')[:200]}")
+
+
 def print_status(hist: Historian) -> None:
     s = hist.state
     print(f"\nDesign state: {len(s['settled'])}/{len(QUESTIONS)} questions settled, "
@@ -93,17 +124,34 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--status", action="store_true", help="print state and exit")
     ap.add_argument("--synthesize-failed", action="store_true",
                     help="backfill payload incompatibilities from failed questions")
+    ap.add_argument("--meta-synthesize", action="store_true",
+                    help="ask whether the recorded incompatibilities are one theorem")
     ap.add_argument("--max-revisions", type=int, default=3)
     ap.add_argument("--survivals", type=int, default=3,
                     help="consecutive cold survivals required to settle (seed: 3)")
+    ap.add_argument("--proposer-shots", type=int, default=1,
+                    help="self-strengthening passes before each gauntlet (stronger proposer)")
     ap.add_argument("--prior-art-web", action="store_true",
                     help="let ATTACKER-PRIOR-ART use WebSearch/WebFetch")
+    ap.add_argument("--scratch", action="store_true",
+                    help="use a throwaway design dir (don't touch design/state.json)")
     args = ap.parse_args(argv)
 
-    hist = Historian(DESIGN_DIR)
+    if args.scratch:
+        d = Path(tempfile.mkdtemp(prefix="newlang_scratch_design_"))
+        runs_dir = Path(tempfile.mkdtemp(prefix="newlang_scratch_runs_"))
+        print(f"[scratch] design={d} runs={runs_dir}", file=sys.stderr)
+        hist = Historian(d)
+    else:
+        runs_dir = RUNS_DIR
+        hist = Historian(DESIGN_DIR)
 
     if args.status:
         print_status(hist)
+        return 0
+
+    if args.meta_synthesize:
+        meta_synthesize(hist)
         return 0
 
     if args.synthesize_failed:
@@ -112,7 +160,7 @@ def main(argv: list[str] | None = None) -> int:
             print("No un-synthesized failed questions.")
         for q in qs:
             print(f"\n>>> Synthesizing failure: {q[:70]}", file=sys.stderr)
-            synthesize_failed_question(hist, q, RUNS_DIR)
+            synthesize_failed_question(hist, q, runs_dir)
         print_status(hist)
         return 0
 
@@ -133,8 +181,9 @@ def main(argv: list[str] | None = None) -> int:
     for idx in targets:
         q = QUESTIONS[idx]
         print(f"\n>>> Driving question [{idx}]: {q[:70]}", file=sys.stderr)
-        run_round(hist, q, RUNS_DIR, max_revisions=args.max_revisions,
-                  survivals=args.survivals, prior_art_web=args.prior_art_web)
+        run_round(hist, q, runs_dir, max_revisions=args.max_revisions,
+                  survivals=args.survivals, prior_art_web=args.prior_art_web,
+                  proposer_shots=args.proposer_shots)
 
     print_status(hist)
     print(f"\nDesign document: {DESIGN_DIR / 'DESIGN.md'}")
