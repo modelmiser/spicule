@@ -43,7 +43,8 @@ def _emptyish_cwd() -> str:
     return tempfile.mkdtemp(prefix="newlang_cold_")
 
 
-def _one_call(prompt: str, system: str, model: str | None, timeout: int) -> CallResult:
+def _one_call(prompt: str, system: str, model: str | None, timeout: int,
+              allow_web: bool = False) -> CallResult:
     cwd = _emptyish_cwd()
     cmd = [
         "claude", "-p", prompt,
@@ -53,6 +54,10 @@ def _one_call(prompt: str, system: str, model: str | None, timeout: int) -> Call
         "--exclude-dynamic-system-prompt-sections",
         "--output-format", "json",
     ]
+    if allow_web:
+        # Whitelist only the web tools so they run without a permission prompt;
+        # everything else stays unavailable, preserving the cold-reasoning stance.
+        cmd += ["--allowedTools", "WebSearch", "WebFetch"]
     if model:
         cmd += ["--model", model]
     try:
@@ -104,6 +109,7 @@ def call(
     timeout: int = 1800,
     label: str = "",
     retries: int = 1,
+    allow_web: bool = False,
 ) -> CallResult:
     """Run one cold role instance and return its parsed result.
 
@@ -116,7 +122,7 @@ def call(
     last: Exception | None = None
     for attempt in range(retries + 1):
         try:
-            res = _one_call(prompt, system, model, timeout)
+            res = _one_call(prompt, system, model, timeout, allow_web=allow_web)
             if label:
                 print(
                     f"  [cold-call] {label} done "

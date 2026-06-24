@@ -108,10 +108,16 @@ class Historian:
         out.append("")
         if s["incompatibilities"]:
             for i in s["incompatibilities"]:
+                src = i.get("source", "reconcile")
+                origin = ("within failed question" if src == "revision-exhaustion"
+                          else "between settled decisions")
                 out.append(f"- **[{i.get('severity','?').upper()}] "
-                           f"{i['between'][0]} ✕ {i['between'][1]}** — "
-                           f"property at risk: *{i.get('property_at_risk','?')}*. "
-                           f"{i.get('description','')}")
+                           f"{i['between'][0]} ✕ {i['between'][1]}**  "
+                           f"<sub>({origin})</sub>")
+                out.append(f"  - property at risk: *{i.get('property_at_risk','?')}*")
+                if i.get("from_question"):
+                    out.append(f"  - surfaced by: {i['from_question']}")
+                out.append(f"  - {i.get('description','')}")
         else:
             out.append("*None recorded yet. (Expected until ≥2 decisions are "
                        "settled — the first recorded incompatibility is the signal "

@@ -112,8 +112,7 @@ ROLE_SYSTEM = {
         Verona, separation-logic tools, region-inference work, etc.). State what it
         cost them, what they abandoned, and what the proposal must do differently to
         not repeat that history. If you genuinely know of no precedent, say so —
-        but that itself is a flag worth recording. Reason from your knowledge; do
-        not use tools."""),
+        but that itself is a flag worth recording."""),
 
     "judge": textwrap.dedent("""\
         You are the JUDGE in an adversarial language-design process. You do NOT
@@ -163,6 +162,53 @@ ATTACKER_ROLES = [
     "attacker-expressiveness",
     "attacker-prior-art",
 ]
+
+
+ROLE_SYSTEM["synthesizer"] = textwrap.dedent("""\
+    You are the SYNTHESIZER in an adversarial language-design process. A design
+    question has just FAILED every revision attempt: no proposal could satisfy all
+    five attack angles at once. You are given the question, the target properties,
+    and the attacks that LANDED (judged genuine flaws) across every revision. Your
+    job is NOT to summarize round-by-round. It is to find the INVARIANT: the single
+    recurring reason the question is unsettleable, expressed as a concrete
+    incompatibility among the target properties — i.e. 'to get property X and
+    property Y, property Z must give, mechanically, because <reason>'.
+
+    This is the highest-value output of the process (the seed's Section 8 payload):
+    a property-incompatibility PROVEN by survived adversarial challenge rather than
+    asserted. Be precise about the mechanism. If the failures were actually
+    scattered and unrelated (no real convergence — the proposer was just bad), say
+    so honestly with converged=false; do not manufacture a clean story.
+    End with EXACTLY one fenced json block:
+    ```json
+    {"converged": true,
+     "properties_in_tension": ["<exact target-property phrases, 2-3>"],
+     "severity": "hard|soft",
+     "headline": "<= 14 words: the two properties that collide>",
+     "description": "<2-4 sentences: the mechanical reason, with the concrete pattern that exposes it>"}
+    ```""")
+
+
+def build_synthesizer_prompt(question: str, failed_rounds: list[dict]) -> str:
+    blocks = []
+    for r in failed_rounds:
+        landed = [
+            a for a in r.get("attacks", [])
+            if r.get("judge", {}).get("per_attack", {}).get(a["role"]) == "genuine-flaw"
+        ]
+        lines = [f"  Revision {r.get('revision','?')} (round {r.get('round','?')}):"]
+        for a in landed:
+            lines.append(f"    - {a['role']} [{a.get('severity','?')}]: "
+                         f"{a.get('strongest_point') or a.get('summary','')}")
+        lines.append(f"    JUDGE: {r.get('judge',{}).get('rationale','')}")
+        blocks.append("\n".join(lines))
+    return (
+        _properties_block()
+        + f"\n\nFAILED QUESTION:\n  {question}\n\n"
+        "ATTACKS THAT LANDED ACROSS ALL REVISIONS:\n"
+        + "\n\n".join(blocks)
+        + "\n\nFind the invariant incompatibility among the target properties above."
+    )
 
 
 def build_reconciler_prompt(decision_a: dict, decision_b: dict) -> str:
@@ -219,13 +265,21 @@ def build_proposer_prompt(
     return "\n".join(parts)
 
 
-def build_attacker_prompt(proposal_text: str) -> str:
+def build_attacker_prompt(proposal_text: str, web: bool = False) -> str:
     # Cold: the proposal and the output contract, nothing else.
+    tool_line = (
+        "You MAY use WebSearch and WebFetch to confirm a precedent or find the "
+        "paper/project; cite the URLs you actually retrieved. Do not browse for "
+        "anything beyond prior art.\n\n"
+        if web else
+        "Reason from your own knowledge alone; do not use any tools.\n\n"
+    )
     return (
         "Here is the design proposal to attack. You have no other context.\n\n"
         "=== PROPOSAL ===\n"
         f"{proposal_text}\n"
         "=== END PROPOSAL ===\n\n"
+        + tool_line
         + _ATTACKER_OUTPUT_CONTRACT
     )
 
