@@ -12,6 +12,28 @@ precise wall it hits. This is that result.*
 
 ---
 
+**The result in plain terms.** Someone specced a "dream" systems language: as safe and
+proof-carrying as Lean, as low-level and zero-overhead as Rust, with proofs and systems
+code in *one seamless language* whose type-checker needs no hand-written proofs. I pointed
+an adversarial debate harness at it — one AI proposes a concrete design, five *cold* AIs
+(no shared context) each try to break it, an AI judge rules — and no piece of the spec
+survived. The reason is sharp and always the same: **you can have a type-checker that's
+decidable and needs no manual proofs, *or* one powerful enough to verify real
+shared-memory/hardware code soundly — not both**, because the hard cases force a check
+that is provably undecidable. The natural escape — "keep one language, but wrap the
+dangerous parts in a clean, machine-checked *seam*, like a formal version of Rust's
+`unsafe`" — doesn't escape either. It hits a precise wall, the **Seam Trilemma** (§9):
+*sound*, *cheap-to-check*, and *"ordinary code never touches the seam"* — pick two. The
+verdict isn't "give up"; it's "you are choosing which of the three to drop — and here is
+which drop every real language already makes."
+
+**How to read this.** §1–8 are the impossibility result (method → the sweep → the theorem
+→ why the instrument is trustworthy). §9 is the constructive follow-up and the Seam
+Trilemma. `proof/` holds a machine-checked (Lean) core, with an honest account — forced by
+a cold review — of exactly how much it proves.
+
+---
+
 ## 1. The ask
 
 The seed (`LANG_DESIGN_SEED.md`) wanted one language with all of:
@@ -80,7 +102,13 @@ POWER allows to fail — yet they converged on one thesis.
 ## 4. The theorem (the six are one)
 
 A meta-synthesis pass over the six found they are **not** independent findings but
-facets of a single theorem (`design/THEOREM.md`):
+facets of a single theorem (`design/THEOREM.md`).
+
+*In plain terms: a type-checker can be **automatic** (decidable, no hand-written proofs)
+or it can be **strong enough** to prove that real shared, aliased, weak-memory code is
+safe — but not both. The safety facts those hard cases need are, at the points where the
+checker has to combine them (a branch join, a loop, an `unsafe`/atomic boundary), provably
+beyond what any always-terminating check can decide.* Formally:
 
 > **No type system can be both (a) decidable and proof-free in the common case, and
 > (b) the sole auto-checked discharge site for the substructural, heap-quantified,
@@ -273,6 +301,12 @@ exactly where the `seamful` theorem (which leans on #4/#6, never #3) predicted i
 land.
 
 ### The result: the Seam Trilemma
+
+*In plain terms: the safe part of the language can only carry **simple** facts (lifetimes,
+uniqueness). The dangerous primitives behind the seam — atomics, lock-free queues, MMIO —
+are only safe under **rich** facts (who-aliases-what, memory ordering). To use such a
+primitive soundly, the rich fact has to be checked **at the place you use it** — but the
+safe language has no way to hold it. So one of three things must give.* Formally:
 
 The decontaminated meta-synthesis states it as a trilemma. The seam must concentrate on
 foundational primitives whose true preconditions are semantic heap-, value-, and
