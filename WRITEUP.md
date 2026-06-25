@@ -204,6 +204,15 @@ toolchains already are.
   calibrated empirical result — **not a mechanized proof.** The undecidability
   reductions it cites (Hilbert's 10th, the array-property fragment) are real and
   load-bearing, but the synthesis assembling them was not machine-checked.
+  *Partial exception:* the Seam Trilemma's **logical skeleton** is now machine-checked
+  in Lean 4 (`proof/SeamGap.lean`, axiom-clean: the core gap needs no axioms, the
+  trilemma only `propext`). But honesty requires the depth caveat that a cold review
+  forced (`proof/REVIEW.md`): the *checked* lemma is information-theoretically trivial
+  ("a one-field projection can't recover a two-field predicate") — all the PL substance
+  lives in the unverified, prose-level **modeling dictionary** (`V` = what NLL sees,
+  `P` = the soundness precondition, `Copy` forces the blindness). The mechanization
+  checks the skeleton and forces the faithfulness claim to be stated and attacked; it
+  does not lift the PL substance out of "survived adversarial challenge."
 - Proposer depth was bounded (3 revisions; up to 3 self-strengthening shots). The
   stress test pushes against this but does not eliminate it. A human PL theorist with
   years might find a path the process did not — though they would be fighting the same

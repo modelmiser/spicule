@@ -11,7 +11,11 @@ lean proof/SeamGap.lean      # exit 0, no output = all proofs accepted
 
 The adversarial process named this as the trilemma's crux:
 
-> *Sound re-import needs a linearity witness NLL's region-only vocabulary cannot carry.*
+> *Sound re-import needs a linearity witness NLL's vocabulary cannot carry.*
+
+(NLL is region **+ affine**, not region-only; the proof's force comes entirely from
+`Copy` *disabling affine tracking*, so the affine machinery degenerates and only the
+region bit remains observable. See "faithfulness" below.)
 
 Formalized as a **measurability gap**:
 
@@ -53,16 +57,31 @@ cross the seam" are the same thing: *decide from `V` alone*. The full trilemma s
 them because, in the richer setting, you may cross the seam to obtain a proof (keep 2,
 drop 3) — a distinction this model does not represent.
 
-## What is NOT proved (honest boundary)
+## What is NOT proved (honest boundary — scope AND depth)
 
-- This mechanizes the **measurability/expressiveness gap** for **one** primitive
-  (a `Copy`-handle interior-mutable cell) — the *common cause* of all three horns. It is
-  **not** a full undecidability metatheorem for concurrent separation logic, and **not**
-  a proof that *every* foundational primitive has this property (though the argument
-  generalizes to any primitive whose soundness rests on a fact `V` cannot observe).
-- The model abstracts a `borrow_mut` site to two Bools. It faithfully captures the
-  *information* available to `V` vs. the *information* `P` needs; it does not model the
-  operational semantics of an actual queue/MMIO/DMA primitive.
-- Therefore: the trilemma as a whole remains "proven by survived adversarial challenge";
-  this file machine-checks its **logical core** — that a sound, concentrated, proof-free
-  re-import of a non-structural-precondition primitive is impossible because `P ∉ σ(V)`.
+**Depth (the most important caveat, per the adversarial review in `REVIEW.md`):** the
+*mechanized lemma is information-theoretically trivial.* Stripped of names,
+`P_not_V_measurable` says "no function of one field equals a predicate over two fields" —
+it would prove *any* two-field/one-projection setup, and carries **no PL content in the
+Lean itself.** All the load-bearing substance lives in the **unverified modeling
+dictionary** — the prose claims that `V` = what NLL can see, `P` = the soundness
+precondition, and `Copy` *forces* `V`'s blindness. What is machine-checked is the
+*logical skeleton*; what you must take on the (adversarially-reviewed, but prose) modeling
+argument is the PL substance. This is the normal shape of a minimal formalization, stated
+plainly so the "machine-checked" framing transfers no more confidence than it earns.
+
+**Scope:**
+- One primitive only (a `Copy`-handle interior-mutable cell). Not a full undecidability
+  metatheorem for concurrent separation logic; not a claim that *every* foundational
+  primitive has this property (the README does **not** assert it generalizes — that would
+  be circular, since it generalizes only to primitives *defined* to have the gap).
+- The model abstracts a `borrow_mut` site to two Bools — the *information* `V` sees vs. the
+  *information* `P` needs — not the operational semantics of a real queue/MMIO/DMA primitive.
+- `no_decision_has_all_three` is a three-line corollary of `P_not_V_measurable` (in this
+  model the "trilemma" is really a di-lemma); `Usable` is encoded as totality, the strongest
+  reading of usability and hence the weakest theorem.
+
+**Net:** the trilemma as a whole remains "proven by survived adversarial challenge." This
+file machine-checks its **logical skeleton** (`P ∉ σ(V)` ⇒ no sound-usable-concentrated
+re-import) and — via `REVIEW.md` — forces the faithfulness claim to be stated explicitly
+and attacked. It does not, and does not claim to, mechanize the PL substance.
