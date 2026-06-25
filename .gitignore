@@ -14,3 +14,4 @@ __pycache__/
 *.pyc
 
 # Keep design/ tracked — DESIGN.md + state.json are the payload.
+runs_seamful2/

@@ -54,6 +54,20 @@ SEAMFUL_CONSTRAINTS = [
     "Zero runtime cost: seam obligations/witnesses erase; nothing at runtime.",
 ]
 
+# --- Program SEAMFUL2: concede #2 AND relax #3 (decontaminated seam test). The first
+#     seamful run kept '#3 derived', forcing the proposer to re-derive a borrow checker
+#     from scratch — a solved sub-problem (the Rust-NLL control settled it) that only
+#     added formalization burden. Here the safe fragment MAY be a hardcoded Rust-style
+#     checker, so the entire gauntlet bears on the SEAM itself. ---
+SEAMFUL2_PROPERTIES = list(SEAMFUL_PROPERTIES)
+SEAMFUL2_PROPERTIES[2] = (
+    "Ownership without GC for the SAFE FRAGMENT — it MAY be a HARDCODED, decidable, "
+    "Rust-style borrow checker (NLL as shipped is acceptable); it need NOT be derived "
+    "from the proof layer. Do not re-derive or re-litigate the safe checker — adopt a "
+    "known-good one; the design effort and the attacks belong on the SEAM (construct, "
+    "sound re-import, concentration, erasure), not on the safe fragment."
+)
+
 # Active program (UNIFIED by default; run.py flips it via set_program).
 TARGET_PROPERTIES = UNIFIED_PROPERTIES        # back-compat alias
 HARD_CONSTRAINTS = UNIFIED_CONSTRAINTS
@@ -63,6 +77,9 @@ _PROGRAMS = {
     "seamful": (SEAMFUL_PROPERTIES, SEAMFUL_CONSTRAINTS,
                 "SEAMFUL — a first-class machine-checked seam is REQUIRED and good; "
                 "design the best seamful language, not a seamless one"),
+    "seamful2": (SEAMFUL2_PROPERTIES, SEAMFUL_CONSTRAINTS,
+                 "SEAMFUL2 — concede #2 AND #3: safe fragment may be a hardcoded "
+                 "Rust-style checker; the entire gauntlet bears on the SEAM itself"),
 }
 _ACTIVE = {"name": "unified", "properties": UNIFIED_PROPERTIES,
            "constraints": UNIFIED_CONSTRAINTS, "banner": _PROGRAMS["unified"][2]}

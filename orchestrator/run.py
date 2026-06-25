@@ -73,11 +73,24 @@ SEAMFUL_QUESTIONS = [
     "with a formal guarantee it leaves no runtime trace.",
 ]
 
-PROGRAMS = {"unified": QUESTIONS, "seamful": SEAMFUL_QUESTIONS}
+# SEAMFUL2: same program, but the safe fragment is a known-good hardcoded checker so
+# the gauntlet bears entirely on the seam (question [1] adopts NLL instead of deriving).
+SEAMFUL2_QUESTIONS = list(SEAMFUL_QUESTIONS)
+SEAMFUL2_QUESTIONS[1] = (
+    "The SAFE FRAGMENT — ADOPT Rust's Non-Lexical-Lifetimes borrow checker as shipped "
+    "(hardcoded, decidable, proof-free) for ordinary single-threaded code. Do NOT "
+    "re-derive it. State only the SAFE INTERFACE it presents to the seam: what a "
+    "seam-crossed primitive must hand back for safe code to use it without proofs."
+)
+
+PROGRAMS = {"unified": QUESTIONS, "seamful": SEAMFUL_QUESTIONS,
+            "seamful2": SEAMFUL2_QUESTIONS}
 
 ROOT = Path(__file__).resolve().parent.parent
-DESIGN_DIRS = {"unified": ROOT / "design", "seamful": ROOT / "design_seamful"}
-RUNS_DIRS = {"unified": ROOT / "runs", "seamful": ROOT / "runs_seamful"}
+DESIGN_DIRS = {"unified": ROOT / "design", "seamful": ROOT / "design_seamful",
+               "seamful2": ROOT / "design_seamful2"}
+RUNS_DIRS = {"unified": ROOT / "runs", "seamful": ROOT / "runs_seamful",
+             "seamful2": ROOT / "runs_seamful2"}
 # Defaults (overridden in main() once --program is parsed).
 DESIGN_DIR = DESIGN_DIRS["unified"]
 RUNS_DIR = RUNS_DIRS["unified"]
