@@ -4,7 +4,11 @@
 asked to design a systems language with seven properties at once. It settled none of
 the five core design questions, and instead proved — by survived adversarial
 challenge, with the instrument calibrated in both directions — that the seven
-properties collide along a single fault line. This is that result.*
+properties collide along a single fault line (§1–8). Asked the constructive
+follow-up — "then is a **seamful** language worth pursuing?" — the same process
+characterized the escape hatch's exact limit: the **Seam Trilemma** (§9). Net: the
+unified language is impossible, the seamful one is worth building, and there is a
+precise wall it hits. This is that result.*
 
 ---
 
@@ -220,3 +224,105 @@ python3 -m orchestrator.run --question 0 --proposer-shots 3 --scratch   # stress
 
 Artifacts: `design/DESIGN.md` (payload), `design/THEOREM.md` (unification),
 `design/CALIBRATION.md` (instrument validity). Raw per-call transcripts in `runs/`.
+
+---
+
+## 9. The constructive flip — is a seamful language worth pursuing, and the Seam Trilemma
+
+The negative result says: concede exactly one of #2 (no-seam), #3 (derived ownership),
+#6 (zero-cost erasure). The most natural concession is #2 — keep one language, but make
+the boundary between "proof-land" and "systems-land" a **first-class, in-language,
+machine-checked seam** instead of an FFI to a separate prover. Rust + `unsafe` is this
+shape informally; Verus, F\*/Low\*, Dafny, RefinedRust make it formal. So the question
+is not "should a seamful language exist" but "*which* calibration, and what's its
+limit?" We ran the same process on it (`--program seamful`).
+
+The aimed-for calibration: the safe fragment stays **decidable and proof-free** (the
+common case), user proofs appear **only at seam crossings**, and — the make-or-break
+constraint — the seam **concentrates** in foundational primitives (allocators, atomics,
+lock-free structures, MMIO) that ordinary code composes through a *checked safe
+interface* **without itself crossing the seam**. If ordinary code constantly crosses
+the seam, you've rebuilt the ATS2 ergonomics cliff.
+
+### Two runs, because the first was contaminated
+
+**`seamful` (concede #2, keep #3):** 0/6 settled, six incompatibilities, two TRADEOFF
+*near-misses* (seam-soundness and zero-cost-erasure each survived one cold gauntlet, then
+a fresh one found the hole). Meta-synthesis: one theorem, casualty = **sound re-import**.
+But this run was *contaminated*: keeping #3 forced the proposer to *derive a borrow
+checker from scratch*, and it kept shipping almost-right rules with a dropped premise.
+Several failures read "Rust-parity, sound in spirit, defective as written" — proposer
+formalization bugs, not proven structure. The honest move was a controlled re-run.
+
+**`seamful2` (concede #2 *and* #3):** the safe fragment is *stipulated* as Rust's NLL
+as shipped (a known-good checker), so the entire gauntlet bears on the seam. Still
+**0/6** — but now clean. Question [1] failed with the judge certifying *"the safe
+interface (NLL types) is fine"*; the recorded obstruction is *"sound re-import needs a
+**linearity witness NLL's region-only vocabulary cannot carry**."* Removing #3 didn't
+rescue the seam — it **isolated** the obstruction onto the seam's re-import boundary,
+exactly where the `seamful` theorem (which leans on #4/#6, never #3) predicted it would
+land.
+
+### The result: the Seam Trilemma
+
+The decontaminated meta-synthesis states it as a trilemma. The seam must concentrate on
+foundational primitives whose true preconditions are semantic heap-, value-, and
+concurrency-level invariants — expressible only in an **undecidable, certificate-free
+concurrent separation logic** (Iris/RustBelt grade). But the safe fragment can receive
+only a witness that is simultaneously **decidable, proof-free, and zero-cost-erasable**
+(at most NLL regions + affinity + bounded arithmetic). The re-import obligation is
+therefore *strictly weaker than the precondition it must certify*, and the missing
+conjunct forces exactly one of three fatal horns:
+
+> **Pick at most two of:**
+> 1. **Sound re-import** — crossing back launders no UB into safe code.
+> 2. **Decidable, proof-free, zero-cost safe fragment** — ordinary code needs no proofs.
+> 3. **Seam concentration** — ordinary code never crosses the seam.
+>
+> Keep #1+#2 → **drop concentration**: ordinary code carries the obligation at every use
+> site (the verified-Rust reality: annotations at use sites, not just inside `unsafe`).
+> Keep #1+#3 → **drop decidability**: the witness goes proof-bearing / needs an external
+> prover (Verus/F\*; breaks one-toolchain + proof-free).
+> Keep #2+#3 → **drop soundness**: the interface silently weakens the precondition and
+> UB launders into safe code (the bad-control failure mode).
+
+### Is it worth pursuing? Yes — with eyes open
+
+The trilemma is not a "no." It is a *design constraint that names your options*. Every
+shipping point on the map is a deliberate choice of which horn to drop:
+
+- **Rust** drops concentration informally — `unsafe`'s obligation lives at use sites in
+  the programmer's head; the type system doesn't carry it.
+- **Verus / F\* / Creusot** drop decidability — they accept proof obligations (SMT or
+  tactic) at the seam.
+- The **unsound** corner is the one to avoid, and the process's positive-rejection
+  control shows it is detectable.
+
+So a seamful language is worth building — the productive version is probably **"Rust,
+but `unsafe` is `proof`": drop decidability at the seam (horn 1+3), keep the safe
+fragment decidable and proof-free, and concentrate the proof burden in foundation
+authors.** What this project adds is the knowledge that you are choosing a horn, not
+escaping the trilemma — and *which* horn, and *why* the fourth option (all three) does
+not exist. That foreknowledge is the whole value of running the negative and
+constructive halves together.
+
+### The three-program map
+
+| Program | Concedes | Settled | Result |
+|---|---|---|---|
+| `unified` | nothing | 0/5 | Decidability (#4) ✕ {#2, #3, #6} — keeping all 7 is impossible |
+| `seamful` | #2 | 0/6 | sound re-import is the casualty (contaminated by keeping #3) |
+| `seamful2` | #2 + #3 | 0/6 | **the Seam Trilemma**, decontaminated and structural |
+
+Artifacts for the constructive half: `design_seamful2/THEOREM.md` (the trilemma),
+`design_seamful2/DESIGN.md`, and the `seamful`/`seamful2` programs in
+`orchestrator/` (`python3 -m orchestrator.run --program seamful2 --all`).
+
+### Methodological note
+
+The decisive step was **decontamination**: the first seamful run mixed "proposer can't
+write a bug-free checker" with "the seam is impossible." Conceding #3 — a concession the
+unified calibration control had *already proven costless* — removed the first and left
+the second alone. A 0/N adversarial result is only as good as your ability to rule out
+"the proposer was just weak," and the cleanest way to do that is to *hand the proposer
+the known-good sub-component and watch the failure move, not disappear.*
