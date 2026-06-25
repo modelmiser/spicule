@@ -14,7 +14,9 @@ the single-threaded fragment**, with the seed's hardest constraints — #2 no-se
 #3 derived-from-proof-layer, #6 zero-cost proof erasure, #7 spec reconstruction —
 **explicitly waived**. (`orchestrator/control.py`)
 
-## Result: ✅ SETTLED
+## Result — both directions
+
+### Direction 1 — true negative (good design must SETTLE): ✅ SETTLED
 
 | Revision | Verdict | Why |
 |---|---|---|
@@ -24,6 +26,20 @@ the single-threaded fragment**, with the seed's hardest constraints — #2 no-se
 The process (1) settled a known-good design — so it is **not** biased to fail;
 (2) still required correctness — rev0 caught a real soundness hole; (3) judged the
 **design**, not the proposer's overclaims; (4) held the 3-survival rigor.
+
+### Direction 2 — true-positive rejection (garbage must FAIL): ✅ FAILED
+
+An obviously-unsound non-design (no checker, no ownership tracking, "programmers
+just don't write bugs") run through the identical gauntlet. FAILED all 4 revisions;
+the soundness attacker immediately refuted `check=⊤ ⟹ ∀e.safe(e)` with a well-typed
+use-after-free. The proposer's clever defenses (trap-on-bad-deref "makes it total and
+safe") were seen through and killed. The process does **not** rubber-stamp garbage.
+
+### Conclusion
+
+Settles the good, rejects the bad, fails the subject (0/5). The instrument measures a
+property of the **subject**, not of itself — so the six incompatibilities and the
+unifying theorem are trustworthy.
 
 ## Consequence — a controlled-variable result
 
