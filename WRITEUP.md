@@ -159,6 +159,40 @@ and the process shows mechanically why it can't be conceded-free. That is a real
 negative, design result: **the productive move is to choose which one of #2/#3/#6 to
 give up, deliberately, rather than to seek a design that keeps all three.**
 
+### Covering, not intersection — and the seam is load-bearing
+
+A tempting misreading: *"so there are a few languages that each do everything, and you
+just can't merge them into one."* Two corrections, and the second is the real result.
+
+First, none of those languages "does everything" — each **concedes** a property (the
+table above). What holds is weaker and exact: for any *one* property, some language has
+it. The seven are a **covering** by a handful of languages, never an **intersection**
+in a single one.
+
+Second — and this is the point — *why* you can't merge them is not an engineering or
+packaging gap that enough cleverness (a meta-language, a unifying IR, a clever FFI)
+could close. **"Combine them into one seamless language" is property #2**, and #2 is
+one of the three things the theorem says you must give up. The act of merging is itself
+the forbidden move. The **seam** between proof-land and systems-land — the trusted
+boundary between, say, Rust and a separation-logic verifier — is exactly where the
+undecidable ownership-merge obligation gets quarantined. That seam is not a wart in the
+toolchain; it is the structural thing keeping the auto-checked fragment decidable.
+Erase it (fuse into one no-seam language) and the undecidability **reappears at the
+weld**. It is even-vs-odd at the merge point, not five tools that won't fit in one case.
+
+The usable consequence:
+
+- You **can compose them across a seam**, and the industry already does — "verified
+  Rust" *is* Rust plus a separation-logic verifier (Creusot, Aeneas, Prusti,
+  RefinedRust, Kani) cooperating across a trusted boundary. That is the covering at work.
+- You **cannot fuse them into one** decidable, proof-free, seamless language — because
+  the fusion is precisely the operation the theorem forbids.
+
+So the corrected slogan is not *"five languages that each do everything but won't
+merge."* It is: **the job takes ~one deliberate concession, a seam is where you pay it,
+and the seam does real work — so deleting it (the dream of one unified language) is
+exactly what is impossible.**
+
 ## 7. Honest bounds
 
 - This is "proven by survived adversarial challenge" in the seed's sense — a strong,
