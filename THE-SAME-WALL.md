@@ -146,6 +146,51 @@ The honest reviewer's job is to find where the rhyme breaks — and the breaks a
    proven correct.** "Let it crash" is the computing world relearning, slowly, what economies
    learned the expensive way.
 
+## The psychological door — where the disanalogies turn ethical
+
+The mind walked into this wall from its own side, repeatedly. Jung: *"neurosis is always a
+substitute for legitimate suffering"* — the substitute heavier than the thing refused. The
+Buddhist **second arrow**: the first arrow is unavoidable pain; the second is the suffering
+we add by resisting it. Freud's return of the repressed: refused material comes back
+disguised as the symptom. And the clinical descendant, ACT (Acceptance and Commitment
+Therapy): *pain × resistance = suffering*; experiential avoidance as a transdiagnostic
+engine. Four doors, one wall — itself an instance of the essay's own evidence rule. The
+conservation structure maps exactly: refuse the necessary suffering and it doesn't vanish,
+it relocates into a worse, disguised form. **The symptom is the monster at the weld.** It's
+the robustness lesson in the psychological register: a psyche that refuses *any* local
+failure — grief, loss, uncertainty — buys global fragility; the refusal of small crashes is
+what engineers the big one.
+
+But this is the one field where the disanalogies stop being academic and become moral, and
+they must be marked as carefully as they deserve.
+
+- **The veil/boundary error becomes blame.** Some suffering is a *refusable seam* — a veil
+  acceptance can dissolve (much anxiety, avoidance, addiction-as-flight-from-a-feeling,
+  ungrieved grief). But much of what we call mental illness is *not a seam at all*; it is a
+  **broken component** — schizophrenia, bipolar disorder, organic depression, dementia —
+  with genetic and neurochemical causes that no act of acceptance addresses. Calling those a
+  "refusal" is the lazy slide from *shares-a-structure* to *is-the-same-thing*, and here the
+  slide blames the sufferer for a hardware fault. "You could just accept it" is false exactly
+  where the thing is not a tension to be accepted.
+- **The "no-spec" disanalogy bites hardest of all.** A program has a fixed *safe*; a life
+  has no fixed *necessary*. Which suffering is necessary and which is a removable injustice
+  is contested, often unknowable in advance — so the very sentence that liberates ("stop
+  firing the second arrow") can imprison ("accept your oppression, your abuse, your treatable
+  illness, as necessary"). That is **spiritual bypass**, the Stoic failure mode: relabeling
+  *removable* suffering as *necessary* to dodge the harder work of changing the conditions.
+
+So the idea lands somewhere truer than where it began. "Mental illness as a refusal of
+necessary suffering" is only true *after* you have solved the part that was actually hard —
+and the hard part was never the accepting. It is the **partition**: telling necessary from
+removable. That partition is the irreducible, non-local, can't-be-decided-cheaply core, and
+the tradition already named it. The Serenity Prayer is a precise statement of the whole
+structure — serenity to accept what cannot be changed, courage to change what can, *and the
+wisdom to know the difference.* The wisdom-to-know-the-difference is the seam: it cannot be
+deleted, automated, or handed to you cheaply; it is where the entire difficulty concentrates.
+**The Serenity Prayer is the Seam Trilemma of the soul** — and the refusal model is a true
+description of one half of the partition that quietly assumes the other, harder half (the
+wise diagnosis) is already done.
+
 ## The future it implies
 
 If the wall is real, the future is *partitioned*, not unified — and the partition stops being
@@ -193,5 +238,8 @@ moves it.
 
 *Draft. The structure (spine, falsifiability test, tiered cousins) and the CS-cousin / Maxwell
 material are this session's contribution; the partitioned-future, economics, and broad-field
-sweep are condensed from web Claude's dialogue in `FINAL-WEBCLAUDE.md`. Needs a human detail pass
-and, if it ever goes public, a citation check and a venue decision — neither done here.*
+sweep are condensed from web Claude's dialogue in `FINAL-WEBCLAUDE.md`. The psychological door
+began as the author's intuition ("mental illness as a refusal of necessary suffering") and was
+developed here — with its ethical disanalogies marked deliberately, since this is the field where
+the veil/boundary slide does real harm. Needs a human detail pass and, if it ever goes public, a
+citation check and a venue decision — neither done here.*
