@@ -10,8 +10,8 @@ from __future__ import annotations
 
 import textwrap
 
-# --- The fixed design target the whole process serves (Section 2 of the seed) ---
-TARGET_PROPERTIES = [
+# --- Program UNIFIED: the seed's original target (keep all 7, no seam) ---
+UNIFIED_PROPERTIES = [
     "Executable specification (spec IS the type system IS the compiler)",
     "Unified proof/systems layer (no FFI seam between proof-land and systems-land)",
     "Ownership semantics without GC, derived from the proof layer (not a hardcoded borrow checker)",
@@ -20,13 +20,57 @@ TARGET_PROPERTIES = [
     "Zero-cost abstractions (the proof layer erases at compile time)",
     "AI-legible semantics (a model trained on the corpus can reconstruct the spec)",
 ]
-
-HARD_CONSTRAINTS = [
+UNIFIED_CONSTRAINTS = [
     "Decidability: type checking must terminate; identify the decidable fragment.",
     "Zero runtime cost: proofs erase; no proof witnesses or unrequested allocations at runtime.",
     "Weak memory models: must express/verify ARM/POWER/RISC-V weak ordering.",
     "Ergonomics cliff: common case must cost no more annotation than Rust (ATS2 is the cautionary tale).",
 ]
+
+# --- Program SEAMFUL: deliberately concede #2 (no-seam). A first-class, in-language,
+#     machine-checked seam is REQUIRED and GOOD; the prior sweep proved keeping all 7
+#     is impossible, so this program asks what the best seamful design is instead. ---
+SEAMFUL_PROPERTIES = [
+    "Executable specification — one toolchain, no external prover; spec IS type system IS compiler",
+    "FIRST-CLASS MACHINE-CHECKED SEAM (deliberate concession of no-seam): proof-land and "
+    "systems-land are ONE language separated by an explicit, in-language, machine-checked seam "
+    "construct — NOT an FFI to a separate prover, NOT seamless. A seam is REQUIRED and good; do "
+    "NOT penalize a proposal for HAVING a seam — only for the seam being informal, unsound, or pervasive",
+    "Ownership without GC, derived from the proof layer — holds in the SAFE FRAGMENT",
+    "Decidable AND proof-free in the SAFE FRAGMENT (ordinary code); user-written proofs and SMT "
+    "appear ONLY at seam crossings, never in ordinary code",
+    "Bare-metal targeting (no runtime, no GC)",
+    "Zero-cost — all proofs, INCLUDING seam obligations, erase at compile time",
+    "AI-legible semantics — the corpus reconstructs the spec including the seam discipline",
+]
+SEAMFUL_CONSTRAINTS = [
+    "Seam CONCENTRATION (the make-or-break): seam crossings must concentrate in a small set of "
+    "foundational primitives (allocators, atomics, lock-free structures, MMIO) re-exported as "
+    "checked safe interfaces; ORDINARY code must compose them WITHOUT itself crossing the seam. A "
+    "design where ordinary code constantly crosses the seam is the ATS2 cliff and FAILS.",
+    "Decidable safe fragment: checking ordinary (non-seam) code terminates with no user proofs and no SMT/timeout.",
+    "Sound re-import: crossing BACK from a seam must restore the safe fragment's invariants soundly — "
+    "no unsound obligation may launder UB into safe code (the unsafe-boundary failure mode).",
+    "Zero runtime cost: seam obligations/witnesses erase; nothing at runtime.",
+]
+
+# Active program (UNIFIED by default; run.py flips it via set_program).
+TARGET_PROPERTIES = UNIFIED_PROPERTIES        # back-compat alias
+HARD_CONSTRAINTS = UNIFIED_CONSTRAINTS
+_PROGRAMS = {
+    "unified": (UNIFIED_PROPERTIES, UNIFIED_CONSTRAINTS,
+                "UNIFIED — keep all 7 properties, no seam (the seed's original ask)"),
+    "seamful": (SEAMFUL_PROPERTIES, SEAMFUL_CONSTRAINTS,
+                "SEAMFUL — a first-class machine-checked seam is REQUIRED and good; "
+                "design the best seamful language, not a seamless one"),
+}
+_ACTIVE = {"name": "unified", "properties": UNIFIED_PROPERTIES,
+           "constraints": UNIFIED_CONSTRAINTS, "banner": _PROGRAMS["unified"][2]}
+
+
+def set_program(name: str) -> None:
+    props, cons, banner = _PROGRAMS[name]
+    _ACTIVE.update(name=name, properties=props, constraints=cons, banner=banner)
 
 _ATTACKER_OUTPUT_CONTRACT = textwrap.dedent("""\
     After your analysis, end your response with EXACTLY one fenced json block:
@@ -228,9 +272,11 @@ def build_reconciler_prompt(decision_a: dict, decision_b: dict) -> str:
 
 
 def _properties_block() -> str:
-    props = "\n".join(f"  {i+1}. {p}" for i, p in enumerate(TARGET_PROPERTIES))
-    cons = "\n".join(f"  - {c}" for c in HARD_CONSTRAINTS)
-    return f"TARGET PROPERTIES (all must eventually hold simultaneously):\n{props}\n\nHARD CONSTRAINTS:\n{cons}"
+    props = "\n".join(f"  {i+1}. {p}" for i, p in enumerate(_ACTIVE["properties"]))
+    cons = "\n".join(f"  - {c}" for c in _ACTIVE["constraints"])
+    return (f"DESIGN PROGRAM: {_ACTIVE['banner']}\n\n"
+            f"TARGET PROPERTIES (all must eventually hold simultaneously):\n{props}\n\n"
+            f"HARD CONSTRAINTS:\n{cons}")
 
 
 def build_proposer_prompt(

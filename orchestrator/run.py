@@ -46,9 +46,41 @@ QUESTIONS = [
     "memory ordering typed, given the sequential ownership core cannot express them?",
 ]
 
+# SEAMFUL program — the constructive flip of the impossibility result. The unified
+# sweep proved keeping all 7 properties is impossible; this asks what the best design
+# is once #2 (no-seam) is deliberately conceded to a first-class, machine-checked,
+# concentrated seam. A coherent design program, in dependency order.
+SEAMFUL_QUESTIONS = [
+    "The SEAM construct — give the formal syntax and typing of the seam: how ordinary "
+    "(safe) code enters proof-land, what machine-checked obligation it discharges there, "
+    "and how it re-exports a CHECKED SAFE INTERFACE that ordinary code then uses WITHOUT "
+    "itself crossing the seam. Give formation / introduction / elimination rules.",
+    "The SAFE FRAGMENT — the decidable, proof-free, GC-free ownership discipline for "
+    "ordinary single-threaded code that needs NO seam and NO SMT, derived from the proof "
+    "layer. State it precisely (move/borrow/lifetime rules).",
+    "BEHIND THE SEAM — concretely, what obligation does a foundation author discharge, "
+    "in-language, to implement (a) a lock-free SPSC queue, (b) an MMIO read-to-clear "
+    "register, (c) an intrusive doubly-linked list — and how does each re-export a safe "
+    "interface the safe fragment can use without proofs?",
+    "SEAM SOUNDNESS / re-import — the rule that makes crossing BACK sound: how does the "
+    "safe fragment trust a seam-crossed primitive without re-verifying it, and what "
+    "structurally stops an unsound obligation from laundering UB into safe code?",
+    "SEAM CONCENTRATION & ergonomics — the language mechanism and the argument that keep "
+    "ordinary code from ever crossing the seam (the checked-interface boundary), and why "
+    "the obligation stays with a handful of foundation authors. Exhibit a realistic "
+    "program where ~99% of code is seam-free.",
+    "ZERO-COST SEAM ERASURE — how every seam obligation/witness erases at compile time "
+    "with a formal guarantee it leaves no runtime trace.",
+]
+
+PROGRAMS = {"unified": QUESTIONS, "seamful": SEAMFUL_QUESTIONS}
+
 ROOT = Path(__file__).resolve().parent.parent
-DESIGN_DIR = ROOT / "design"
-RUNS_DIR = ROOT / "runs"
+DESIGN_DIRS = {"unified": ROOT / "design", "seamful": ROOT / "design_seamful"}
+RUNS_DIRS = {"unified": ROOT / "runs", "seamful": ROOT / "runs_seamful"}
+# Defaults (overridden in main() once --program is parsed).
+DESIGN_DIR = DESIGN_DIRS["unified"]
+RUNS_DIR = RUNS_DIRS["unified"]
 
 
 def next_unsettled(hist: Historian) -> int | None:
@@ -135,7 +167,16 @@ def main(argv: list[str] | None = None) -> int:
                     help="let ATTACKER-PRIOR-ART use WebSearch/WebFetch")
     ap.add_argument("--scratch", action="store_true",
                     help="use a throwaway design dir (don't touch design/state.json)")
+    ap.add_argument("--program", choices=list(PROGRAMS), default="unified",
+                    help="which design program: 'unified' (keep all 7) or 'seamful'")
     args = ap.parse_args(argv)
+
+    # Select the active program: question set, design dir, and role target-properties.
+    global QUESTIONS, DESIGN_DIR, RUNS_DIR
+    QUESTIONS = PROGRAMS[args.program]
+    DESIGN_DIR = DESIGN_DIRS[args.program]
+    RUNS_DIR = RUNS_DIRS[args.program]
+    roles.set_program(args.program)
 
     if args.scratch:
         d = Path(tempfile.mkdtemp(prefix="newlang_scratch_design_"))
