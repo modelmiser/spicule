@@ -161,17 +161,15 @@ give up, deliberately, rather than to seek a design that keeps all three.**
 
 ### Covering, not intersection — and the seam is load-bearing
 
-A tempting misreading: *"so there are a few languages that each do everything, and you
-just can't merge them into one."* Two corrections, and the second is the real result.
+A few languages *together* already do everything — that framing is right, and the
+precise way to say it is that they form a **covering**, not an **intersection**. For
+any *one* property, some language has it (the table above); but no single language has
+all seven, because each one *concedes* a property to stay coherent. The union covers
+the seven; no point in the union holds all seven.
 
-First, none of those languages "does everything" — each **concedes** a property (the
-table above). What holds is weaker and exact: for any *one* property, some language has
-it. The seven are a **covering** by a handful of languages, never an **intersection**
-in a single one.
-
-Second — and this is the point — *why* you can't merge them is not an engineering or
-packaging gap that enough cleverness (a meta-language, a unifying IR, a clever FFI)
-could close. **"Combine them into one seamless language" is property #2**, and #2 is
+The substantive question is *why the covering can't be collapsed into one language* —
+and the answer is not an engineering or packaging gap that enough cleverness (a
+meta-language, a unifying IR, a clever FFI) could close. **"Combine them into one seamless language" is property #2**, and #2 is
 one of the three things the theorem says you must give up. The act of merging is itself
 the forbidden move. The **seam** between proof-land and systems-land — the trusted
 boundary between, say, Rust and a separation-logic verifier — is exactly where the
@@ -188,10 +186,13 @@ The usable consequence:
 - You **cannot fuse them into one** decidable, proof-free, seamless language — because
   the fusion is precisely the operation the theorem forbids.
 
-So the corrected slogan is not *"five languages that each do everything but won't
-merge."* It is: **the job takes ~one deliberate concession, a seam is where you pay it,
-and the seam does real work — so deleting it (the dream of one unified language) is
-exactly what is impossible.**
+So the result is not bad news. A few languages, connected by seams, genuinely cover
+the whole job — and the seam that resists full fusion is *doing real work*, which is
+why deleting it (the dream of one unified language) is exactly what's impossible.
+**The job takes ~one deliberate concession, a seam is where you pay it, the seam is
+load-bearing — so "you can't combine them completely, and that's fine" is not a
+limitation you tolerate; it is the design win.** It is also where verified-Rust
+toolchains already are.
 
 ## 7. Honest bounds
 
