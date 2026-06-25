@@ -1,0 +1,1757 @@
+{
+  "version": 1,
+  "created": "2026-06-25T01:50:57+00:00",
+  "rounds": [
+    {
+      "round": 1,
+      "question": "The SEAM construct \u2014 give the formal syntax and typing of the seam: how ordinary (safe) code enters proof-land, what machine-checked obligation it discharges there, and how it re-exports a CHECKED SAFE INTERFACE that ordinary code then uses WITHOUT itself crossing the seam. Give formation / introduction / elimination rules.",
+      "revision": 0,
+      "proposal_excerpt": "# THE SEAM CONSTRUct (`seam` / `open`)\n\n## 1. THE DECISION\n\nTwo judgement forms, one checker:\n\n- **Safe fragment S:** `\u0393 \u22a2\u209b e : \u03c4` \u2014 affine context, decidable, no propositions, no SMT.\n- **Proof-land P:** `\u03a3; \u0393 \u22a2\u209a e : T` with refinement types `{x:\u03c4 | \u03c6}` and a discharge relation `\u03a3 \u22a8 \u03c6` (SMT for decidable theories + user tactic terms for the rest \u2014 same toolchain, property 1).\n\nThe seam is the **only** syntactic bridge between them. It is a sealed abstract-type definition (ML-style sealing + `runST`-style rank-2 brand + refinement-at-boundary) parameterized by **brand variables** \u03b2: type-level skolems, compared by \u03b1-equality only, that *reflect* P-level existentials/equalities into S at zero cost.\n\n### Types\n\n```\nSafeTy \u03c4 ::= b | &\u03c4 | &mut \u03c4 | \u03c4\u22b8\u03c4 | \u03c4\u00d7\u03c4 | \u03c4+\u03c4\n           | K[\u03b2\u0304; \u03c4\u0304]                 -- sealed type ctor introduced by a seam\n\u03b2 (Brand) ::= skolem name, \u03b1-equality only, no arithmetic, no computation\nProofTy   ::= {x:\u03c4 | \u03c6} | ...        -- never appears in any \u03c4 \u2208 SafeTy\n```\n\n### Seam signature \u039e\n\n```\n\u039e ::= seam K(\u03b2\u0304 : Brand, \u1fb1 : Type) where\n        denote \u27e6K[\u03b2\u0304;\u1fb1]\u27e7 : Val \u00d7 Heap \u2192 Prop          -- representation predicate, lives in P\n        op_i : \u03c3_i   \u22a8   spec_i       ",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Static-bounds hot loops force either lost vectorization or per-algorithm nonlinear-arithmetic proofs \u2014 the ATS2 cliff; concentration bound is false there.",
+          "strongest_point": "Zero-cost static indexing (matmul, ring buffers, parsers) makes #seams scale with optimized-algorithm count \u2014 not primitive families \u2014 each carrying a nonlinear-arithmetic SMT/tactic proof, reproducing the exact ATS2 unusability the proposal claims to escape."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Existential brand packing smuggles a scoped brand past the \u03b2\u2209FTV(\u03c4) check via the heap, violating \u27e6K\u27e7 after scope exit.",
+          "strongest_point": "An S-well-typed program packs a scoped guarded reference as \u2203\u03b3.&mut Data[\u03b3] into a pre-existing cell, satisfying \u03b2\u2209FTV(Unit), then mutates the data after the lock releases \u2014 accepted by the rules, yet UB."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Sealed interior-pointer ops (get:&a into rep) need region/outlives reasoning that \u03b1-only brands can't carry and sealing hides from the borrow checker.",
+          "strongest_point": "The borrow checker is an alias-analysis pass, but the seal makes the representation invisible, so the only sound fix puts outlives (region) constraints into \u03c3_i \u2014 a relational proposition that brands can't express and \u039e-Form's 'no \u03c6' forbids."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "No trusted-axiom path and a heap-only denotation: FFI, syscalls, and MMIO specs are unprovable or unstateable.",
+          "strongest_point": "The seam obligation requires a machine-checkable spec in a Val\u00d7Heap model, but opaque foreign code is unprovable and device-register semantics are unstateable, so the core bare-metal/FFI primitives get vacuous specs or unchecked trusted axioms \u2014 hollowing the soundness theorem and demolishing the concentration bound."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Seam = RustBelt + GDP; but RustBelt proves atomics/lock-free seams need Iris, not SMT, breaking the one-toolchain/sequential-denote claims.",
+          "strongest_point": "For the very primitive families it advertises (atomics, lock-free, interior mutability), RustBelt established the seam obligation requires concurrent separation logic with ghost state and prophecy variables \u2014 neither expressible as \u27e6K\u27e7:Val\u00d7Heap\u2192Prop nor dischargeable by SMT, falsifying property (1)."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "argued-past",
+          "attacker-expressiveness": "genuine-flaw",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Abolishes local trust-based `unsafe`: genuinely-novel zero-cost static elision must be authored as a seam with a one-time (possibly nonlinear-arithmetic) obligation \u2014 bounded and reused per abstraction, but a real, carried cost.",
+          "If revised to admit FFI, foreign/syscall specs are trusted axioms, not machine-checked \u2014 property (1)'s 'one checker verifies everything' scopes to in-language primitives and the concentration bound weakens at the foreign surface."
+        ],
+        "headline": "Seam architecture is sound (RustBelt), but scoped-brand escape, heap-only denotation, and SMT-one-toolchain claims fail.",
+        "rationale": "Existential packing yields concrete S-typed UB past the FTV check (soundness). The printed Val\u00d7Heap\u2192Prop denotation cannot state MMIO specs and SMT cannot discharge advertised atomics/lock-free families (expressiveness, prior-art). Implementation overreaches\u2014lifetimes aren't \u03c6. Ergonomics is a recorded tradeoff. Proposer must revise."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.344,
+      "timestamp": "2026-06-25T02:03:40+00:00"
+    },
+    {
+      "round": 2,
+      "question": "The SEAM construct \u2014 give the formal syntax and typing of the seam: how ordinary (safe) code enters proof-land, what machine-checked obligation it discharges there, and how it re-exports a CHECKED SAFE INTERFACE that ordinary code then uses WITHOUT itself crossing the seam. Give formation / introduction / elimination rules.",
+      "revision": 1,
+      "proposal_excerpt": "# THE DECISION \u2014 the `seam` construct\n\n## 0. Notation and judgement forms\n\nThree syntactic layers, one language:\n\n- **Safe fragment `S`** (ordinary code): judgement `\u0393; \u0394 \u22a2\u209b e : \u03c4`. `\u0393` unrestricted context, `\u0394` linear context. **Decidable, proof-free** \u2014 pure typestate + linearity checking (occurs/scope checks, linear-use accounting). No SMT, no user proofs.\n- **Proof-land `P`** (only inside a `seam` body): `\u0393; \u0394 \u22a2\u209a e : \u03c4`. Adds the *raw substrate* operations drawn from a fixed kernel table \ud835\udca6.\n- **Proof terms**: `\u0393 \u22a2 \u03c8 : \u03c6`, where `\u03c6` is a proposition in the **refinement logic** \u211b (defined below). Checking `\u22a2\u2713 \u03c8` is **decidable proof-*checking*** (Curry\u2013Howard, a total dependent-type checker in the toolchain \u2014 proof *search* is the author's job, not the checker's). \u211b has `by smt` leaves restricted to a decidable first-order theory `T = QF(LIA \u228e BV \u228e arrays)`; these terminate, so seam checking terminates. **No external prover**: the checker and the `T`-solver are toolchain components.\n\nThe seam is the *only* construct that admits `\u22a2\u209a` and `\u22a2 \u03c8`. Everything else is `\u22a2\u209b`.\n\n## 1. Capability protocols (the exported safe interface)\n\nA **protocol** is a finite typestate automaton:\n\n```\np",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "runST-style brand bars any capability from escaping its open block \u2014 async futures, returned arena refs, detached threads all inexpressible.",
+          "strongest_point": "\u03b3\u2209FTV(\u03c4) means an in-flight capability cannot cross a scope boundary, so async I/O with a live resource (arm-suspend-complete) is categorically inexpressible, not merely verbose."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Duplicable Sealed(P) + unconditional Cap@init lets nested open alias a singleton's typestate, breaking \u03a6.inv and yielding safe-code UB.",
+          "strongest_point": "Seam-Elim draws s from unrestricted \u0393 and re-mints Cap[P@init] per open, so nested open of one MMIO/mutex singleton gives two co-live Held tokens \u2014 falsifying the separating invariant and the 'no UB in safe code' theorem with a fully \u22a2\u209b derivation."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Allocator/queue invariants are inductive heap predicates outside QF(LIA\u228eBV\u228earrays), falsifying the 'finite-state, SMT-dischargeable' claim; automatic solver pass is NP/exponential per seam.",
+          "strongest_point": "The unbounded-heap shape/disjointness invariants of the very 'foundational' primitives (allocator free-list, MPSC queue) require inductive/reachability reasoning provably excluded from the decidable leaf theory T, so they cannot be SMT leaves and collapse the finite-state termination story onto an unproven strong-normalization assumption for a linear-dependent-reflective-axiomatic \u211b."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "DMA/device-shared RAM \u2014 the central bare-metal pattern \u2014 falls outside \ud835\udca6, the forward-certifiable class, and the separating invariant simultaneously.",
+          "strongest_point": "A DMA descriptor ring's linearization point is a device (silicon) transition with no program term to consume Cmt[\u03b1], so by the proposal's own A2 it admits no forward certificate \u2014 yet it's plain application RAM with no \ud835\udca6 row and aliased CPU/device access the separating invariant forbids, forcing driver code to escape the type system entirely."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "\u211b's 'no step-indexing, no Iris' certificate logic likely can't express impredicative invariants the foundational primitives need.",
+          "strongest_point": "RustBelt verified this exact primitive set (Mutex/Arc/RwLock) and required impredicative invariants + higher-order ghost state + step-indexing \u2014 model-existence devices, not decidability devices \u2014 which the proposal's \u211b explicitly excludes while claiming to wrap the same primitives."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "tradeoff",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "runST-scoped Seam-Elim forbids any capability escaping its open block: async I/O, returned arena refs, and detached/'static workers are inexpressible in the safe surface.",
+          "Forward-certifiable class plus closed register-indexed \ud835\udca6 excludes DMA-coherent shared RAM and simultaneous aliased typed views \u2014 core driver patterns require escape; concentration's denominator excludes drivers.",
+          "Allocator/queue invariants are inductive heap predicates outside T, forcing explicit inductive \u03c8 terms (contradicting the 'finite-state, SMT-dischargeable' claim); per-seam solver cost is NP/exponential, BV breaks Nelson\u2013Oppen stable-infiniteness on the MMIO path, and SN of linear-dependent-reflective \u211b is unproven.",
+          "\u211b's 'no Iris / no step-indexing' claim is unsubstantiated against impredicative invariants; must exhibit a predicative \u03c8 for a two-thread shared mutex, and cite L3 (\u00a71) and Timany et al. (\u00a75)."
+        ],
+        "headline": "Linear-capability seam over a finite kernel \u2014 but duplicable Sealed(P) re-mints singleton typestate, yielding safe-code UB.",
+        "rationale": "Seam-Elim draws Sealed(P) from unrestricted \u0393 and unconditionally mints Cap@init, so nested open of one singleton aliases its typestate \u2014 a fully \u22a2\u209b program breaks mutual exclusion, falsifying the soundness theorem. Fix: make Sealed linear and thread it. Four real costs recorded."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.4474,
+      "timestamp": "2026-06-25T02:13:01+00:00"
+    },
+    {
+      "round": 3,
+      "question": "The SEAM construct \u2014 give the formal syntax and typing of the seam: how ordinary (safe) code enters proof-land, what machine-checked obligation it discharges there, and how it re-exports a CHECKED SAFE INTERFACE that ordinary code then uses WITHOUT itself crossing the seam. Give formation / introduction / elimination rules.",
+      "revision": 2,
+      "proposal_excerpt": "## 1. THE DECISION\n\nI replace the defeated `open \u2026 in \u2026` elimination form entirely. The previous design died because the capability lived in unrestricted `\u0393` and was *re-minted per use*. The revision makes the capability a **linear resource that is minted exactly once and only threaded thereafter**, and adds a **precision/exclusivity side-condition** that blocks duplication even inside proof-land. There is no construct in safe-land that *produces* a fresh capability for an already-bound resource.\n\n### 1.1 Judgement forms and context discipline\n\n```\n\u0393 ; \u0394 \u22a2\u209b e : \u03c4          safe-land. DECIDABLE, proof-free, no SMT.\n\u0393 ; \u0398 \u22a2\u209a \u03c0 : P          proof-land. SMT + user proofs. P : Prop, \u2217 multiplicative.\n```\n\n- `\u0393` \u2014 **unrestricted** context (admits weakening + contraction): copyable values, type/prop vars.\n- `\u0394` \u2014 **linear** context (NO weakening, NO contraction): capabilities `\u03b3^p@\u2113`, roots `Root[\u2113]`.\n- `\u0398` \u2014 separation-logic context; appears ONLY under `\u22a2\u209a`, only inside a `proof{}` block.\n\nThe single syntactic bridge `\u22a2\u209a \u2192 \u22a2\u209b` is the `impl S { proof{\u2026} }` form (\u00a71.4). Nothing else invokes `\u22a2\u209a`. This is the seam, and it is the only seam.\n\nCapability types are indexed by a **static resource",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "Concurrent atomic mutation (lock-free queue, ISR) is inexpressible: linear threading is sequential, fractions share only reads, and (\u22c6) forbids the duplicable invariants atomics need.",
+          "strongest_point": "The load-bearing exclusivity condition R\u2217R\u22a2\u22a5 structurally forbids the persistent/duplicable shared invariants that verifying concurrent atomic access (the proposal's own named targets) fundamentally requires."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "Cap type indexed by \u2113 only; per-seam invariant R lets one token cross seams with contradictory R, breaking preservation.",
+          "strongest_point": "A \u03b3^1@\u2113 minted under seam S1's invariant R1 type-checks as input to seam S2's op maintaining incompatible R2, so the threaded token is reinterpreted under a contradictory invariant with no proof obligation, falsifying Sound Re-import."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Matching the @\u2113 index in Seam-Use/Split/Join forces integer (dis)equality reasoning into the 'no-SMT' safe fragment.",
+          "strongest_point": "Holding two elements of a resource array (register file, lock pool, allocated arenas) needs a disjointness proof i\u2260j that is either undecidable/SMT-LIA in safe-land or a \u22a2\u209a obligation outside the seam \u2014 breaking decidability and proof-concentration at once."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "Resource identities are statically finite; no rule mints tokens for runtime-created resources, so allocators/heap/per-node ownership are unrepresentable.",
+          "strongest_point": "Every token derives from a finite static Root set and (\u2020) bans ops returning fresh capabilities, so a custom allocator's blocks get raw ownership-free pointers \u2014 collapsing the entire no-GC ownership claim to hardware-fixed singletons and excluding the heap."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "(\u22c6)'s precision requirement contradicts \u00a71.4's existential capability realization; RustBelt already abandoned precision for explicit Excl ghost tokens.",
+          "strongest_point": "The soundness mechanism demands R be precise while defining the capability as \u2203h.Own_\u2113(R(h)) \u2014 an existential that the fractional-permission literature shows is not precise and 'can never be known false', so R\u2217R\u22a2\u22a5 is undischargeable exactly where it must hold."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "genuine-flaw",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "tradeoff",
+          "attacker-expressiveness": "genuine-flaw",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Index language unspecified: static-literal \u2113 preserves no-SMT decidability (#4) but forbids resource families/pools; any dynamic-index repair forces integer (dis)equality reasoning or a \u22a2\u209a disjointness obligation at every array consumer, breaking concentration #2.",
+          "(\u22c6) must be pinned down: if heap-predicate precision, the headline refutation is unproven for abstract footprint-free predicates; if an Excl ghost-token RA (the mechanism known to work), each foundational seam inherits RustBelt-style per-primitive Iris proof burden, straining the 'five rules, concentrated' claims #2/#7."
+        ],
+        "headline": "Sequential single-owner linear capabilities over a fixed static resource universe",
+        "rationale": "Three independent fatal flaws: concurrent atomic mutation and async handlers are inexpressible yet advertised (A); one token reinterprets across seams with contradictory R, falsifying Sound Re-import (B); no fresh-\u2113 minting leaves heap/allocator ownership unrepresentable (D)."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.0355,
+      "timestamp": "2026-06-25T02:20:33+00:00"
+    },
+    {
+      "round": 4,
+      "question": "The SEAM construct \u2014 give the formal syntax and typing of the seam: how ordinary (safe) code enters proof-land, what machine-checked obligation it discharges there, and how it re-exports a CHECKED SAFE INTERFACE that ordinary code then uses WITHOUT itself crossing the seam. Give formation / introduction / elimination rules.",
+      "revision": 3,
+      "proposal_excerpt": "# THE SEAM CONSTRUCT \u2014 REVISED\n\nA stratified design in which ownership tokens are erased reflections of separation-logic resources, capabilities carry their minting seam's identity, and the *exported interface* is confined to a syntactically decidable, pure-obligation-free fragment. The three fatal attacks are answered by three specific mechanisms: **modes** (persistent vs. linear capabilities) for attack 1, **identity-indexed nominal capabilities** for attack 2, and **ghost-allocation minting** for attack 3.\n\n---\n\n## 1. THE DECISION\n\n### 1.0 Two strata, one toolchain\n\n| stratum | judgement | who writes it | decidable? | proofs/SMT? |\n|---|---|---|---|---|\n| **safe fragment** (systems-land) | `\u0393 \u22a2\u209b e : \u03c4` | ordinary code | **yes** (affine, syntactic) | **never** |\n| **proof-land** (seam interior) | `\u0394 \u22a2\u209a {P} e {Q}` | seam authors only | no (full sep. logic) | **only here** |\n\n`\u22a2\u209a` is a fragment of Iris: separating conjunction `\u2217`, persistence modality `\u25a1`, invariants `inv N P`, ghost state `own \u03b3 a` over user-chosen resource algebras, view shifts `\u21db`. The seam is the *only* construct relating the two judgements.\n\n### 1.1 Capabilities carry identity and mode\n\nA **capability** is `c ",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "Real systems primitives must be authored as research-grade Iris seams; ordinary code has no borrow story, only linear threading.",
+          "strongest_point": "The lock-free/allocator/intrusive structures the design exists to support are exactly the seams that each require a publishable Iris proof to write, while the 'free' consumer code lacks any borrow discipline (`ref[c]` has no rules), making even in-place mutation a uniqueness-threading slog worse than pre-borrow Rust."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "Mint rule manufactures physical ownership val(v,\u03c4) from a True/ghost-only premise; two allocs yield aliasing linear tokens.",
+          "strongest_point": "The stated Mint rule's conclusion contains val(v,\u27e6\u03c4\u27e7) (real memory ownership) with no source in its ghost-only premise, so alloc can be discharged from True and produce two exclusive tokens over the same bytes."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "S-Elim argument matching is AC-matching plus integer-linear/Presburger witness solving: NP-complete to 2-EXP, not the advertised cheap syntactic check.",
+          "strongest_point": "Checking `\u0393 \u22a2\u209b a : \u2308P_f\u2309` against a `\u2217`-separated, \u2203-index-quantified precondition is MILL provability (NP-complete) coupled to linear-arithmetic witness inference (ILP/Presburger), so 'composition triggers zero obligations' is false on compile cost."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Full Iris in bodies plus unrestricted payload types and runtime-check tokens make sound systems patterns expressible; no unchecked-escape forced.",
+          "strongest_point": "The only real friction\u2014non-linear/static facts unminted by any seam, and dynamic per-object invariants folding into one monolithic seam\u2014are expressible workarounds the proposal already concedes (Attacks A/C), not an inexpressibility."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "RustBelt+Cogent+Mezzo+ATS reassembled; the 'machine-checked, no-external-prover' seam discharges undecidable full-Iris obligations RustBelt needed interactive Coq for.",
+          "strongest_point": "The S-Form obligation is full-Iris (view shifts, invariant opening, arbitrary RAs) \u2014 undecidable and discharged only by interactive expert Coq in RustBelt; the proposal claims to check it in one decidable toolchain with no external prover but never says how."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "genuine-flaw",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "tradeoff",
+          "attacker-expressiveness": "argued-past",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Seam-body discharge is interactive-Iris-grade proof labor (RustBelt/Cogent); 'no external prover / AI-legible three rules' oversells, and Cogent's result says concentration relocates rather than shrinks proof burden \u2014 the \u00a73C ATS2-cliff question stays open.",
+          "S-Elim elaboration is worst-case NP-hard (\u2217-context partition = MILL provability) plus index-witness ILP/Presburger solving; decidability holds but 'cheap syntactic check / zero-cost composition' is a real, unbudgeted compile-cost overclaim unless witnesses are read off concrete tokens via directed elaboration.",
+          "Dynamic per-object invariants (Arc<Mutex<T>>, per-bucket locks) and static non-linear facts fold into one monolithic seam invariant, since inv allocates only at S-Form and Mint does ghost_alloc not inv_alloc \u2014 leaking the concentration claim."
+        ],
+        "headline": "Mint fabricates physical memory from True; ref has no borrow rules \u2014 both unsound/intolerable as specified.",
+        "rationale": "Two genuine flaws. The stated Mint rule derives val(v,\u03c4) memory ownership from a ghost-only premise, yielding aliasing linear tokens (BadBump). The grammar lists ref[c]\u03c4 with no formation/elim, forcing linear threading worse than pre-borrow Rust. Implementation, prior-art, expressiveness are recordable tradeoffs, not kills."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.7491,
+      "timestamp": "2026-06-25T02:32:30+00:00"
+    },
+    {
+      "round": 5,
+      "question": "The SAFE FRAGMENT \u2014 the decidable, proof-free, GC-free ownership discipline for ordinary single-threaded code that needs NO seam and NO SMT, derived from the proof layer. State it precisely (move/borrow/lifetime rules).",
+      "revision": 0,
+      "proposal_excerpt": "## 1. THE DECISION\n\nThe safe fragment is a **flow-sensitive affine type system whose typing context is the syntactic, quantifier-free fragment of a separation logic.** Ownership is the erasure of the points-to assertion; the borrow checker is the *automatic frame-rule inference* for that logic; lifetime inference is a least-fixpoint dataflow (Polonius/NLL-style), not an SMT solve. The precise line between this fragment and the seam is **syntactic vs. semantic disjointness**.\n\n### 1.1 Places, prefixes, conflict\n\n```\nplace  p ::= x | p.i | *p          (lvalue / access path)\ntype   \u03c4 ::= b | Box \u03c4 | &\u02b3 \u03c4 | &\u02b3 mut \u03c4 | (\u03c4\u0304) | D\u27e8\u03c1\u0304,\u03c4\u0304\u27e9\nregion r ::= \u03c1 | {\u2113\u0304}               (loan set / region variable)\nloan   \u2113 ::= shrd p | uniq p\n```\n\nDefine the **prefix order** `p \u2291 q` \u27fa q is p extended by `.i`/`*`. Two places **conflict**, `p \u22c8 q`, iff `p \u2291 q \u2228 q \u2291 p`. Both relations are decided by access-path string comparison in O(|p|+|q|).\n\n### 1.2 The separating context\n\nThe flow context is `\u0393 = (\u03a3, M, L, C)`:\n- `\u03a3`: root variable \u2192 static type.\n- `M`: set of **moved-out (hole) places**.\n- `L`: region variable \u2192 live loan set.\n- `C`: outlives/liveness constraint set over region variables.\n\n**Context ",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "No shared-mutable capability exists; interior mutability and all lock-free concurrency are unexpressible and unrepresentable in the seam.",
+          "strongest_point": "The lattice {own,shrd,uniq} has no shared-mutable permission and \u00a71.9 defines &\u02b3 as read-only, so atomics/interior-mutability/lock-free queues cannot be re-exported as a safe capability and each concurrent structure demands a fresh Iris-grade protocol proof the proposal claims not to need."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "Syntactic \u22c8 can't see that *r1 aliases x; reborrow lets parent loan die, yielding two live &mut to one cell.",
+          "strongest_point": "T-Mut/\u00a71.5 accept evil(&mut x, r2) where r2=&mut *r1, because x\u22c8*r1 is syntactically false and \u03c11 dies before statement (3), producing two simultaneously-live mutable aliases to x."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "\u00a71.7 proves only region inference decidable; the required trait/associated-type normalization pass (your own iterator example) is non-terminating and unbounded.",
+          "strongest_point": "The `for x in &mut v` desugaring central to Attack A invokes associated-type projection normalization \u2014 a Turing-complete pass the \u00a71.7 finite-lattice proof never covers \u2014 so ordinary generic safe-fragment code can hang the compiler, contradicting claim (4)."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Two-capability lattice is shared-XOR-mutable; interior mutability (atomics, Cell, locks, MMIO) has no home and the disjointness-only seam can't provide one.",
+          "strongest_point": "Interior mutability is shared-AND-mutable with no `*` to prove, so the seam (defined solely as semantic-disjointness discharge) cannot supply it, and adding it requires a compiler-blessed exception that contradicts the \u00a71.9 shared=fractional=immutable correspondence."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Reinvents RustBelt's architecture but defers RustBelt's actual problem (seam soundness) as 'a later round'; Polonius-Datalog was abandoned; Mezzo proves cyclic case costs runtime.",
+          "strongest_point": "The Attack-D 'sound re-import' obligation deferred to a later round is precisely RustBelt's per-library Iris soundness proof \u2014 the multi-year core of that project, not a footnote, and the proposal offers no mechanization that avoids repeating it."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "tradeoff",
+          "attacker-expressiveness": "genuine-flaw",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Interior mutability is a second axis (shared-mutation), not disjointness; requires a blessed UnsafeCell-analogue capability, so the \u00a71.10 'seam = disjointness only' and \u00a71.9 'shared=fractional=immutable complete' claims must be narrowed.",
+          "Full safe-fragment decidability needs a bounded trait/associated-type resolution fragment (fuel \u2192 static rejection); the \u00a71.7 regions-only proof does not cover it, in tension with 'proof-free, no solver'.",
+          "Cyclic data is not zero-cost: arena=bounds-checked index, Rc-analogue=refcount, generational handle=runtime tag (Mezzo precedent).",
+          "Seam vocabulary is 'small but open' (grows with distinct aliasing disciplines), not strictly independent of program size.",
+          "Polonius decidability \u2260 practicality; staying rank-1/excluding opaque regions may cost impl Trait returns."
+        ],
+        "headline": "NLL/Polonius affine borrow discipline as erased separation logic for single-threaded code.",
+        "rationale": "Two fatal defects: stated \u00a71.5 liveness rules accept a reborrow producing two live &mut aliases (unsound), and the shared-XOR-mutable lattice has no home for interior mutability, refuting the disjointness-only seam. Both repairable but require revision. Remaining attacks are real recorded costs."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.2224,
+      "timestamp": "2026-06-25T02:42:31+00:00"
+    },
+    {
+      "round": 6,
+      "question": "The SAFE FRAGMENT \u2014 the decidable, proof-free, GC-free ownership discipline for ordinary single-threaded code that needs NO seam and NO SMT, derived from the proof layer. State it precisely (move/borrow/lifetime rules).",
+      "revision": 1,
+      "proposal_excerpt": "# THE DECISION \u2014 The Safe Fragment of SEAMFUL (the ownership core `\u03bb\u22b8`)\n\nThe safe fragment is a **flow-sensitive, origin-constraint borrow discipline over a MIR-like core**, decided by monotone dataflow over a finite CFG. It is the *syntactically-decidable fragment of the proof layer's affine separation logic*: ownership is a linear resource, `&mut` is a unique borrowed capability, `&` is a fractional read token. Crucially \u2014 and this is the direct answer to the fatal reborrow attack \u2014 **the borrow check never decides a semantic place-disjointness predicate `\u22c8`. It decides loan *liveness* under outlives constraints.** The previous design died because it let an ancestor loan die while a descendant reborrow lived. The reborrow constraint here makes that unrepresentable.\n\n## 1. Syntax (A-normal core)\n\n```\nplaces   p ::= x | p.f | *p | p[\u2022]        (\u2022 = index erased to whole-container)\ntypes    \u03c4 ::= b | &\u1d68 mut \u03c4 | &\u1d68 shr \u03c4 | own \u03c4 | Cell \u03c4 | S<\u03c1\u0304, \u03c4\u0304>\nrvalues  e ::= use p | copy p | &\u1d68 mut p | &\u1d68 shr p | move p | f(p\u0304) | ...\nstmts    s ::= p = e | drop p | call | ...\n```\n\nA **program point** P is an edge of the CFG (NLL points). An **origin** \u03c1 is a set of points (the region where a ref",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Disjointness predicate isn't eliminated, just relocated to seams; seam-authoring cost (the real systems workload) is unspecified and hinted prover-grade.",
+          "strongest_point": "split_at_mut and multi-handle allocators force the seam to mint provably-disjoint fresh places \u2014 the very \u22c8 predicate the proposal claims to abolish \u2014 yet the cost of discharging it, where systems programmers spend most of their time, is never specified and \u00a76's 'discharges the obligation' points at ATS2-style proofs."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "T-Reborrow-Mut omits the conflict premise; two mutable reborrows of *r1 are accepted, yielding aliasing &mut; and \u2605 falsifies UMA even when patched.",
+          "strongest_point": "T-Reborrow-Mut carries no \u00acCONFLICT requirement, so r2=&mut *r1; r3=&mut *r1; evil(r2,r3) type-checks and hands evil two unique mutable references to the same byte."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "\u00a72 subtyping over a \u03bb\u22b8 core's first-class region-polymorphic functions is higher-ranked region subtyping \u2014 no complete decision procedure.",
+          "strongest_point": "The moment a function parameter is itself origin-polymorphic (rank-2, unavoidable in a linear lambda calculus with references), the \u00a72 `<:` rule reduces to higher-ranked region subtyping, which has no known complete algorithm and forces the same incomplete leak-check Rust was stuck with \u2014 refuting the 'decidable, no-timeout, one-outlives-relation' claims."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "No two-phase borrows: conflict gate rejects idiomatic v.push(v.len()); 'single seam primitive' claim false\u2014RefCell needs its own seam.",
+          "strongest_point": "The conflict gate makes a mutable loan hostile from the instant it is minted, so v.push(v.len())-class code that real NLL accepts via two-phase borrows is rejected, contradicting the proposal's own NLL/Polonius fidelity claim."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "This is NLL; its CONFLICT gate rejects v.push(v.len()), the case Rust needed two-phase borrows to fix.",
+          "strongest_point": "The conflict gate forbids the canonical nested-method-call idiom that forced Rust to invent two-phase borrows (RFC 2025), so 'ordinary code composes seam-free' is false."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "tradeoff",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "\u22c8 disjointness is relocated to named seams, not eliminated; seam-authoring cost (proof vs SAFETY-comment) is unspecified and belongs to a separate decision",
+          "No two-phase borrows: idiomatic v.push(v.len()) is rejected as written; recovery requires importing reservation/activation, complicating the one-rule legibility and the UMA proof",
+          "Interior mutability is not a single seam primitive: RefCell/Rc/arena each need their own seam returning a borrow into non-nameable memory \u2014 concentration is per-flavor",
+          "Higher-ranked region polymorphism (closures/HOFs over references, implied by the \u03bb\u22b8 name) has no complete decision procedure; decidability holds only for the first-order/rank-1 fragment, else an incomplete leak-check is needed",
+          "Representation choice is silent: NLL points inherit Problem-Case-#3 incompleteness; Polonius loans inherit the performance cost \u2014 'no timeout' and completeness are not both free"
+        ],
+        "headline": "Sound discipline in spirit, but the reborrow rule is ungated and UMA is false as stated",
+        "rationale": "T-Reborrow-Mut omits the \u00acCONFLICT premise, accepting two aliasing &mut (UB); and \u2605 keeps the ancestor in-scope, so UMA-over-in-scope-loans is literally false at every reborrow. Fixable via gating plus an activation predicate, but must be revised. The four tradeoffs are real and recorded."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.273,
+      "timestamp": "2026-06-25T02:51:51+00:00"
+    },
+    {
+      "round": 7,
+      "question": "The SAFE FRAGMENT \u2014 the decidable, proof-free, GC-free ownership discipline for ordinary single-threaded code that needs NO seam and NO SMT, derived from the proof layer. State it precisely (move/borrow/lifetime rules).",
+      "revision": 2,
+      "proposal_excerpt": "## 1. THE DECISION\n\nThe safe fragment is a **flow-sensitive, loan-tracking affine type system** with path-precise places, NLL-style loan liveness, and outlives-only region constraints. All checks are syntactic prefix tests + monotone dataflow fixpoints + union-find on outlives edges \u2014 no SMT, no user proofs. References are erased capability tokens drawn from the proof layer; the loan environment \u039b is the compiler-maintained reflection of a separation-logic context.\n\n### 1.1 Syntax\n\n```\nprojection  q   ::= .f | *\nplace       \u03c0   ::= x | \u03c0.q                  root(\u03c0) = the leading variable\ntype        \u03c4   ::= b                         (scalar; Copy)\n                  | &\u03c1 \u03c4                       (shared ref; Copy)\n                  | &\u03c1 mut \u03c4                   (unique ref; affine)\n                  | S | Box \u03c4 | fn<\u03c1\u0304|C>(\u03c4\u0304)\u2192\u03c4  (affine aggregates)\n```\n\n`Copy(\u03c4)` iff \u03c4 is a scalar or a shared reference. All other types are **affine** (move-only).\n\n### 1.2 Static state  \u03a3 = \u27e8\u0393 ; M ; \u039b\u27e9  over a region context R\n\n- **\u0393**: `x \u21a6 \u03c4` with a lexical declaration scope `scope(x)` (a set of CFG points).\n- **M**: `\u03c0 \u21a6 {Live, Moved}` \u2014 forward dataflow over the finite lattice `Moved \u2291 Live`, tracki",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "No UnsafeCell analog; BI clause (a) makes interior mutability (Arc/Mutex/RefCell/Rc/atomics) unexpressible even behind the seam.",
+          "strongest_point": "A MutexGuard's &mut is concretely non-disjoint from the live shared loans of its container, so BI clause (a)'s memory-disjointness obligation is literally unsatisfiable \u2014 the seam primitive cannot be written, not merely hard to prove."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "Multi-level reborrow (&mut **rr) emits only one outlives edge; outer loan dies early, yielding two live &mut to same memory",
+          "strongest_point": "Reborrow-U generates \u03c11\u2292\u03c1a but not \u03c12\u2292\u03c1a for &mut **rr, so the loan on p dies prematurely and &mut *p is accepted alongside a live a:&mut x, directly violating BI clause (b)."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Safe fragment is essentially decidable NLL; undecidable disjointness correctly quarantined behind the seam. Inference boundary under-specified, union-find mis-named.",
+          "strongest_point": "'region(\u03c1) = where the carrying value is live' is region-signature inference, not liveness dataflow; if signatures are inferred not annotated, recursive region-polymorphic functions hit semi-unification, and the proposal never establishes decidability of that pass."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "No two-phase borrows or closures; rejects pervasive seam-free code (v.push(v.len()), captured-&mut closures) that even Rust accepts.",
+          "strongest_point": "With one eagerly-conflicting uniq loan and no reservation phase, v.push(v.len()) fails ConflictShrd \u2014 a ubiquitous unsafe-free line that current Rust accepts, tripping the author's own stated defeat condition."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "This is Rust NLL re-derived; its conceded failure mode is the documented decade-old NLL Problem Case #3.",
+          "strongest_point": "The proposal's union-at-joins liveness regions are exactly NLL, which rejects the seam-free get_default idiom (Problem Case #3) \u2014 the very 'common ordinary-code pattern' \u00a73C names as a disqualifying defeat, fixable only by Polonius, unshipped after ~7 years."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "genuine-flaw",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "tradeoff",
+          "attacker-expressiveness": "genuine-flaw",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "region(\u03c1) must be computed by SCC-condensation + directed transitive closure, not union-find (still polynomial)",
+          "region-polymorphic fn<\u03c1\u0304|C> signatures must be annotated at call boundaries; 'inferred not written' does not extend interprocedurally without risking semi-unification"
+        ],
+        "headline": "An NLL-equivalent affine borrow checker that, as written, is unsound and cannot express interior mutability.",
+        "rationale": "Multi-level reborrow (&mut **rr) emits only the innermost outlives edge, yielding two live &mut to one byte in safe code \u2014 defeating BI(b). BI(a) also forbids interior mutability even behind the seam, and union-at-joins rejects the author's own conceded defeat case."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.484,
+      "timestamp": "2026-06-25T03:01:39+00:00"
+    },
+    {
+      "round": 8,
+      "question": "The SAFE FRAGMENT \u2014 the decidable, proof-free, GC-free ownership discipline for ordinary single-threaded code that needs NO seam and NO SMT, derived from the proof layer. State it precisely (move/borrow/lifetime rules).",
+      "revision": 3,
+      "proposal_excerpt": "# THE SAFE FRAGMENT \u2014 Origin-Indexed Affine Core (\u03bb\u2011OIA)\n\nI am proposing the static semantics of ordinary single-threaded code: a **location-sensitive, origin-as-loan-set** discipline that is the *erased shadow* of a fractional-permission separation logic. It is proof-free and decidable; the seam is exactly the set of entailments this decision procedure refuses to discharge.\n\nI address each landed attack explicitly and label where:\n\n- **[A2 nested reborrow]** fixed by a transitive `requires`-closure over the whole deref chain.\n- **[A3 two-phase]** fixed by first-class *reserved/active* loan phases.\n- **[A4 prior-art/NLL]** fixed by adopting location-sensitive loan liveness as the *definition* (not a retrofit), with a decidability argument for why it ships here.\n- **[A1 unsatisfiable disjointness]** fixed structurally: the safe fragment imposes **no disjointness proof obligation at all**; disjointness is *decided syntactically*. Arithmetic disjointness is pushed to the seam.\n\n---\n\n## 0. Setting and the proof-layer derivation\n\nThe full language is a separation logic `L_sep` with fractional permissions (Boyland/Iris-style): resources `p \u21a6^q v`, `q \u2208 (0,1]`. The **safe fragment is the ",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Seam concentration relocates rather than removes proof burden; the undefined seam is either ATS2 proofs or just Rust's unsafe.",
+          "strongest_point": "Slab allocators, intrusive lists, and ring buffers are 100% seam code, so whether this is the ATS2 cliff or Rust-tolerable hinges entirely on the seam's authoring discipline \u2014 which the proposal never specifies."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Shared reborrow rule T-Brw-Shr omits the \u00a73 support/requires closure; deref-chain shared borrow accepts a use-after-free.",
+          "strongest_point": "The [A2] fix lives only in mut-producing T-Reborrow; T-Brw-Shr adds no requires edges, so supporting loans die early and a live `&(**rr)[0]` survives reassignment of the root `v`, yielding an accepted use-after-free."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Mandatory location-sensitive borrow datalog materializes \u0398(n\u00b3\u207a) point-indexed subset/requires tuples \u2014 the documented Polonius cliff the proposal falsely blames on retrofit, not performance.",
+          "strongest_point": "The point-indexed subset/requires/loan_live relations the proposal adopts as its sole definition are exactly the materialization blow-up that stalled location-sensitive Polonius, contradicting its explicit 'not performance' shipping claim."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Seam has no proof-free floor; FFI/allocators/MMIO need full L_sep proofs or are inexpressible \u2014 the ATS2 cliff relocated, not removed.",
+          "strongest_point": "A safe wrapper over an aliasing C library is inexpressible: no raw pointer is allowed and the required disjointness entailment concerns foreign code that cannot be supplied to the decision procedure."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "It is Polonius/NLL/Mezzo prior art; its sole differentiator \u2014 'ships where Polonius didn't' \u2014 misreads why Polonius stalled.",
+          "strongest_point": "Polonius's location-sensitive Datalog stalled on scalability, not diagnostics retrofit, so adopting that exact formulation as the day-one definition inherits the blocker the proposal claims greenfield avoids."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "tradeoff",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Seam authoring discipline is undefined yet load-bearing: whole-program soundness/expressiveness needs either L_sep proofs (ATS2 cliff) or a proof-free unsafe floor (Rust's hole). Must be its own future decision (ergonomics+expressiveness).",
+          "Raw pointers excluded with no proof-free unsafe sublanguage \u21d2 FFI and runtime-dependent aliasing are currently inexpressible at the seam.",
+          "Location-sensitivity is load-bearing (accepts get_default) but materializes \u0398(n\u00b3\u2013n\u2074) point-indexed subset/requires/loan_live tuples \u2014 the documented Polonius scaling cliff; needs a real bound-with-constants.",
+          "Differentiating claim 'ships where Polonius didn't, not performance' is refuted by primary sources (Polonius stalled on location-sensitive Datalog scalability); novelty over NLL/Polonius/two-phase-borrows/Mezzo is largely absent."
+        ],
+        "headline": "Polonius-style affine core, sound for ordinary code \u2014 but the stated shared-reborrow rule admits a UAF.",
+        "rationale": "Ordinary-code discipline is precise and Rust-parity, but T-Brw-Shr omits the \u00a73 support/requires closure, accepting a concrete use-after-free through a shared deref chain. Seam authoring, scaling cost, and the false 'ships where Polonius didn't' claim are recorded tradeoffs the revision inherits."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.4093,
+      "timestamp": "2026-06-25T03:10:56+00:00"
+    },
+    {
+      "round": 9,
+      "question": "BEHIND THE SEAM \u2014 concretely, what obligation does a foundation author discharge, in-language, to implement (a) a lock-free SPSC queue, (b) an MMIO read-to-clear register, (c) an intrusive doubly-linked list \u2014 and how does each re-export a safe interface the safe fragment can use without proofs?",
+      "revision": 0,
+      "proposal_excerpt": "## 1. THE DECISION\n\n### 1.1 The seam construct: `seal`\n\nA foundation is a `seal`. Inside a `seal`, and **only** inside, three things become available that ordinary code never sees: (i) raw capabilities \u2014 `*mut T`, `volatile`, the `atomic.*` intrinsics, `alloc`/`dealloc`; (ii) the proof logic \u2014 a concurrent separation logic (CSL, Iris/RC11-style) with ghost state; (iii) the **obligation generator**. A `seal` declares an `Interface` of ordinary safe types and must discharge, per export, a CSL Hoare triple proving the implementation refines the separation-logic *denotation* of that safe type.\n\nFour judgement forms fix the language:\n\n- **Safe typing** `\u0393 \u22a2_S e : \u03c4` \u2014 affine/linear context, syntactic, decidable, no SMT, no user proofs.\n- **Denotation** `\u27e6\u03c4\u27e7 : Val \u2192 iProp` \u2014 every safe type is *notation* for a CSL assertion. `own T \u225c \u2203v. p\u21a6v \u2217 \u27e6T\u27e7(v)`; `&'r T \u225c frac\u2016r\u2016 permission`; `lin T \u225c exactly-once token \u2217 \u27e6T\u27e7`. Ownership is *derived from the proof layer*, not bolted on.\n- **Seal obligation** `\u0394 ; \u0393 \u22a2_P {P} e {Q}` \u2014 CSL, kernel-checked; SMT discharges only pure leaf side-conditions (index/address arithmetic).\n- **Erasure** `|e|`, `|\u03c4|` \u2014 assertions, ghost tokens, witnesses live in s",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "No granular informal unsafe; every new primitive mandates a mechanized Iris/RC11 proof, and systems programmers write primitives constantly.",
+          "strongest_point": "The safe fragment has zero raw capabilities, so any new low-level op \u2014 even a one-off poke you'd happily just trust \u2014 requires a full kernel-checked separation-logic refinement proof, which is the ATS2-unusable experience exactly."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "Concentration theorem (frame rule = affine split) is false for concurrency; two-thread SPSC use composes to J\u2217J=False \u2014 no valid CSL image.",
+          "strongest_point": "An affinely-typed `spawn(p.try_push) \u2016 spawn(c.try_pop)` typechecks in \u22a2_S but its CSL image needs J\u2217J\u22a2head\u21a6\u2217head\u21a6\u22a2False, so a sequential SEAL-EXPORT triple is laundered into an unsound concurrent capability."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Seal obligations are higher-order SL entailments with inductive predicates \u2014 undecidable to discharge; 'SMT only at leaves' misclassifies the inductive/iterated-star core.",
+          "strongest_point": "SEAL-EXPORT's consequence-rule entailments over dll (undecidable inductive-predicate entailment) and over generic \u27e6T\u27e7 (higher-order unification) cannot be mechanically discharged, so admissibility is undecidable unless authors hand-write full Iris proofs the proposal never admits they need."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Returning/caller-invoked triple shape excludes context switches, interrupt handlers, and aliasing FFI \u2014 the core of bare-metal systems.",
+          "strongest_point": "SEAL-EXPORT only admits returning, caller-invoked partial-correctness triples over a flat heap, so stack-swapping schedulers, asynchronously-invoked ISRs, and aliasing C FFI have no rule shape and no raw capability \u2014 they are inexpressible, and adding them breaks the concentration theorem's private-frame story."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "This is RustBelt (uncited): semantic-model + fundamental theorem + unsafe-boundary verification; case studies are RustBelt-Relaxed and GhostCell.",
+          "strongest_point": "The 'make-or-break concentration theorem' is RustBelt's 2018 fundamental theorem, and RustBelt-Relaxed proves the SPSC ownership-transfer is a research-grade Iris proof, not the SMT-leaf the proposal claims."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "tradeoff",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Seal-side discharge is undecidable to automate; authors hand-write higher-order separation-logic proof terms the kernel checks \u2014 'SMT only at pure leaves' is false and must be dropped.",
+          "Each foundation is research-grade interactive Iris proof effort, not routine; cite RustBelt / RustBelt-Relaxed / GhostCell and state the real delta (integrated obligation generator + verified erasure compiler).",
+          "No granular informal `unsafe` escape hatch, and primitive-authoring is routine (not rare) in the target domain; entangled invariants (waker/queue/task) do not compose as bounded stacked layers, weakening the concentration premise.",
+          "Framework excludes non-returning control (context switch), asynchronously-invoked handlers (ISR), and aliasing FFI; per-binding FFI axioms scale with external surface, not foundation count."
+        ],
+        "headline": "Sealed RustBelt-style semantic-typing seam whose concentration theorem is mis-stated and unsound for concurrency.",
+        "rationale": "Caller-side composition and the three sequential obligations are credible, but the make-or-break concentration theorem ('affine split = frame rule') is false for the concurrent SPSC foundation: J\u2217J\u22a2False, so a sequential triple is laundered into an unsound concurrent capability. Revise via shared invariants; record cost/scope tradeoffs."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.0562,
+      "timestamp": "2026-06-25T03:19:32+00:00"
+    },
+    {
+      "round": 10,
+      "question": "BEHIND THE SEAM \u2014 concretely, what obligation does a foundation author discharge, in-language, to implement (a) a lock-free SPSC queue, (b) an MMIO read-to-clear register, (c) an intrusive doubly-linked list \u2014 and how does each re-export a safe interface the safe fragment can use without proofs?",
+      "revision": 1,
+      "proposal_excerpt": "## 1. THE DECISION\n\nThe seam's obligation language is not sequential Hoare logic. It is a fixed, in-toolchain **concurrent separation logic, CSL\u00b0 (Iris-style: user-declared cameras/RAs, atomic invariants `inv N P`, ghost ownership, a weak-memory base \u00e0 la iRC11)**. Every `export` is checked by discharging CSL\u00b0 triples; nothing else (no external prover). The defeating attack is closed by one structural rule: **`Send`/`Share` for a foundation type is not primitive \u2014 it is a capability the foundation author can `export` only by exhibiting the *concurrent* (atomic-invariant) proof. A sequential triple cannot mint it.**\n\n### 1.1 Two judgements and one translation\n\n- Safe fragment: `\u0393 \u22a2_S e : \u03c4` \u2014 affine, decidable, proof-free, no SMT.\n- Foundation: `\u0393 ; \u03a0 \u22a2_F e : \u03c4 { CSL\u00b0 triple }` \u2014 may demand user proofs / SMT, but only here.\n\nA fixed translation `\u27e6\u00b7\u27e7 : SafeType \u2192 iProp` maps each affine safe type to its CSL\u00b0 footprint resource. This is the entire soundness bridge:\n\n```\n\u27e6&mut T @ l\u27e7      = \u2203v. l \u21a6 v \u2217 \u27e6T\u27e7 v                 (exclusive)\n\u27e6&T   @ l\u27e7        = \u2203q v. l \u21a6{q} v \u2217 \u25a1\u27e6T\u27e7 v\n\u27e6owned T\u27e7         = \u27e6T\u27e7 \u00b7                              (full ownership)\n\u27e6AbstractTok \u03b3\u27e7   = (camera token ch",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Self-referential async futures can't live in proof-free \u22a2_S; async forces a CSL\u00b0 proof per async fn \u2014 the ATS2 cliff.",
+          "strongest_point": "The proposal's own case (c) admits cyclic aliasing needs a bespoke folded proof, and a borrow-across-await future is exactly that, so every nontrivial async fn either re-crosses the seam with a separation-logic proof or is unsupported."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Send-gating checks atomic-invariant usage, a proxy that mints Send for thread/core-affine resources that are not send-closed.",
+          "strongest_point": "An IrqGuard whose ops use only atomic invariants satisfies the gating rule and closes its CSL\u00b0 triples, so `export Send` is accepted, yet moving it across cores via S-PAR re-enables interrupts on the wrong CPU \u2014 unsound because CSL\u00b0/iRC11 models no thread affinity."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Composite Send-derivation in the 'decidable' safe fragment is auto-trait resolution \u2014 Turing-complete; \u00a74.B nesting and \u00a74.C 'no inference' contradict.",
+          "strongest_point": "Spawning a Queue<Cursor> forces \u22a2_S to resolve conditional Send through payload-footprint projections, which is exactly Rust's undecidable auto-trait resolution \u2014 so the safe fragment is either non-terminating or incomplete, not 'decidable.'"
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Hardware/FFI boundary primitives carry trusted axioms, not CSL\u00b0 proofs; contradicts 'nothing else, no external prover' \u2014 shown by their own MMIO example.",
+          "strongest_point": "The flagship register example's read-clears triple and any FFI wrapper are unprovable axioms about silicon/foreign code, so the seam already rests on an unbounded unchecked trusted base the architecture never acknowledges, and an aliasing C spec re-injects the unsoundness Send-gating claims to banish."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "This is the RustBelt/iRC11/GhostCell/RefinedC program re-derived; the 'entire' soundness bridge omits RustBelt's lifetime logic, the hardest part.",
+          "strongest_point": "The reference interpretations \u27e6&mut\u27e7/\u27e6&\u27e7 are flat points-to predicates with no lifetime tokens, so the claimed complete soundness bridge cannot model borrow expiry \u2014 the exact problem RustBelt needed an entire lifetime logic to solve."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "tradeoff",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Async/self-referential futures: borrow-across-await types cannot live in proof-free \u22a2_S; proposal must exhibit a parametric Pin/future foundation or explicitly scope async out, else concentration leaks per-async-fn proofs.",
+          "Send is conditional (Send Container<T> :- Send T); \u00a74.C 'per-type boolean, no inference, decidable' is false \u2014 \u22a2_S needs structural Send-propagation, decidable only modulo a Rust-style recursion limit (incomplete). Correct the claim.",
+          "Hardware/FFI boundary rests on trusted axiom specs (the MMIO read-clears triple, foreign-fn specs); qualify 'no external prover' to 'no external proof-checker plus a trusted primitive-spec TCB' and add an explicit extern/register-spec construct.",
+          "Novelty: constructions reproduce RustBelt(2018)/iRC11(2020)/GhostCell(2021)/RefinedC(2021) uncited; only the fixed-surface-vocabulary language packaging is plausibly new and must be argued on that axis."
+        ],
+        "headline": "RustBelt-style CSL\u00b0 seam with Send-gating: unsound for affine guards, lifetime logic absent.",
+        "rationale": "Send-gate checks atomicity not semantic send-closedness, so it mints Send for MutexGuard/IrqGuard-class thread-affine tokens (S-PAR then moves them, unsound). And the 'entire' soundness bridge uses flat points-to predicates with no lifetime logic, unable to model borrow expiry. Both require revision."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.8652,
+      "timestamp": "2026-06-25T03:32:29+00:00"
+    },
+    {
+      "round": 11,
+      "question": "BEHIND THE SEAM \u2014 concretely, what obligation does a foundation author discharge, in-language, to implement (a) a lock-free SPSC queue, (b) an MMIO read-to-clear register, (c) an intrusive doubly-linked list \u2014 and how does each re-export a safe interface the safe fragment can use without proofs?",
+      "revision": 2,
+      "proposal_excerpt": "# THE DECISION\n\n**The seam is the RustBelt *semantic-typing* discipline, reified as an in-language construct, instantiated on a relaxed-memory Iris with lifetime logic, and extended with two explicit ghost resources \u2014 *context tokens* and *named device specs* \u2014 that close exactly the two holes that defeated the previous round.**\n\n## The foundation logic FL (fixing both attacks at the substrate)\n\nFL is **Iris over a relaxed-memory operational semantics** (Cosmo-style: release/acquire ownership transfer is primitive), with **RustBelt lifetime logic (lftL) instantiated on it**, plus two extensions:\n\n- **Lifetime logic, in full** (this is the direct answer to attacker-prior-art): lifetimes `\u03ba`, fractional lifetime tokens `[\u03ba]_q`, death tokens `[\u2020\u03ba]`, full borrows `&^{full}_\u03ba P`, fractured borrows `&^{frac}_\u03ba \u03a6`, inclusion `\u03ba \u2291 \u03ba'`, and the borrow-access/inheritance rules `LftL-bor-acc` and the death clause that, on `[\u2020\u03ba]`, returns the borrowed `P` to its lender. **\u27e6&'a mut T\u27e7 is a genuine full borrow at \u03b1(a), not a points-to.** Borrow expiry is `[\u2020\u03b1(a)]` firing inheritance. The previous flat points-to had no `[\u2020\u03ba]` to fire; FL does.\n\n- **Context tokens** (direct answer to attacker-soun",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Concentration bet fails for bare-metal: drivers are mostly non-reusable foundations needing Iris proofs from experts who aren't on the team.",
+          "strongest_point": "Each proprietary SoC's side-effecting registers are per-project foundations requiring separation-logic proofs, so the 'few, reusable, amortized' claim collapses precisely in the embedded domain the proposal targets."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "Queue admits Producer<T>:Send with no T:Send bound; laundering !Send per-CPU register across cores resurrects the IrqGuard bug.",
+          "strongest_point": "\u27e6Send Container<T>\u27e7 is defined as context-independence of the container's own and never demands \u27e6Send T\u27e7, so the seam admits Producer<!Send>: Send and the channel moves a core-affine resource to the wrong core."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Ring-index side-conditions over symbolic const-N are nonlinear/undecidable (QF_NIA); 'bounded SMT at the seam' is false.",
+          "strongest_point": "Their once-at-the-seam discipline pins the modulus N symbolic exactly where `prod mod N \u2260 cons mod N` becomes undecidable nonlinear arithmetic, and the only escape (concrete-N) forces SMT into the supposedly proof-free downstream fragment."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Flagship intrusive list only models shared-lifetime case; dynamic/pinned waker queues have no typeable safe signature since \u27e6\u00b7\u27e7 lacks Pin.",
+          "strongest_point": "Dynamic-membership intrusive lists (the actual use case) need per-node death-triggered unlinking and Pin drop guarantees, which a total syntax-directed \u27e6\u00b7\u27e7 with location-agnostic own_T cannot express at all \u2014 so the safe interface is untypeable, not merely hard to prove."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Seam architecture is uncited RefinedRust; Attack 3 names Cosmo but the real lftL-on-relaxed precedent is iRC11/RBRlx.",
+          "strongest_point": "The proposal silently reinvents RefinedRust's compiler-generated-goal architecture while misidentifying its own substrate (Cosmo vs. the actual lifetime-logic-on-relaxed-memory result, iRC11), hiding that the frontend\u00d7relaxed-lftL fusion is unbuilt and per-foundation cost contradicts the concentration promise."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "tradeoff",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Concentration economics invert for bare-metal: per-chip side-effecting registers are non-reusable, expert-only foundations; 'amortized across ecosystem' overstated (corroborated by RefinedRust's multi-thousand-line-per-container cost).",
+          "Generic-N ring arithmetic (prod mod N != cons mod N) is nonlinear/SMT-undecidable for symbolic N; the 'bounded SMT at the seam' claim is retracted and falls to manual proof.",
+          "'Exactly two holes' is false: DMA/cache-coherence, TLB/ASID, RCU are an open-ended trusted-axiom family; dynamic-membership/pinned intrusive lists need a Pin/drop-guarantee interpretation that a total location-agnostic \u27e6\u00b7\u27e7 currently lacks.",
+          "Substrate must be named iRC11/RBRlx (lftL-on-relaxed, published), not Cosmo; the reified-seam architecture is RefinedRust/RefinedC reified \u2014 novelty is packaging, and the frontend\u00d7relaxed-lftL fusion is unbuilt."
+        ],
+        "headline": "Seam admits Producer<!Send>:Send \u2014 flagship queue launders a core-affine register across cores.",
+        "rationale": "Soundness attack exhibits a safe-accepted program composing the proposal's own (a)+(b) that resurrects the IrqGuard affinity bug, because \u27e6Send Container<T>\u27e7 never demands \u27e6Send T\u27e7. One genuine flaw forces revision; four corrections (economics, SMT bound, two-holes closure, substrate/prior-art) recorded."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.1647,
+      "timestamp": "2026-06-25T03:41:13+00:00"
+    },
+    {
+      "round": 12,
+      "question": "BEHIND THE SEAM \u2014 concretely, what obligation does a foundation author discharge, in-language, to implement (a) a lock-free SPSC queue, (b) an MMIO read-to-clear register, (c) an intrusive doubly-linked list \u2014 and how does each re-export a safe interface the safe fragment can use without proofs?",
+      "revision": 3,
+      "proposal_excerpt": "## 1. THE DECISION\n\n### 1.1 The seam construct and its three judgement forms\n\nA foundation is written in a `seam` block. It is the *only* place where (i) `unsafe` primitives (`Atomic`, `RawPtr`, `Volatile`, `mmio_addr`) are in scope, (ii) the kernel's decision procedures (SMT + a CIC proof checker, both in the one toolchain) run, and (iii) a safe signature may be *minted*. Ordinary code lives in the safe fragment and never enters a `seam`.\n\nThree judgements:\n\n```\nSafe fragment:   \u0393 \u22a2 e : \u03c4                       -- affine + borrow; decidable; no SMT, no user proofs\nSeam elaboration:  \u03a3 ; \u0393 \u22a2\u1d4d d  \u2933  \u27e8\u03a6, \u03c3\u27e9          -- d = foundation def; \u03a6 = generated obligations; \u03c3 = exported safe sig\nDischarge:       \u22a2\u2096 \u03c0 : \u03c6           (\u03c6 \u2208 \u03a6)       -- machine-checked, in-language (SMT goal closed OR CIC term)\n```\n\n**Soundness of re-import (the theorem the kernel enforces, not the author).** If `\u03a3;\u0393 \u22a2\u1d4d d \u2933 \u27e8\u03a6,\u03c3\u27e9` and `\u22a2\u2096 \u03c0\u1d62 : \u03c6\u1d62` for every `\u03c6\u1d62 \u2208 \u03a6`, then `\u03c3` may be added to the safe environment, and any safe program well-typed against `\u03c3` is UB-free and preserves affinity/borrow invariants. The author *discharges* `\u03a6`; the author never *states* what `\u03a6` is. `\u03a6` is generated by the kernel from the r",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "Cost relocated from composition to seam-authorship; for real systems work authoring novel seams is the job, not rare.",
+          "strongest_point": "A working systems programmer's deliverable is the novel low-level structure (MPSC, arena, slab, async future) \u2014 each a new seam requiring research-grade Iris/SMT proofs \u2014 so the 'rare foundation author' premise that makes composition free is false for the target population."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Footprint phase claimed decidable/SMT-free is actually inductive-predicate entailment for the RawPtr/DLL foundation; phase ordering is circular.",
+          "strongest_point": "Verifying that a heap-loaded RawPtr's target is in the declared footprint \u03a0={links(n):n\u2208S} requires the dll shape invariant discharged only at step 3, so the 'decidable, no-SMT' footprint phase of \u00a71.2.1 cannot exist for pointer structures without circularity or undecidability."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Kernel-run discharge of ring-buffer exclusivity VC is symbolic-modulus NIA \u2014 undecidable, not the claimed 'trivial SMT'.",
+          "strongest_point": "Proving \u03bbi.i mod N injective on the live window and producer/consumer slots disjoint under wraparound, with capacity N a type parameter, is nonlinear integer arithmetic (undecidable) \u2014 and it is the very VC the proposal calls 'what makes re-import sound'."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Closed-world, no-assertion model cannot express DMA, interrupt-masked critical sections, or FFI \u2014 the substance of its bare-metal target.",
+          "strongest_point": "Memory mutated by non-CPU agents (DMA/ISR/foreign C) has no primitive footprint to conserve, so it is either inexpressible or requires the trusted assertion \u00a71.4 forbids \u2014 and admitting that assertion reopens the exact UB-laundering defeat the design claims to have fixed."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Uncited reinvention of RustBelt/RefinedC/Steel; flagship release-acquire SPSC proof is paper-sized manual Iris, not an SMT-dischargeable kernel lemma.",
+          "strongest_point": "RustBelt-meets-relaxed-memory (POPL 2020) shows the proposal's own SPSC example requires a bespoke relaxed-memory logic and a manual paper-sized proof per structure \u2014 SMT cannot close it \u2014 so the ATS2 cliff is relocated into the seam, not eliminated, and Attack B's 'kernel lemma' concession understates the cost by an order of magnitude."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "genuine-flaw",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "tradeoff",
+          "attacker-expressiveness": "genuine-flaw",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Even the simplest generic foundation (symbolic-capacity ring buffer) needs hand-written CIC proofs of modular-arithmetic injectivity/disjointness; 'trivial under I (SMT)' is false and the discharge pass is not a decision procedure."
+        ],
+        "headline": "Concentrate all proof cost behind a seam, mint proof-free safe signatures \u2014 but the cliff is relocated, not removed.",
+        "rationale": "Footprint phase is circular/undecidable for pointer structures (B); 'never assert' contradicts its own MMIO axiom and cannot express DMA/interrupts without laundering UB (D); flagship SPSC transfer is paper-sized manual Iris, not SMT (E), and authoring is the target's job (A)."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.3438,
+      "timestamp": "2026-06-25T03:49:57+00:00"
+    },
+    {
+      "round": 13,
+      "question": "SEAM SOUNDNESS / re-import \u2014 the rule that makes crossing BACK sound: how does the safe fragment trust a seam-crossed primitive without re-verifying it, and what structurally stops an unsound obligation from laundering UB into safe code?",
+      "revision": 0,
+      "proposal_excerpt": "## 1. THE DECISION\n\n**Re-import is sound because the safe fragment never trusts a seam author's *claim*; it trusts a *certificate* that only the type-checker kernel can mint, and the kernel mints it only from a separation-logic proof discharged against a fixed, finite, audited axiom set \u2014 with the frame rule structurally confining the raw body to its declared footprint.**\n\nConcretely, define one language with two typing universes sharing one kernel `K`:\n\n- **Safe fragment.** Judgement `\u0393; \u0394 \u22a2 e : \u03c4`. `\u0393` unrestricted, `\u0394` an affine *resource* context (capabilities, `Owned`, `Frac`, `Atomic` tokens). Decidable, proof-free, no SMT.\n- **Model `M`.** A separation-logic model of machine state: heap `Addr \u21c0 Byte`, capabilities, fractional permissions, atomic protocols. Every safe type denotes an `M`-predicate: `\u27e6\u03c4\u27e7 : M \u2192 Prop`. Resource contexts denote `\u27e6\u0394\u27e7 = \u229b_{x:\u03c4 \u2208 \u0394} \u27e6\u03c4\u27e7`.\n- **Foundational axiom set `A`.** The *only* primitives whose operational steps are postulated rather than derived: `__load/__store`, `__cas`, `__mmap/__munmap`, MMIO register reads/writes, fence orderings. Each axiom is a separation triple, e.g.\n  `A \u22a2 {p \u21a6\u2071 \u22a5 \u2217 Cap(p,n)} __mmap(p,n) {Owned(Raw(p,n))}`.\n  `A` is f",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Affine-only use-site interface can't carry duplicable invariants for shared-state concurrency; arenas need absent region/lifetime layer.",
+          "strongest_point": "A multi-producer lock-free queue needs a duplicable (persistent) invariant resource shared across threads, which the advertised purely-affine, proof-free SEAM-USE context cannot express without becoming the very separation-logic burden the proposal claims to confine to seam definitions."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "SEAM-USE's resource matching IS separation-logic entailment over arbitrary M-predicates \u2014 undecidable, not proof-free; restricting to opaque tokens kills composability.",
+          "strongest_point": "Threading/splitting resources to match a seam's \u0394_in at a use site is SL entailment over arrays/fractions/user predicates, which is undecidable, so the 'decidable proof-free safe fragment' is false unless resources become indivisible tokens that cannot be composed."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "SEAM-USE is separation-logic frame inference: NP-complete (subset-sum/MLL) at best, undecidable with their own nonlinear indices.",
+          "strongest_point": "The use-site resource check is frame inference, which is subset-sum/MLL-NP-complete for the proposal's own combinable capabilities and undecidable once indices carry nonlinear arithmetic like its own `n\u00b7size T`, so SMT-grade reasoning reappears at every call site \u2014 refuting 'decidable, proof-free, no SMT.'"
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Fixed finite A cannot step FFI calls or model DMA/interrupts; expressing them reintroduces per-site unaudited axioms, collapsing the trust-concentration claim.",
+          "strongest_point": "Calling any opaque C function or driving a DMA device has no operational step in A and isn't modelable in M, forcing either inexpressibility or per-site axiom introduction\u2014the very 'N unaudited unsafe blocks' the design claims to beat."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Soundness decision is RustBelt+FPCC+Low* re-described; precedent corroborates it but prices the under-credited per-seam atomic proofs.",
+          "strongest_point": "The architecture is RustBelt's semantic typing (validated, hence it survives), but RustBelt's own manual Iris proofs for atomics/CAS refute the proposal's implication that SEAM-DEF is a cheap SMT-aided crossing."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "genuine-flaw",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "genuine-flaw",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Trusted base A is unbounded in practice: FFI and device/DMA contracts are per-site trusted axioms, so 'fixed, small, audited once' degrades to 'named, affine-typed, auditable' \u2014 weaker than advertised but still better than diffuse unsafe.",
+          "SEAM-DEF per-primitive proofs for atomics/CAS/fences are large manual higher-order concurrent-separation-logic developments, NOT cheap SMT-discharged crossings; 'SMT may help' overstates. Concentration of code crossings does not concentrate proof effort.",
+          "The atomic/fence fragment of A is the historically least-stable, repeatedly-unsound part (weak memory: RBRlx, C11, x86-TSO); 'audited once' is optimistic there.",
+          "Architecture is RustBelt semantic typing + Foundational PCC + Low*/F* erasure re-described; must cite and state its actual delta."
+        ],
+        "headline": "Certificate-not-claim re-import via sealed SL proofs against a fixed axiom set, frame-confined.",
+        "rationale": "Re-import theorem and sealing are sound (prior art confirms). But the load-bearing 'decidable, proof-free, no-SMT' SEAM-USE is false: matching held resources to \u0394_in is SL frame inference \u2014 NP-complete to undecidable for the proposal's own Cap/Frac/nonlinear-index resources \u2014 and the affine interface can't carry shared-state concurrency. Revise."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 1.9763,
+      "timestamp": "2026-06-25T03:58:22+00:00"
+    },
+    {
+      "round": 14,
+      "question": "SEAM SOUNDNESS / re-import \u2014 the rule that makes crossing BACK sound: how does the safe fragment trust a seam-crossed primitive without re-verifying it, and what structurally stops an unsound obligation from laundering UB into safe code?",
+      "revision": 1,
+      "proposal_excerpt": "# THE DECISION\n\n**Re-import is by *semantic-typing leaf*, not by resource transfer. A seam definition discharges, once, a Hoare triple over a *language-fixed* interpretation of safe-fragment types; it then installs an ordinary safe-fragment binding. Ordinary code composes that binding with pure borrow/affine checking and never touches a resource. Soundness is the once-proved fundamental theorem of the safe fragment; UB cannot launder because a triple can enter the system *only* through the kernel-checked seam leaf, over a *total, fixed* interpretation that makes a missing precondition an unprovable obligation rather than a silent hole.**\n\nThis is the RustBelt architecture made *first-class and single-toolchain*, with the concentration/decidability/erasure invariants pinned. The previous proposal died because it exposed a separation-logic resource context `\u0394_in` at *use* sites and matched it by entailment/frame inference. This design has **no resource context in the safe fragment at all**. Resources exist only in the verification layer, only inside `seam {...}`.\n\n## Two layers, one toolchain\n\n**Safe fragment** (ordinary code). Judgement `\u0393 \u22a2\u209b e : \u03c4`. Types:\n\n```\n\u03c4 ::= b | own \u03c4 | &'",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "No reviewed-not-proved escape hatch; systems programmers' core work (allocators, lock-free, drivers, ISRs) each needs a from-scratch Iris proof.",
+          "strongest_point": "Deleting Rust's reviewed-`unsafe` escape and requiring a machine-checked separation-logic proof for every custom low-level primitive imposes the ATS2 burden precisely on the population the language targets, with no opt-out."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Pinned 4-line \u27e6\u00b7\u27e7 omits lifetime tokens, so fundamental theorem can't discharge mutable-borrow expiry for an accepted reborrow; decidability claim unguarded against semi-unification.",
+          "strongest_point": "A standard accepted sequential `&mut` reborrow has no SL derivation under the fixed \u27e6\u00b7\u27e7, because nothing recovers \u27e6own \u03c4\u27e7 at region end \u2014 so the once-proved fundamental theorem the design rests on does not actually attach to it."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Capability-flag resolution isn't O(1); conditional Send/Copy laws for generic seams are undecidable trait resolution.",
+          "strongest_point": "The MPSC's own `<T:Send>` forces capability flags to be conditional on type parameters, so 'O(1) table lookup' is false and the required parametric-recursive resolution is Rust-trait/UndecidableInstances-class undecidable."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "No-user-axiom rule makes arbitrary FFI and non-pre-modeled hardware drivers inexpressible; the only fix reopens laundering.",
+          "strongest_point": "Banning user admit/assume to secure no-laundering also forbids vouching for any unmodeled C library or device, so general FFI and most drivers cannot be written without a kernel proof that provably cannot exist."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "This is RustBelt; its lineage proves the fixed interpretation, flag-capabilities, and decidable single-toolchain claims are unachievable as stated.",
+          "strongest_point": "RustBelt Meets Relaxed Memory had to rebuild the 'fixed' interpretation and uncovered a real Arc data race the original atomics axiom blessed \u2014 refuting both the 'pin \u27e6\u00b7\u27e7 once' and 'trivially-trusted CAS axiom' claims."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "genuine-flaw",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "tradeoff",
+          "attacker-expressiveness": "genuine-flaw",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Use-site capability resolution is Rust-class auto-trait/Horn resolution, not O(1); decidable only with a fuel/overflow bound, hence incomplete (rejects some valid programs).",
+          "Region inference must import Rust's mandatory-annotation / no-polymorphic-recursion discipline to avoid the semi-unification reduction.",
+          "Concentration ratio is likely unfavorable (Cogent evidence): the proof-bearing seam layer may dominate real programs, not be a thin escape hatch."
+        ],
+        "headline": "Re-import = once-kernel-proved triple over a fixed type interpretation, no user axioms.",
+        "rationale": "Sound in spirit but defective as written: the 4-line \u27e6\u00b7\u27e7 can't prove borrow expiry (theorem doesn't attach); the three-flag schema omits Sync/variance/Drop, reopening forgotten-precondition laundering above the kernel; and the no-user-axiom rule makes FFI/drivers inexpressible or forces back admit. Must revise."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.5789,
+      "timestamp": "2026-06-25T04:09:58+00:00"
+    },
+    {
+      "round": 15,
+      "question": "SEAM SOUNDNESS / re-import \u2014 the rule that makes crossing BACK sound: how does the safe fragment trust a seam-crossed primitive without re-verifying it, and what structurally stops an unsound obligation from laundering UB into safe code?",
+      "revision": 2,
+      "proposal_excerpt": "## 1. THE DECISION\n\nThe re-import rule trusts an **interface type**, never an implementation, and stamps every safe value with a **trust footprint** that makes any unsoundness *attributable* rather than *silent*. Concretely:\n\n### 1.1 Three judgement forms, three logics \u2014 kept apart on purpose\n\n- **Safe fragment** (ordinary code), decidable, proof-free, affine ownership/borrow typing:\n  $$\\Gamma \\vdash_{\\mathsf{s}} e : \\tau \\,!\\, \\varphi \\;\\dashv\\; \\Gamma'$$\n  flow-sensitive output context $\\Gamma'$, and $\\varphi \\subseteq \\mathsf{Axioms}$ a **trust footprint** (a finite set of named axioms). This judgement is **not** separation logic and **never** invokes the seam translation $\\llbracket\\cdot\\rrbracket$. Reborrow, region-end recovery, drop, move are *native typing rules of this system* with their own soundness metatheory (Oxide/Polonius-grade), proved once.\n\n- **Seam discharge** (proof-land, concentrated in seam modules) \u2014 any logic you like, including a relaxed-memory separation logic (iRC11-grade):\n  $$\\vdash_{\\mathsf{p}} \\pi : \\{P\\}\\;\\mathit{prim}\\;\\{Q\\}$$\n  where $P,Q$ are drawn from a **shared positive resource language** $\\mathcal{A}$ (below). SMT/tactics live *here only*.\n\n-",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Seam concentration fails for async/intrusive code: the aliasing is in user code, making every async fn a seam \u2014 the ATS2 cliff returns, and \ud835\udc9c can't even express the contracts.",
+          "strongest_point": "Self-referential futures put unsafe aliasing in the user's own per-fn code, so async either demands per-block proof/axiom discharge (the ATS2 cliff) or a global codegen axiom that makes \u03c6=\u2205 unreachable for any async program \u2014 and \ud835\udc9c's closed positive grammar can't express pinning, recursion, or container_of to write a sound interface regardless."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Attribution is structurally airtight via closedness+union; positivity blocks ex-falso; decidable. Only notational and unstated-lemma gaps found.",
+          "strongest_point": "The \u00a71.7 CAS interface uses \u21d2 and & \u2014 connectives absent from \ud835\udc9c's grammar that, if real, would collapse \u00a71.6's positivity-based no-laundering theorem; and the adequacy lemma is stated unframed while RI applies it under a frame."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "RI's 'linear match' is separation-logic frame inference: NP-complete CQ matching plus subset-sum/LRA fraction accounting \u2014 SMT in the 'no-SMT' fragment.",
+          "strongest_point": "Matching a *-conjunction precondition with shared existentials and recombinable fractions against the context is conjunctive-query homomorphism plus subset-sum, contradicting the 'decidable linear match, no SMT' claim unless A's preconditions are secretly restricted in a way that kills the expressiveness defense."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Positive propositionless A cannot express caller-discharged pure preconditions; zero-cost unchecked primitives need unconditional blanket axioms, unlike Rust's per-site unsafe.",
+          "strongest_point": "Conditionally-safe zero-cost primitives like get_unchecked(i<len) have no expressible interface: A has no pure-proposition channel, safe code can mint no refinement witness, so the only encoding is an unconditional axiom that is strictly weaker and less attributable than Rust's per-call-site unsafe."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Footprint = Coq Print Assumptions + Safe Haskell Trustworthy; precedent shows pervasive axioms make 'localized blast radius' false \u2014 proposal's own atomics example confirms it.",
+          "strongest_point": "Transitive trusted-base tracking (Coq/Lean Print Assumptions, Safe Haskell) is sound but non-localizing for pervasive axioms, and the design's load-bearing primitives \u2014 allocator, atomics, memory model \u2014 are exactly pervasive, so 'safe code is otherwise untouched' is contradicted by \u00a71.7's own 'every Arc user's footprint already names it.'"
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "argued-past",
+          "attacker-implementation": "tradeoff",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "TRADEOFF",
+        "tradeoffs": [
+          "Seam concentration is not guaranteed: self-referential (async) and co-aliased (intrusive) aliasing lives in user code. For that class, re-import either reinstates a per-construct seam obligation (the ATS2 cliff) or rests on one pervasive blanket codegen axiom \u2014 so \u03c6=\u2205 is unreachable there, and \ud835\udc9c as written cannot express the pinning/recursion/container_of contract. Async support is an OPEN future decision (Pin-like discipline in the safe fragment, or \ud835\udc9c extension).",
+          "RI's 'linear match' is poly-time only if \ud835\udc9c preconditions are bounded to ground, non-relational, single-share patterns; relational-existential / fraction-recombining / \u2211-in-P preconditions make it NP-hard + rational-arithmetic SMT. Named seams (alloc/atomics/MMIO, incl. CAS) stay cheap, but 'no-SMT for arbitrary \ud835\udc9c' must be retracted and the precondition fragment explicitly bounded \u2014 cheap matching XOR relationally-expressive preconditions.",
+          "\ud835\udc9c's positivity (which closes the entailment channel) also forecloses caller-discharged pure preconditions; zero-cost unchecked primitives (get_unchecked, unchecked_add, copy_nonoverlapping) need an unconditional blanket axiom with coarse every-caller attribution, unless \ud835\udc9c gains relational/refinement witness resources (colliding with the matching tradeoff). The 'axiom = reviewed-unsafe' equivalence must be downgraded to per-primitive, not per-call-site, trust.",
+          "Footprints give sound, complete impact enumeration but NOT localized blast radius for pervasive primitives (allocator/atomics/memory-model). 'Safe code otherwise untouched' is contradicted by \u00a71.7's own 'every Arc user's footprint names the atomics axiom'; reframe the benefit as sound attribution (improvement over RustBelt silent breakage), not surgical localization.",
+          "State adequacy as a framed (locality-preserving) lemma and define 'valid axiom' as frame-closed SL validity (not pointwise); reconcile \u00a71.7's \u21d2/& notation with \ud835\udc9c's positive grammar by reading it as the dependent sum \u2211_b Q(b)."
+        ],
+        "headline": "Sound, attributable re-import via trusted interfaces + positive valve + footprints \u2014 but only for ground-precondition, non-self-referential seams.",
+        "rationale": "The dedicated soundness probe found no UB-with-empty/non-attributing footprint and no undecidability; closedness+union+positive \ud835\udc9c make anti-laundering hold. But four attacks land real, unrebutted costs on adjacent claims \u2014 async/self-reference, NP-hard matching, no caller-preconditions, non-localizing pervasive axioms \u2014 that must be recorded and separately decided."
+      },
+      "outcome": "TRADEOFF",
+      "cost_usd": 2.9156,
+      "timestamp": "2026-06-25T04:22:37+00:00"
+    },
+    {
+      "round": 16,
+      "question": "SEAM SOUNDNESS / re-import \u2014 the rule that makes crossing BACK sound: how does the safe fragment trust a seam-crossed primitive without re-verifying it, and what structurally stops an unsound obligation from laundering UB into safe code?",
+      "revision": 2,
+      "proposal_excerpt": "## 1. THE DECISION\n\nThe re-import rule trusts an **interface type**, never an implementation, and stamps every safe value with a **trust footprint** that makes any unsoundness *attributable* rather than *silent*. Concretely:\n\n### 1.1 Three judgement forms, three logics \u2014 kept apart on purpose\n\n- **Safe fragment** (ordinary code), decidable, proof-free, affine ownership/borrow typing:\n  $$\\Gamma \\vdash_{\\mathsf{s}} e : \\tau \\,!\\, \\varphi \\;\\dashv\\; \\Gamma'$$\n  flow-sensitive output context $\\Gamma'$, and $\\varphi \\subseteq \\mathsf{Axioms}$ a **trust footprint** (a finite set of named axioms). This judgement is **not** separation logic and **never** invokes the seam translation $\\llbracket\\cdot\\rrbracket$. Reborrow, region-end recovery, drop, move are *native typing rules of this system* with their own soundness metatheory (Oxide/Polonius-grade), proved once.\n\n- **Seam discharge** (proof-land, concentrated in seam modules) \u2014 any logic you like, including a relaxed-memory separation logic (iRC11-grade):\n  $$\\vdash_{\\mathsf{p}} \\pi : \\{P\\}\\;\\mathit{prim}\\;\\{Q\\}$$\n  where $P,Q$ are drawn from a **shared positive resource language** $\\mathcal{A}$ (below). SMT/tactics live *here only*.\n\n-",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "No Pin/address-sensitivity: affine safe-fragment move invalidates self-referential resources; axiom escape hatch gated behind A excludes async, reentrant handlers, intrusive aliasing.",
+          "strongest_point": "A is relocatable-ownership with a free move rule and no Pin modality, so async futures and intrusive nodes cannot be safely re-imported\u2014the safe fragment's own move dangles them, and no axiom can be valid."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Forged resource laundered through mutable global into an empty-footprint consumer that exhibits the UB; attribution names producer, not crash site.",
+          "strongest_point": "A \u03c6=\u2205 function can be the UB site for a false axiom held in another derivation's footprint, because footprints follow control flow while forged resources follow heap dataflow \u2014 so footprint-based impact analysis reports the crashing function as unaffected."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "RI's 'linear match' is SL frame inference: NP-complete MLL search + rational subset-sum (SMT) in the flagship fractional/atomic regime.",
+          "strongest_point": "Matching multiple coexisting fractional shares of one atomic location across a seam-call chain is MLL provability (NP-complete) plus QF_LRA fraction-assembly \u2014 i.e. exponential proof search and SMT inside the fragment sold as 'decidable, proof-free, no-SMT'."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Closed positive \ud835\udc9c transfers ownership but not evidence; value preconditions (i<len, init-up-to-n, alignment) inexpressible, so unchecked primitives collapse to unenforceable axioms.",
+          "strongest_point": "\ud835\udc9c has no abstract/value-relational predicates and the safe fragment has no refinements, so a safe wrapper cannot pass a discharged bound (e.g. i<len) across the seam \u2014 get_unchecked-style zero-cost primitives become unconditional axioms the type system cannot guard per-call."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Footprint/attribution is uncited Print-Assumptions/oracle-tagging; seam is Cogent's FFI; its known coarseness kills localization in your allocator/atomics target domain.",
+          "strongest_point": "The 'trust footprint' is Coq Print Assumptions / Isabelle oracle tags re-skinned as an effect, and that lineage's documented failure \u2014 taint spreads to every transitive consumer until attribution is useless \u2014 lands hardest exactly on the universal allocator and atomics axioms you chose as seams."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "genuine-flaw",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "tradeoff",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "RI matching with first-class fractional/atomic \ud835\udc9c resources risks NP-hard MLL search + QF_LRA: the proposal must fix a matching discipline (structural/opaque share tokens or annotated splits) to preserve the no-SMT, decidable-cheap claim.",
+          "The positive seam transfers ownership but not value-evidence: input-side value preconditions (i<len, init-up-to-n, alignment) can only be axiom'd, never statically guarded per-call; witness/refinement passing is out of scope."
+        ],
+        "headline": "Re-import via positive interface type + named-axiom footprint attribution.",
+        "rationale": "Footprinted soundness holds only for whole closed terms; the modular attribution it markets is unsound (heap-laundering produces a \u03c6=\u2205 crash site) and, where sound, useless (universal allocator/atomics axioms make footprints non-actionable). No address-sensitivity modality blocks async. Revise."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.5127,
+      "timestamp": "2026-06-25T04:29:44+00:00"
+    },
+    {
+      "round": 17,
+      "question": "SEAM SOUNDNESS / re-import \u2014 the rule that makes crossing BACK sound: how does the safe fragment trust a seam-crossed primitive without re-verifying it, and what structurally stops an unsound obligation from laundering UB into safe code?",
+      "revision": 3,
+      "proposal_excerpt": "# THE DECISION\n\n**Re-import is sound because the safe fragment never imports a *witness* \u2014 it imports a *refinement theorem*. There are no user axioms anywhere in the language; the only seam obligation is a closed, kernel-checked proof that an unsafe module observationally refines a pure safe-fragment model. Soundness is then a *precongruence* metatheorem, not an impact analysis \u2014 which is exactly why it is robust against the dataflow attack that killed the footprint.**\n\nThis requires three structural commitments, formalized below.\n\n## 1. Two-tier trust: Tier-0 Foundation (closed) vs. Tier-1 Seam (refinement-only)\n\nThe mistake last round was treating the universal allocator and atomics as *user axioms* tracked by a footprint effect. They are not axioms. They are the **definition of the language's machine model** `M`, on the same footing as the semantics of `+` on `u32`.\n\n- **Machine model `M`**: a small-step semantics over raw memory with explicit `Stuck_UB` states. It defines `atomic_cas`, `volatile_load/store` (MMIO), and one OS-given primitive resource `RawHeap(base, n)`. `M` is fixed, program-independent, and is the AI-legible ground truth (property 7). Its fidelity to silicon ",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "Every seam needs an unautomated, RustBelt-grade refinement proof; systems programming is almost entirely seams. Pure ATS2 failure.",
+          "strongest_point": "The proposal never specifies who produces the relaxed-memory contextual-refinement certificate R or how \u2014 SMT cannot, leaving only hand-authored Iris-grade proofs per allocator/queue/driver, which is exactly the ATS2 intolerability for the language's actual target users."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Pin has no containment-propagation rule; a Reloc aggregate embedding a Pin intrusive node relocates it \u2192 dangling pointer \u2192 UB.",
+          "strongest_point": "The precongruence is restricted to 'address-stable S-contexts,' but the type rules as written accept an S-context that relocates a Reloc struct containing a Pin field, violating address stability and reaching Stuck_UB \u2014 attack #1 resurrected."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Step-(ii) precongruence under the required relaxed-memory observation set is open/false; thin-air composition violates UB-reflection.",
+          "strongest_point": "B borrows RustBelt's SC precongruence while C mandates an axiomatic relaxed-memory M; under that M the once-off precongruence is non-compositional (out-of-thin-air), so a load-buffering composition of two validly-certified seams produces an observation the model lacks \u2014 directly contradicting the Sound Re-import theorem."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "No pure S-model can refine a concurrent impl up to relaxed-memory observation; flagship lock-free queue is inexpressible without breaking property 4.",
+          "strongest_point": "A sequential FunctionalQueue model cannot exhibit the coherence/interleaving observations the lock-free impl does, so impl \u2291 model is false under the very observation lattice weakness C requires \u2014 and fixing it forces concurrent refinement obligations into S, violating the decidable obligation-free safe fragment."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Cogent/ReLoC/RustBelt already built this; seam certificates are interactive Iris proofs, not SMT-oracle-emitted, small-kernel-replayable objects.",
+          "strongest_point": "The per-seam \u2291 certificate for the proposal's own lock-free/relaxed-memory examples is ReLoC/RustBelt-grade interactive separation logic with no SMT decision procedure, directly contradicting the 'untrusted SMT oracle emits, small kernel K replays' claim the whole TCB story rests on."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "genuine-flaw",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Verification cost concentrates on seam authors (allocators/queues/drivers) with no automation for the relaxed-memory refinement goal class \u2014 the population the language targets pays it",
+          "M's observation lattice must be designed so race-free concurrent impls remain refinable against pure sequential S-models while genuine races stay reflected; consistency is asserted, not shown"
+        ],
+        "headline": "Witness-free refinement re-import via precongruence \u2014 but unsound as written on three counts",
+        "rationale": "Pin lacks a containment-propagation rule (accepted UB program); the relaxed-memory M that weakness C mandates breaks the RustBelt-inherited precongruence weakness B relies on (thin-air, non-compositional); and seam certificates are interactive Iris proofs, not SMT-emitted small-kernel-replayable objects. Architecture viable, claims overstated."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.2815,
+      "timestamp": "2026-06-25T04:39:11+00:00"
+    },
+    {
+      "round": 18,
+      "question": "SEAM CONCENTRATION & ergonomics \u2014 the language mechanism and the argument that keep ordinary code from ever crossing the seam (the checked-interface boundary), and why the obligation stays with a handful of foundation authors. Exhibit a realistic program where ~99% of code is seam-free.",
+      "revision": 0,
+      "proposal_excerpt": "## 1. THE DECISION\n\n**Mechanism: grammatical confinement of unsafety + witness tokens that compose by ordinary affine typing.** The seam is the *only* grammatical site where (a) primitive unsafe operations exist and (b) proof obligations are emitted. Ordinary code reasons not by *discharging* facts but by *carrying* witnesses minted at a seam. Composition of witnesses is affine bookkeeping \u2014 decidable, proof-free, SMT-free.\n\n### 1.1 Two strata, one language\n\n- **S (safe fragment).** Affine ownership types + *indexed abstract types*. Index equality decided by congruence closure over a fixed first-order signature \u03a3 (the \"ghost algebra\"). S typechecking is bidirectional and **emits no proof obligations**: indices *flow by unification*; they are never *solved against a predicate*. Any predicate `P(x)` that must hold is reified as **possession of a ghost token** of an abstract type `Pf<P,x>` \u2014 and \"do you possess it\" is decided by affine typing (you have the value or you don't), not by a solver.\n- **P (proof fragment).** Dependent types, SMT, user-written proofs. Reachable *only inside* a `seam` block.\n\nS's grammar **lacks** `assume`/`axiom`, raw-pointer deref, `atomic.*`, MMIO, and `tr",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "99%-seam-free is an artifact of a library-only example; custom structures force per-structure seam proofs",
+          "strongest_point": "The runtime-mint fallback only exists for bounds-shaped predicates; aliasing/init/lifetime invariants that actually require unsafe have no mint path, so every hand-written allocator, intrusive list, or future forces app-level seam proofs."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Inter-seam physical-resource disjointness is a necessary soundness obligation that no closed contract C can name; overlapping MMIO/DMA regions yield UB in seam-free depth=0 code.",
+          "strongest_point": "Two individually-sound seams (ADC + ring) sharing an address compose into a data race observable in zero-obligation depth=0 code, because the closedness rule forbids any C from stating region disjointness \u2014 so UB-avoidance does NOT reduce to the discharged realizes obligations."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Composable witnessed indices need arithmetic identities; that pass is Presburger (kills S-purity) or nonlinear/undecidable \u2014 uninterpreted CC can't compose.",
+          "strongest_point": "Their 'closed index algebra' is not closed under composition: strided/derived witnesses require nonlinear-arithmetic validity (Hilbert's 10th) or Presburger reasoning that falsifies Lemma S-purity, so zero-cost composability and decidable obligation-free S cannot both hold."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Safe code can only consume pre-exported witnesses; non-runtime-checkable/cross-library/FFI facts force seam crossings, refuting the 'never a seam crossing' hard constraint.",
+          "strongest_point": "Because minting is P-only, any true fact lacking an exported O(1) runtime-checker (DMA completion via MMIO, non-aliasing, a sister-library's proof, FFI behavior) is inexpressible in S except by opening a seam or writing `assume` \u2014 exactly the 'escape the system' failure the hard constraint denies."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Solver-free congruence-closure indices can't compose witnessed sub-structures; DML/ATS added arithmetic solvers for exactly this reason.",
+          "strongest_point": "Removing the solver to buy S-purity makes the witnessed-index algebra non-compositional \u2014 relating Above<N> offsets back to Idx<N> needs linear arithmetic, forcing either a per-composition seam or a runtime check, the ATS cliff DML/ATS proved unavoidable."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "tradeoff",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Seam-free ratio is workload-dependent; the runtime-mint fallback covers only bounds-shaped, O(1)-decidable predicates. Novel structures and non-bounds invariants (aliasing/init/lifetime) require new foundation seams.",
+          "The witnessed-index algebra is a FIXED MENU, not closed under composition: relating combinator outputs (Above<N>\u2192Idx<N>, strided i*stride+j) needs arithmetic CC cannot derive, degrading to runtime checks (seam-free but not zero-cost) or per-composition seams. 'Closed algebra'/unqualified zero-cost must be retracted.",
+          "Witnesses do not compose across independently-authored foundations (disjoint \u03a3); cross-library proof reuse needs adapter seams or runtime re-checks. The 'compose by affine typing' headline holds only within one coherent foundation.",
+          "FFI bindings rest on `assume` of foreign specs, so the TCB grows per foreign function; A3's 'finite, named TCB' must be qualified, and auditing prelude combinators is research-grade (RustBelt) not a checklist."
+        ],
+        "headline": "Grammatical seam-confinement with affine witnesses, but its soundness theorem is incomplete.",
+        "rationale": "Concentration (provenance + S-purity) is sound and is the real contribution. But two individually-sound seams sharing a physical address yield UB in zero-obligation depth=0 code; closedness makes inter-seam region disjointness unstateable, refuting the exact 'UB reduces to discharged realizes' claim. Revise."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.2023,
+      "timestamp": "2026-06-25T04:48:12+00:00"
+    },
+    {
+      "round": 19,
+      "question": "SEAM CONCENTRATION & ergonomics \u2014 the language mechanism and the argument that keep ordinary code from ever crossing the seam (the checked-interface boundary), and why the obligation stays with a handful of foundation authors. Exhibit a realistic program where ~99% of code is seam-free.",
+      "revision": 1,
+      "proposal_excerpt": "## 1. THE DECISION\n\n**Mechanism: capability-rooted regions with seam-minted footprints (the \"Cap-root discipline\").** There is *no ambient memory*. Every byte of address space \u2014 RAM, MMIO, stack frames \u2014 is reachable only through a **linear capability** rooted in a linker-provided singleton (`Cap[ALL_RAM]`, `Cap[UART_MMIO]`, \u2026). A seam can only touch an address for which it consumes a covering capability. The safe fragment is a substructural type system (affine + lexically-scoped fractional/shared permissions) over these capabilities. *Region disjointness is a first-class, machine-checked seam obligation over footprints \u2014 not a contract clause ordinary code is forbidden to state, and not something ordinary code states at all.* This is the direct repair of the defeated design.\n\n### Two ghosts, erased at compile time\n\n- **`Cap[r]@q`** \u2014 a zero-sized *linear* capability for abstract region `r` at permission `q \u2208 {uniq, shr}`. Carries the *runtime right* to access `fp(r)`. Non-duplicable. `uniq` \u21d2 exclusive read-write; `shr` \u21d2 shared read-only, splittable, rejoined at lexical scope end (borrow-style, so rejoin is proof-free).\n- **`Ref[r,\u03c4]`** \u2014 an *unrestricted* (freely copyable) regio",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Existential region-per-alloc plus Cyclone-grade cap threading make multi-region code intolerable; 'ergonomic ordinary code' claim is false past the single-region toy.",
+          "strongest_point": "Each allocation mints a fresh existential linear capability, so heterogeneous collections (Vec<Box<T>>), growable containers, and disjoint simultaneous &mut are unrepresentable or seam-bound, while every data-touching signature inherits Cyclone-style region polymorphism that adoption history already rejected."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "Proof-free lexical CAP-JOIN restores uniq write-cap while a SEND-escaped shr fraction still reads in a detached thread \u2192 data race in safe code",
+          "strongest_point": "SEND lets a borrow-scoped shr fraction escape into a detached thread, yet unconditional CAP-JOIN re-mints the uniq write-cap at lexical scope-exit without recollecting it, producing a typeable write/read race that refutes the central UB-freedom theorem."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "L2 over dynamic live_regions needs inductive separation-logic invariants, not pointer-local SMT; hits the mandatory allocator, not exotic seams.",
+          "strongest_point": "\"SMT discharges realizes against the actual returned pointer\" is impossible: disjoint(fp(r), \u22c3 live_regions) quantifies over a whole-program dynamic set, forcing a maintained inductive partition invariant (undecidable entailment) for the universal base allocator."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Footprint=address-set can't model address translation; aliasing views (bit-band, mmap mirror, DMA, kernel direct-map) are inexpressible or silently unsound.",
+          "strongest_point": "Cortex-M bit-banding gives two disjoint-footprint capabilities (L2 passes) that write the same physical bits, so L3's no-write/write-conflict invariant is vacuously 'proved' while actually violated \u2014 on the proposal's own bare-metal target."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Cogent built this exact architecture for real filesystems; foundation layer was large and manually proven, not 1%.",
+          "strongest_point": "Cogent (uncited) already shipped a linear safe fragment plus separation-logic-verified systems foundations and found the foundation/FFI layer numerous and Isabelle-proven, empirically refuting the 99%-seam-free, push-button-SMT bet."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "genuine-flaw",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "tradeoff",
+          "attacker-expressiveness": "genuine-flaw",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "L2 partition for the mandatory base allocator requires a maintained inductive separation-logic invariant (interactive proof), not push-button SMT 'against the returned pointer' \u2014 the discharge story must be downgraded from one-toolchain/AI-legible to proof-assistant-grade for every allocator.",
+          "The 'small, stable foundation set / 99%-seam-free' bet (refuted empirically by Cogent) and 'zero-cost non-lexical sharing' (refuted by Mezzo's runtime adoption/abandon) are contested by the closest uncited prior art and require demonstration, not assertion."
+        ],
+        "headline": "Capability-root regions with seam-minted footprints \u2014 sound only on paper; the printed SEND/CAP-JOIN rules race.",
+        "rationale": "Detached SEND of a borrow-scoped shr fraction plus unconditional lexical CAP-JOIN types a write/read race, refuting the core theorem. Ergonomics (unrepresentable Vec, rigged example) and address-translation aliasing (bit-band) add genuine on-target defects. Allocator-L2 cost and Cogent/Mezzo bets are recorded tradeoffs."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.3964,
+      "timestamp": "2026-06-25T04:57:01+00:00"
+    },
+    {
+      "round": 20,
+      "question": "SEAM CONCENTRATION & ergonomics \u2014 the language mechanism and the argument that keep ordinary code from ever crossing the seam (the checked-interface boundary), and why the obligation stays with a handful of foundation authors. Exhibit a realistic program where ~99% of code is seam-free.",
+      "revision": 2,
+      "proposal_excerpt": "## 1. THE DECISION\n\n**Two stratified type systems in one checker, joined by exactly one introduction form.**\n\nThe language has a **Safe Fragment** (SF) and a **Seam**. They share syntax and nominal types but are distinct typing judgements. The make-or-break property is a *closure metatheorem*: SF typing has **no rule that can emit a proof obligation**, so composing safe values can never cross the seam. Obligations exist only at one syntactic node, `forge`, which is by definition not in SF.\n\n### 1.1 The Safe Fragment (ordinary code: proof-free, SMT-free, decidable)\n\nTypes \u2014 note these are **nominal owned types, not per-allocation existentials**:\n\n```\n\u03c4 ::= b | Box<\u03c4> | Vec<\u03c4> | Rc<\u03c4> | &'a \u03c4 | &'a mut \u03c4 | dyn Tr | T\n```\n\nJudgement is affine flow-typing with inferred lifetimes (Rust-class region inference, *not* explicit region-polymorphic quantifiers in signatures):\n\n```\n\u0393 \u22a2 e : \u03c4 \u22a3 \u0393'\n```\n\n**Critical:** scan every SF rule. None has a premise of the form `\u22a8_SMT \u03c6`, none has `\u03a6 \u22a2 ob`, none mints a fresh existential `\u2203\u03c1. Cap[\u03c1]`. `Box<\u03c4>` is an ordinary nominal type whose safe API (`new`, `deref`, `drop`) was manufactured *once* by the allocator author at a seam. Therefore `Vec<Box<dy",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Deletes Rust's proof-less unsafe trapdoor; authoring any off-menu primitive forces SMT separation-logic proofs or is inexpressible.",
+          "strongest_point": "Systems programmers author primitives daily, and the spatial-only model M makes whole classes (DMA rings, weak-memory queues) not merely tedious but impossible to forge \u2014 worse than ATS2, which at least lets you write the proof."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Listed Rc<\u03c4> plus cap-only thread rules with no Send/Sync admit a typeable non-atomic refcount data race (UB); the cap PCM and Closure Theorem don't cover it.",
+          "strongest_point": "A fully-SF program \u2014 Rc::clone then detached_spawn capturing a clone \u2014 type-checks with zero obligations (by the authors' own Closure Theorem) yet races the non-atomic refcount across threads, because nothing introduces Send/Sync and the cap discipline governs only the referent, not captured auxiliary state."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Forge obligation discharge isn't a decision procedure: bit-band footprints + Inv_T give quantified nonlinear/inductive-SL theory, undecidable.",
+          "strongest_point": "Discharging foot(c\u2081)\u2229foot(c\u2082)=\u2205 against M's \u2200-quantified bit-band axioms with symbolic word index w yields quantified nonlinear arithmetic (32\u00b7w products) \u2014 no decision procedure exists, so the pass returns 'unknown' or diverges."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "No assume-hatch: FFI/blobs are inexpressible and lock-free/GC foundations aren't SMT-dischargeable; the seam concentrates obligations it can't close.",
+          "strongest_point": "forge requires a machine-discharged proof against M with no axiomatic escape, so wrapping an opaque FFI call or the proposal's own spsc::Queue has either no proof target or an undecidable one \u2014 the program simply cannot be introduced into SF."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Architecture is RustBelt's; its exact primitives (Mutex/Rc/split_at_mut) needed higher-order Coq/Iris, not the claimed SMT-decidable forge obligations.",
+          "strongest_point": "RustBelt verified your exact foundation set (Rc, Mutex, split_at_mut, thread::spawn) and proved their seam obligations require higher-order step-indexed separation logic, which is not SMT-dischargeable \u2014 and RefinedC's Lithium fragment maps precisely the boundary where automation stops, excluding the higher-order Mutex/Rc invariants your \u00a71.5 depends on."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "genuine-flaw",
+          "attacker-expressiveness": "genuine-flaw",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Soundness is relative to platform model M (conceded, Attack C) \u2014 standard trusted-base caveat to record once flaws are repaired.",
+          "Deleting Rust's proof-less `unsafe` middle tier concentrates an intolerable authoring burden on foundation authors with no lightweight checked region; consumer ergonomics survive, author ergonomics regress."
+        ],
+        "headline": "Stratified SF/seam with allegedly SMT-decidable forge \u2014 fails on soundness, decidability, and seam closure.",
+        "rationale": "Closure Theorem certifies an SF Rc-clone/spawn data race (no Send/Sync); 'invariant discharged once' breaks rep-invariant preservation (RustBelt needs higher-order Iris, not SMT); forge obligations are undecidable; no assume-hatch makes FFI inexpressible. Multiple genuine flaws \u2014 revise."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.0795,
+      "timestamp": "2026-06-25T05:05:25+00:00"
+    },
+    {
+      "round": 21,
+      "question": "SEAM CONCENTRATION & ergonomics \u2014 the language mechanism and the argument that keep ordinary code from ever crossing the seam (the checked-interface boundary), and why the obligation stays with a handful of foundation authors. Exhibit a realistic program where ~99% of code is seam-free.",
+      "revision": 3,
+      "proposal_excerpt": "## 1. THE DECISION\n\n**The seam is the boundary between an in-language step-indexed separation logic (proof-land interior) and a decidable refinement+capability calculus (the safe fragment exterior). SMT is never required to cross it. A crossing is discharged by a *checked proof term*, not solved by a decision procedure; what ordinary code consumes is a *sealed `Iface` value* whose only visible facts are decidable. Seam introduction is a closed-term constructor that cannot appear under composition \u2014 which is the formal content of \"99% seam-free.\"**\n\nI concede the prior-art attack in full and build on it: the interior **is** RustBelt/Iris (higher-order, step-indexed, guarded). I do **not** claim SMT discharges Rc/Mutex. The previous proposal died because `forge` pushed an Iris obligation through SMT. Here the Iris obligation is paid as an explicit proof term, checked by conversion (decidable), and only the *exterior interface it exports* must be decidable and proof-free.\n\n### 1.1 Two layers, three judgements\n\n- Safe fragment (exterior, ordinary code): `\u0393 \u22a2\u209b e : \u03c4 @ \u03ba`. Syntax-directed, decidable. `\u03c4` is a refinement type over the fixed theory `T_SF` (below); `\u03ba` is a capability/share",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Proof-free zone covers only value-shaped leaves; every app-specific aliased/driver abstraction is a non-amortizing RustBelt proof, so trust-ledger collapse ensues.",
+          "strongest_point": "Systems unsafe is dominated by non-reusable application-specific aliased structures (drivers, FSMs, pools, intrusive lists); each becomes a RustBelt-grade \u03c0 that doesn't amortize, so deadline pressure routes them all into the trust ledger and the guarantee evaporates \u2014 the ATS2 route-around, reproduced."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "\u00a71.5 meet-over-components computes Send of a shared reference from referent's Send, not Sync; admits a data race",
+          "strongest_point": "For any Send-but-not-Sync Iface (RefCell/Cell), capturing &cell scores send(env)=\u22a4 under the stated meet rule, so Spawn-Use accepts two threads racing non-atomic set on the same F-cell."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Exterior oracle \u22a8_T_SF is an embedded NP-complete SMT solver; combination of QF-LIA with a partial separation algebra is asserted decidable, not proven.",
+          "strongest_point": "The 'no-SMT, no-timeout, decidable' exterior secretly requires deciding QF-LIA combined with a partial-monoid separation algebra \u2014 that is an SMT query, NP-complete at best, with combination-decidability asserted but never proven and BBI undecidability next door."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Safe fragment has no generics/user-traits/existentials; the proposal's own 'ordinary' scheduler needs trait objects and is inexpressible without per-type seams.",
+          "strongest_point": "The four closed exterior rules provide no abstraction over Ifaces, so the example's seam-free `sched` module (a heterogeneous task queue needing existential closures) cannot be written \u2014 forcing generic abstractions to explode into per-monomorphization seams and refuting the 99%-seam-free centerpiece."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Architecture is RefinedC/RefinedRust + Cogent; the novel decidable proof-free exterior is exactly what they couldn't achieve and SL theory says is undecidable.",
+          "strongest_point": "The one differentiating claim \u2014 a fully decidable, SMT-free exterior combining QF-LIA with a separation algebra \u2014 is precisely the combination the cited separation-logic literature proves undecidable, which is why RefinedC's Lithium settled for incomplete proof search instead."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "genuine-flaw",
+          "attacker-expressiveness": "genuine-flaw",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Exterior oracle \u22a8_T_SF is NP-complete (QFBAPA-class), not 'cheap/no-SMT'; combination-decidability of QF-LIA + partial separation algebra must be proven, not asserted",
+          "Trust ledger inherits F*'s consistent-but-false axiom surface; Sat_T_SF catches only inconsistency, and blast radius = footprint F, which for an allocator/DMA ring is the whole client heap",
+          "Foundation-set size and \u03c0-amortization are domain-contingent: strong for bare-metal DSP, but per-driver and non-amortizing for driver/protocol-heavy systems, with economic pressure routing the long tail into trust",
+          "Architecture is RefinedC/RefinedRust + Cogent lineage; the one differentiator (decidable proof-free exterior vs Lithium's incomplete search) must be concretely demonstrated"
+        ],
+        "headline": "Two-tier decidable-exterior/Iris-interior seam \u2014 but as written unsound, inexpressible for its own example, and decidability-unproven",
+        "rationale": "Three genuine flaws in the layer claimed safe: \u00a71.5 trait-meet admits a Cell race; closed four-rule exterior cannot express its own seam-free scheduler; 'decidable/no-SMT/no-timeout' exterior is an unproven NP-complete combination. Strong skeleton, fixable, but not yet sound."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.3996,
+      "timestamp": "2026-06-25T05:15:48+00:00"
+    },
+    {
+      "round": 22,
+      "question": "ZERO-COST SEAM ERASURE \u2014 how every seam obligation/witness erases at compile time with a formal guarantee it leaves no runtime trace.",
+      "revision": 0,
+      "proposal_excerpt": "# THE DECISION\n\n**Seam obligations and witnesses inhabit the multiplicity-0 fragment of a Quantitative Type Theory (QTT), and \"erasure\" is the QTT 0-erasure translation `\u230a\u00b7\u230b`, whose no-runtime-trace property is a once-and-for-all metatheorem (T1\u2013T4 below), not a per-program compiler heuristic.** Ownership is multiplicity 1 (linear/affine); sharing is \u03c9; proofs are 0. One semiring annotation unifies ownership (target 3) and proof-erasure (target 6).\n\n## Resource semiring and judgement\n\n`R = {0, 1, \u03c9}`, the QTT semiring (`0\u00b7x=0`, `1\u00b7x=x`, `1+1=\u03c9`, `\u03c9` absorbing). Contexts carry per-variable usage `x :^\u03c1 A`. Judgement `\u0393 \u22a2 M :^\u03c3 A` types `M` *at demand* `\u03c3`. **`\u03c3 = 0` is the proof/ghost fragment; `\u03c3 \u2208 {1,\u03c9}` is systems-land.** The 0-fragment is fully present during type-checking and fully absent at runtime \u2014 exactly the seam discipline.\n\n## The seam construct `seal`\n\nA foundational primitive `raw : RawA \u2192 RawB` (allocator/atomic/MMIO, UB-bearing) is lifted to a safe interface `S = { op : A\u2192B | Pre \u21d2 Post }` only via:\n\n```\n   \u0393 \u22a2 raw :^1 (RawA \u2192 RawB)        \u0393 \u22a2 \u03c0 :^0 Refines(raw, S)\n   \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500  (SEAL)\n                    \u0393 \u22a2 seal raw ",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Precondition discharge is per-call-site, not at seal; {0,1,\u03c9} lacks regions/borrows; seal proofs are SMT-impossible with no tooling.",
+          "strongest_point": "The concentration theorem covers Refines(raw,S) but not the Pre obligation at each op call, so nontrivial preconditions force proofs throughout ordinary code\u2014exactly the ATS2 cliff the proposal claims to avoid."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "T3 conflates multiplicity-0 with irrelevance; erased type indices change erased code/layout, falsifying T3 and exposing a T4 gap.",
+          "strongest_point": "Two programs differing only in an erased (0-multiplicity) type index like Vec n have identical relevant skeletons but different machine code, so T3's byte-identical conclusion is false."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Dependent conversion checking \u2014 unmentioned, un-offloadable \u2014 is undecidable once general-recursive \u03c9-terms reach refinement-type indices.",
+          "strongest_point": "'Multiplicity checking is syntactic and decidable' hides that type checking also needs definitional-equality/normalization, which is undecidable when the unified single-semiring language lets recursive \u03c9-terms appear in refinement types."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "FFI/MMIO/allocator seams need trusted axioms seal can't introduce, or proofs SMT certificates can't carry; real seams inexpressible or TCB claim false.",
+          "strongest_point": "Refines(raw,S) requires modeling foreign/hardware semantics absent from the theory, so every foundational primitive needs a trusted per-program axiom that 'seal is the only introducer' forbids \u2014 making FFI either inexpressible or a silent, unbounded TCB the proposal claims doesn't exist."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Semiring is Idris2/QTT; using its {1,\u03c9} fragment for ownership repeats Linear Haskell's borrowing/aliasing failure.",
+          "strongest_point": "Linear Haskell already deployed this exact {1,\u03c9} fragment for ownership and could not express borrows or prevent aliasing (resorting to CPS), so target 3 is not 'derived from the proof layer' as claimed."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "genuine-flaw",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "tradeoff",
+          "attacker-expressiveness": "genuine-flaw",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Type-level fragment needs a totality fence (\u00e0 la Idris 2) for decidable conversion checking; refinements cannot index on arbitrary general-recursive \u03c9-functions.",
+          "SMT certificate production is not total (nonlinear/quantified/separation goals); seals hit a prove-or-reject cliff or must re-trust the solver.",
+          "Residual TCB includes SMT-encoding adequacy and per-primitive/FFI spec axioms, not just the kernel + T1-T4."
+        ],
+        "headline": "Erase seam witnesses as QTT multiplicity-0, with no-trace guaranteed by metatheorems T1-T4",
+        "rationale": "T3 conflates multiplicity-0 with irrelevance\u2014erased type indices change emitted code, so the headline is false. Independently, {0,1,\u03c9} doesn't yield borrows (target 3, per Linear Haskell), and seal cannot introduce the trusted primitive axioms FFI/MMIO require, falsifying the irreducible-TCB claim. Decidability and concentration also overclaimed."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.1264,
+      "timestamp": "2026-06-25T05:24:51+00:00"
+    },
+    {
+      "round": 23,
+      "question": "ZERO-COST SEAM ERASURE \u2014 how every seam obligation/witness erases at compile time with a formal guarantee it leaves no runtime trace.",
+      "revision": 1,
+      "proposal_excerpt": "## 1. THE DECISION\n\n**Erasure is the projection that deletes a definitionally-irrelevant *witness zone*, and the zero-cost guarantee is a *witness-irrelevance + non-interference simulation theorem* \u2014 NOT a byte-identity claim.** I explicitly retract the prior byte-identity conclusion (it was false, per attacker-soundness) and replace it with the construction below.\n\n### 1.1 Two orthogonal annotations\n\nHypotheses and type-formers carry two independent qualifiers:\n\n- **Multiplicity** `\u03bc \u2208 {0, 1, \u03c9}` (QTT/Atkey-2018): how many times a binding is consumed *at runtime*. `0` = erased index, `1` = linear/owned, `\u03c9` = shared/copyable. Governs ownership.\n- **Irrelevance modality** `\u266fA` (Pfenning / Abel\u2013Scherer SProp): whether a value's *identity* may ever be inspected. Governs proofs/witnesses.\n\nThese answer different questions and erase by different lemmas. Keeping them orthogonal is what defeats attacker-soundness.\n\n### 1.2 The irrelevance modality (witness zone)\n\nContexts split into a relevant part `\u0393` and an irrelevant part `\u0394`; judgement `\u0393 ; \u0394 \u22a2 e : A`.\n\n```\n(\u266f-Form)   \u0393;\u0394 \u22a2 A : Type                          \u27f9   \u0393;\u0394 \u22a2 \u266fA : Type\n(\u266f-Intro)  \u0393,\u0394 \u22a2 a : A          (full context)       \u27f9   ",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Lock-free/interrupt code is forced entirely seam-side; the seam proof is frontier weak-memory verification the stated SC separation logic can't even express.",
+          "strongest_point": "Sealing an MPSC queue requires proving a weak-memory concurrency refinement, but the proposal's seam logic is an SC fractional-permission algebra with no atomics/memory-model \u2014 so the proof is either unsound or unwritable by any working systems programmer, versus Rust's one-line `Ordering::Release`."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "(\u266f-Intro) 'full context' has no multiplicity scaling; a \u03bc=1 linear consumption inside box erases to nothing, leaking the owned resource.",
+          "strongest_point": "box(close y):\u266fUnit typechecks as a valid single linear use of y, yet \u230a\u00b7\u230b deletes it, so the owned handle is consumed zero times at runtime \u2014 falsifying \u03bc=1's 'exactly once' invariant with an accepted program."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Elaborator D must decide entailment in a logic (fractional separation BI + wands/inductive predicates) that is undecidable; T4 termination fails on ordinary borrow code.",
+          "strongest_point": "Reborrows are magic wands over a fractional separation resource algebra, so D's precondition-discharge pass reduces to Boolean-BI/separation-logic entailment \u2014 a known undecidability result \u2014 on ordinary code that is not seam-side, refuting T4's 'D terminates'."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Power-of-two masking and dynamic alignment escape Presburger L_dec, forcing pervasive seals/runtime checks in hot zero-cost code",
+          "strongest_point": "Masked indexing (h & (len-1) < len) and dynamic pointer alignment \u2014 the core of every hash table, ring buffer, and allocator \u2014 need bitvector/power-of-two reasoning outside Presburger, so either L_dec excludes them (expressiveness fails) or D must call SMT (T4's no-SMT promise fails)."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "T4's decidable-yet-solver-free-yet-wide refinement claim is the trilemma Flux/Liquid prove unattainable; erasure core merely re-derives F*/Low*/Steel.",
+          "strongest_point": "Flux and Liquid Haskell already ship decidable refinement over an ownership language and realize it by calling SMT on exactly L_dec's fragment, so D is either Z3-relabeled (no cost win) or strictly narrower than QF-LIA (cliff far wider than conceded)."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "genuine-flaw",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "genuine-flaw",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Bit-trick wall: masked indexing/dynamic alignment need bitvector reasoning \u2014 either BV-in-D (breaks 'no SMT') or runtime checks (breaks zero-cost); 'alignment covered' is only true for the static case.",
+          "T4 is the Flux/Liquid trilemma: decidable + solver-free + wide is pick-two; achievable point is decidable-but-solver-internal-and-narrow \u2014 drop 'no SMT query', keep at most 'no user-proof obligation'.",
+          "Erasure core T1\u2013T3 and erased-Spec ownership are F*/Low*/KaRaMeL/Steel/EPTS; cite rather than re-derive \u2014 the contribution surface collapses onto T4."
+        ],
+        "headline": "Erasure-by-irrelevance plus seam-concentrated decidable refinement \u2014 but it leaks linear resources and over-claims D.",
+        "rationale": "(\u266f-Intro) lacks multiplicity scaling, so a boxed \u03bc=1 consumption erases to nothing and leaks an owned handle \u2014 a fatal accepted unsound program. Independently, T4's 'decidable, solver-free, wide-enough' D is unattainable: ownership entailment is undecidable, lock-free needs an unspecified weak-memory logic, bit-tricks escape Presburger."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.2226,
+      "timestamp": "2026-06-25T05:34:17+00:00"
+    },
+    {
+      "round": 24,
+      "question": "ZERO-COST SEAM ERASURE \u2014 how every seam obligation/witness erases at compile time with a formal guarantee it leaves no runtime trace.",
+      "revision": 2,
+      "proposal_excerpt": "## 1. THE DECISION\n\n**Erasure is governed by a quantitative (graded) type theory in which `0` means runtime-irrelevant, and the only thing erased is the `0`-graded fragment \u2014 under a hard side-condition that no effectful term may ever occupy a `0`-graded position. Seam witnesses are `0`-graded by construction; the unsafe implementation they justify is `1/\u03c9`-graded and is *not* erased. The no-trace property is a metatheorem about this grading, not a compiler convention.**\n\n### 1.1 Quantities and contexts\n\nSemiring `R = {0, 1, \u03c9}`, the zero-one-omega semiring:\n\n```\n+ : 0+x=x   1+1=\u03c9   1+\u03c9=\u03c9   \u03c9+x=\u03c9\n\u00b7 : 0\u00b7x=0   1\u00b7x=x   \u03c9\u00b7\u03c9=\u03c9\n```\n\nReading: `0` = used only in types/proofs (**erased**), `1` = used exactly once at runtime (**owned/linear resource**), `\u03c9` = unrestricted. Contexts are graded `\u0393 = x\u2081:^{\u03c1\u2081}A\u2081, \u2026`; `\u0393+\u0394` adds grades pointwise, `\u03c0\u00b7\u0393` scales them.\n\nCrucially, **linearity (`1`) and relevance are now orthogonal axes.** A linear value is `1`-graded and therefore *relevant*: erasing it is a grade violation, not a permitted optimization. This is the structural fix for the fatal attack (\u00a73.1).\n\n### 1.2 Judgement\n\n```\n\u0393 \u22a2 e : A ! \u03b5\n```\n\n`\u03b5` is an effect drawn from a join-semilattice of",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "No trust-me hatch; every new custom unsafe/lock-free abstraction demands an undecidable L_seam proof, not amortizable at the application layer.",
+          "strongest_point": "Rust's `unsafe` is a ship-today trust boundary; `seal` is a mandatory (possibly non-terminating) proof boundary with no fallback, and real systems programmers create new seams far too often for the 'few foundational primitives' amortization story to hold."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "(Seal) has no premise tying \u03b5_r to safe(I); rules accept effect-laundering, then erase the dropped real effect.",
+          "strongest_point": "An interface with safe(I)=\u2205 and Spec\u1d35=\u22a4 types an effectful r as pure, so f(seal(r,())) erases to \u230af\u230b and silently deletes a real write \u2014 soundness rests entirely on the undefined `refines`, not on the grading."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Happens-before edges between separately-sealed atomics force iRC11 entailment at composition sites in ordinary code, defeating confinement.",
+          "strongest_point": "Release/acquire facts are relational between primitives, so they cannot be localized inside any per-primitive seal \u2014 either tokens are too weak to build lock-free compositions, or the ordinary borrow checker must run the undecidable weak-memory entailment it claims to confine to seals."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "Fixed iRC11/FSL memory model can't state MMIO/DMA/IRQ refinements; with no raw escape, bare-metal drivers are inexpressible.",
+          "strongest_point": "The seam's logic models only thread-view C11 atomics, so device drivers and DMA \u2014 the canonical programs of stated target #5 \u2014 have no expressible witness `\u03c6` and no `unsafe{}` fallback, leaving only an undisclosed 'typed primitive' path that nullifies the seam's 'only way to cross' guarantee."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Reassembles QTT+RustBelt+ghost-erasure; iRC11 seam is interactive Coq, not SMT, and Lemma 0 forgets ghost-code's non-divergence condition.",
+          "strongest_point": "The L_seam logic it chose (iRC11/GPS/FSL) has no SMT decision procedure \u2014 every prior system proves these refinements by hand in Iris/Coq at person-year cost per primitive, so the 'SMT-backed, one toolchain, amortized once' pitch is false."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "genuine-flaw",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "tradeoff",
+          "attacker-expressiveness": "genuine-flaw",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Seal granularity must enclose each closed ordering invariant; cross-cutting happens-before edges cannot be composed from finer-grained seals.",
+          "Grade checking is linear only under mandatory multiplicity annotation; with inference it is a finite-domain CSP over {0,1,\u03c9}."
+        ],
+        "headline": "Graded {0,1,\u03c9} QTT erasure of the 0-fragment, gated by an effect-purity lock and a per-primitive seal witness.",
+        "rationale": "(Seal) has no effect-coverage premise, so the rules launder and drop real effects\u2014no-trace rests on an undefined `refines`, not the grading. Theorem 2 also needs termination (only purity given). Fixed iRC11 M can't state drivers, and there is no trust-me escape hatch. Revise."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.676,
+      "timestamp": "2026-06-25T05:44:46+00:00"
+    },
+    {
+      "round": 25,
+      "question": "ZERO-COST SEAM ERASURE \u2014 how every seam obligation/witness erases at compile time with a formal guarantee it leaves no runtime trace.",
+      "revision": 3,
+      "proposal_excerpt": "## 1. THE DECISION\n\n**Seam obligations and witnesses are the multiplicity-0 fragment of a Quantitative Type Theory. Erasure is a syntactic, type-directed projection `\u230a\u00b7\u230b` that runs *before* codegen and lands in a runtime IR `L_run` whose grammar cannot express an obligation. The \"no runtime trace\" guarantee is the pair (T1 syntactic, T2 semantic) below \u2014 a specialization of QTT erasure soundness (Atkey, LICS 2018) to a *physical-event-structure* observation. Crucially, erasure is driven by *multiplicity*, which is fixed by the trusted prelude's physical-op signatures, and NEVER by an interface's specification.**\n\n### Substrate\n\nSemiring of multiplicities `R = ({0,1,\u03c9}, +, \u00b7)`, standard QTT. The semiring does triple duty and this is deliberate:\n\n- `\u03c1=0` \u2014 **erased**: proofs, obligations, ghost resources. Zero-cost (this round).\n- `\u03c1=1` \u2014 **linear/owned**: move semantics, no GC (target #3).\n- `\u03c1=\u03c9` \u2014 **unrestricted physical**: machine values, `Ref`, `Atomic`, `Mmio`.\n\nThree universes: `\ud835\udcb0_run` (runtime types), `\ud835\udcb0_prop` (propositions/obligations, proof-irrelevant), `\ud835\udcb0_ghost` (resource-algebra elements). Well-formedness side condition \u2014 **the erasure guard**:\n\n```\nA : \ud835\udcb0_prop \u222a \ud835\udcb0_ghost  ",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "{0,1,\u03c9} has no borrow; \u03c1=1 forces resource-threading (ATS2 disaster), \u03c1=\u03c9 is unchecked aliasing \u2014 #3 unserved.",
+          "strongest_point": "Without a borrow multiplicity, every non-consuming use of an owned resource must either be threaded back out (the linear-types catastrophe Rust exists to avoid) or made \u03c9 and lose all type-level exclusivity, so shared mutable state \u2014 the hard systems code \u2014 is unverified-until-`trusted`."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "No accepted program violates zero-trace; multiplicity discipline soundly blocks every effect-laundering route I tried.",
+          "strongest_point": "Checking `cross` requires normalizing `wp[impl_I(a)]` for recursive driver loops (#5), and the proposal never states the invariant-based/strongly-normalizing restriction that keeps that decidable \u2014 a gap, but blockable by the standard WP realization, so not a break."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Erasure guard requires deciding universe membership under large elimination \u2014 undecidable, no trusted escape, blocks erasure totality.",
+          "strongest_point": "\u230a\u00b7\u230b is total only on well-typed terms, but the erasure-guard checker must classify computed types into \ud835\udcb0_prop/\ud835\udcb0_ghost, which is undecidable under universe-valued large elimination over a symbolic \u03c9 value."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "\u03c9-fixed store/load/cas can't accept \u03c1=1 references; owned mutable memory is inexpressible or its safety is deferred to the undecidable prover.",
+          "strongest_point": "Every physical op demands its reference at \u03c9, so a linearly-owned buffer can never be written in place or single-freed \u2014 collapsing target #3 (ownership without GC) into the discharge problem this round explicitly defers."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Substrate is Idris2+Steel+Iris; the 'one theorem, not per-primitive' cost claim is refuted by iRC11/Cosmo's per-primitive weak-memory seam soundness.",
+          "strongest_point": "The zero-trace headline presumes \u03a0's event semantics is ground truth, but making \u03a0 sound against \ud835\udd44 is the per-primitive, person-year cost (iRC11/Cosmo) that the proposal mis-files as deferred discharge."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "argued-past",
+          "attacker-implementation": "tradeoff",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "TRADEOFF",
+        "tradeoffs": [
+          "#3 ownership-without-GC is NOT delivered by the \u03c1=1 fragment alone: {0,1,\u03c9} has no borrow, so owned mutable memory is either linearly threaded (ATS2 ceremony) or made \u03c9 (unchecked aliasing, free/reset carries an obligation). Requires a future borrow/fractional/region multiplicity decision; the \u00a72 'directly, same semiring' claim must be withdrawn.",
+          "\u03a0's \u03c9-signatures must be proven sound against each memory model \ud835\udd44 \u2014 a per-primitive, per-model cost (iRC11/Cosmo/CompCertTSO lineage), distinct from both erasure and user-VC discharge. The 'one model-parametric theorem, not a person-year per primitive' framing must be corrected; zero-trace is only meaningful relative to a validated \u03a0.",
+          "Erasure decidability/totality requires an explicit syntactic universe stratification (no data\u2192universe large elimination into \ud835\udcb0_prop/\ud835\udcb0_ghost; conversion confined to a strongly-normalizing fragment). 'Independent of the obligation logic' must be qualified accordingly, with the resulting expressiveness ceiling recorded.",
+          "Checking the (Cross) premise requires an invariant-based/strongly-normalizing wp realization to stay decidable once impl_I contains the unbounded driver loops target #5 needs; must be stipulated, not left to wp-by-unfolding."
+        ],
+        "headline": "Zero-trace erasure is sound; ownership, \u03a0-vs-\ud835\udd44 soundness, and decidability stratification are deferred costs.",
+        "rationale": "The attacker charged with breaking zero-trace failed honestly; every 'BREAKS' verdict concedes T1/T2 survive and instead falsifies \u00a72 service claims. No genuine-flaw reaches the erasure decision, but it enters the doc only carrying four explicit, future-decision-spawning tradeoffs."
+      },
+      "outcome": "TRADEOFF",
+      "cost_usd": 2.6091,
+      "timestamp": "2026-06-25T05:55:32+00:00"
+    },
+    {
+      "round": 26,
+      "question": "ZERO-COST SEAM ERASURE \u2014 how every seam obligation/witness erases at compile time with a formal guarantee it leaves no runtime trace.",
+      "revision": 3,
+      "proposal_excerpt": "## 1. THE DECISION\n\n**Seam obligations and witnesses are the multiplicity-0 fragment of a Quantitative Type Theory. Erasure is a syntactic, type-directed projection `\u230a\u00b7\u230b` that runs *before* codegen and lands in a runtime IR `L_run` whose grammar cannot express an obligation. The \"no runtime trace\" guarantee is the pair (T1 syntactic, T2 semantic) below \u2014 a specialization of QTT erasure soundness (Atkey, LICS 2018) to a *physical-event-structure* observation. Crucially, erasure is driven by *multiplicity*, which is fixed by the trusted prelude's physical-op signatures, and NEVER by an interface's specification.**\n\n### Substrate\n\nSemiring of multiplicities `R = ({0,1,\u03c9}, +, \u00b7)`, standard QTT. The semiring does triple duty and this is deliberate:\n\n- `\u03c1=0` \u2014 **erased**: proofs, obligations, ghost resources. Zero-cost (this round).\n- `\u03c1=1` \u2014 **linear/owned**: move semantics, no GC (target #3).\n- `\u03c1=\u03c9` \u2014 **unrestricted physical**: machine values, `Ref`, `Atomic`, `Mmio`.\n\nThree universes: `\ud835\udcb0_run` (runtime types), `\ud835\udcb0_prop` (propositions/obligations, proof-irrelevant), `\ud835\udcb0_ghost` (resource-algebra elements). Well-formedness side condition \u2014 **the erasure guard**:\n\n```\nA : \ud835\udcb0_prop \u222a \ud835\udcb0_ghost  ",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "No borrow fragment, no inference; trusted path keeps full ceremony while losing all verification \u2014 worse than Rust unsafe.",
+          "strongest_point": "The {0,1,\u03c9} semiring has no borrowing/fractional multiplicity and no inference story, so every safe-aliasing structure (arena, intrusive list, MPSC queue) forces either raw-\u03c9-no-safety or hand-written separation proofs, while the 'trusted' fallback keeps the full Cmd/annotation/ghost-split ceremony yet delivers zero verification \u2014 strictly dominated by Rust's unsafe block."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "T2 relies on an unstated, unproven lemma that \u03c1=0 subterms are event-free; a store-Cmd can be bound at multiplicity 0 and erased.",
+          "strongest_point": "Because Cmd:\ud835\udcb0_run is allowed at \u03c1=0, `let x:^0 = store r v in body` is well-typed yet erasure deletes it \u2014 laundering a physical write the Corollary claims is impossible, since \u03a0 pins store's operands at \u03c9 but never pins the sequencing combinator that fires the event."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Erasure pass is genuinely O(n)/decidable; undecidable passes all sit in the explicitly-deferred, trusted-escapable discharge layer.",
+          "strongest_point": "The asserted 'fixed decidable theory fragment' for smt mode is not enforceable \u2014 fragment-membership of wp-over-looping-impl_I VCs is undecidable \u2014 but the trusted escape keeps it off the forced compile path, so it dents discharge ergonomics rather than breaking zero-trace."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "\u03a0 fixes all physical ops at \u03c9 with no sound 1\u2192\u03c9 coercion, so \u03c1=1-owned memory can never be read/written; owned mutable buffers are inexpressible.",
+          "strongest_point": "store demands Ref^\u03c9 and no 1\u2192\u03c9 coercion exists, so a linearly-owned buffer cannot be dereferenced \u2014 collapsing target #3's ownership-without-GC into either vacuity or the deferred undecidable discharge."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Erasure machinery is shipped prior art (Idris2/Why3/Low*); novel weak-memory T2 omits hardware dependency relations and over-claims the anti-laundering corollary.",
+          "strongest_point": "The event structure (po/rf/loc) drops the syntactic addr/data/ctrl dependencies that Herding Cats/ARMv8 make first-class for your bare-metal target, and Vafeiadis POPL'15 shows 'obviously sound' local deletions are invalid under weak memory \u2014 so the anti-laundering Corollary is an unproven conclusion asserted as a lemma."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "argued-past",
+          "attacker-expressiveness": "genuine-flaw",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Forgoes verified/proof-driven optimization: erase-before-optimize firewall buys safety, not speed (proposal's own A1).",
+          "Authoring ergonomics: trusted path keeps full Cmd-monad + ^\u03c9/^0 + manual ghost/physical split for zero verification value; no borrow/fractional multiplicity; no inference story \u2014 'trusted = unsafe-analog' claim must be retracted.",
+          "smt mode's 'fixed decidable fragment' is not enforceable: fragment-membership of wp-over-looping impl_I is undecidable, so smt silently degrades to trusted for looping impls.",
+          "\u03c1=1 cannot dereference physical memory (no sound 1\u2192\u03c9); ownership-without-GC for real buffers relocates onto deferred undecidable discharge, not delivered 'directly' by the semiring."
+        ],
+        "headline": "Erasure as specified can launder a 0-bound store-Cmd to nothing; core guarantee unproven.",
+        "rationale": "Decisive: `let x:^0=store r v in body` type-checks (guard only binds \ud835\udcb0_prop/ghost; Cmd is \ud835\udcb0_run) yet erases a physical write, falsifying the Corollary \u2014 \u03a0 never pins the bind multiplicity. Weak-memory observable incomplete and \u03c1=1 memory-ownership vacuous compound it."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.3387,
+      "timestamp": "2026-06-25T06:02:21+00:00"
+    }
+  ],
+  "settled": [],
+  "incompatibilities": [
+    {
+      "between": [
+        "Decidable AND proof-free in the SAFE FRAGMENT (ordinary code)",
+        "ordinary code composes seam primitives WITHOUT itself crossing the seam (concentration + sound re-import)"
+      ],
+      "severity": "hard",
+      "property_at_risk": "Decidable AND proof-free in the SAFE FRAGMENT (ordinary code), ordinary code composes seam primitives WITHOUT itself crossing the seam (concentration + sound re-import), ownership derived from the proof layer",
+      "description": "Decidable proof-free safe code can't soundly use capabilities whose safety is a separation invariant \u2014 The seam exists to hand ordinary code capabilities (unique Held tokens, owned bytes, invariant-bearing atomics) over the very primitives whose safety is a concurrent-separation-logic resource invariant with ghost state \u2014 provably not a decidable Val\u00d7Heap\u2192Prop/SMT goal (RustBelt/Iris). A capability is sound only where its invariant is enforced at the point of use, but a proof-free decidable fragment can enforce linearity, not resource invariants. So the invariant has nowhere safe to live: drop it and the token aliases (existential laundering R0, nested-open double tokens R1, cross-seam reinterpretation under contradictory R R2, ghost-to-memory minting R3 \u2014 every soundness kill), or re-thread it linearly and ordinary code is back across the seam (ATS2 cliff, 'worse than pre-borrow Rust', exclusivity wall blocking shared atomics \u2014 every ergonomics kill). Sound re-import is the property that mechanically gives.",
+      "source": "revision-exhaustion",
+      "from_question": "The SEAM construct \u2014 give the formal syntax and typing of the seam: how ordinary (safe) code enters proof-land, what machine-checked obligation it discharges there, and how it re-exports a CHECKED SAFE INTERFACE that ordinary code then uses WITHOUT itself crossing the seam. Give formation / introduction / elimination rules.",
+      "properties_in_tension": [
+        "Decidable AND proof-free in the SAFE FRAGMENT (ordinary code)",
+        "ordinary code composes seam primitives WITHOUT itself crossing the seam (concentration + sound re-import)",
+        "ownership derived from the proof layer"
+      ],
+      "timestamp": "2026-06-25T02:33:49+00:00"
+    },
+    {
+      "between": [
+        "Decidable AND proof-free in the SAFE FRAGMENT",
+        "Ownership without GC, derived from the proof layer"
+      ],
+      "severity": "hard",
+      "property_at_risk": "Decidable AND proof-free in the SAFE FRAGMENT, Ownership without GC, derived from the proof layer, Seam concentration (ordinary code composes primitives WITHOUT crossing the seam)",
+      "description": "Proof-free decidable safe checking cannot soundly resolve aliasing through reborrow/deref chains \u2014 Whether a reborrow taken through a pointer (`&mut *r1`, `&mut **rr`, `&(**rr)[0]`) creates a second live `&mut`, or outlives its supporting loan, is a SEMANTIC provenance fact about runtime aliasing through pointers \u2014 invisible to any syntactic rule and to fixed outlives/liveness propagation, the only devices a proof-free, SMT-free, decidable checker may use. Every revision proved this: under-constrain the deref and you accept two live `&mut`/use-after-free (R0\u2013R3); over-constrain to recover soundness and you either falsify uniqueness-over-in-scope-loans (R1's \u2605) or reject ordinary unsafe-free code the design forbids rejecting (`v.push(v.len())`, `get_default`, the NLL\u2192Polonius gap, R2). The fact that lands precisely between is exactly a per-crossing disjointness/provenance obligation \u2014 a SEAM obligation \u2014 but it is generated pervasively by ordinary deref-chain code, so discharging it soundly forces ordinary code across the seam (violating concentration), while excluding it leaves the safe fragment unsound or over-restrictive.",
+      "source": "revision-exhaustion",
+      "from_question": "The SAFE FRAGMENT \u2014 the decidable, proof-free, GC-free ownership discipline for ordinary single-threaded code that needs NO seam and NO SMT, derived from the proof layer. State it precisely (move/borrow/lifetime rules).",
+      "properties_in_tension": [
+        "Decidable AND proof-free in the SAFE FRAGMENT",
+        "Ownership without GC, derived from the proof layer",
+        "Seam concentration (ordinary code composes primitives WITHOUT crossing the seam)"
+      ],
+      "timestamp": "2026-06-25T03:11:55+00:00"
+    },
+    {
+      "between": [
+        "Decidable AND proof-free in the SAFE FRAGMENT (ordinary code)",
+        "Sound re-import (no unsound obligation laundering UB into safe code)"
+      ],
+      "severity": "hard",
+      "property_at_risk": "Decidable AND proof-free in the SAFE FRAGMENT (ordinary code), Sound re-import (no unsound obligation laundering UB into safe code), Seam CONCENTRATION (ordinary code composes foundations without crossing the seam)",
+      "description": "Decidable proof-free composition cannot soundly re-export shared, aliased, or thread-affine foundations \u2014 The cheap, decidable safe fragment is necessarily structural (affine ownership / points-to footprints / structural Send-gates), which is sound only for separated, owned, sequential resources. But the foundations the seam exists to vend \u2014 lock-free queues, thread-affine guards, intrusive lists, DMA/MMIO \u2014 are exactly the non-separated ones, whose soundness depends on semantic invariants (shared invariants, core affinity, Send-closedness, borrow expiry, shape invariants, relaxed-memory order) that no decidable structural check can observe. So the gap must be paid: either the structural composition rule bridges it unsoundly and launders UB (J\u2217J\u22a2False, Send minted for IrqGuard, Container<T> skipping Send T, circular footprints, trusted DMA assertions), or composition must carry the real per-structure proof, which makes every novel foundation a fresh research-grade seam and collapses concentration into the ATS2 cliff. The recurring pattern \u2014 `spawn(try_push) \u2016 spawn(try_pop)` typechecking affinely while its concurrent image is False \u2014 is the canonical exhibit.",
+      "source": "revision-exhaustion",
+      "from_question": "BEHIND THE SEAM \u2014 concretely, what obligation does a foundation author discharge, in-language, to implement (a) a lock-free SPSC queue, (b) an MMIO read-to-clear register, (c) an intrusive doubly-linked list \u2014 and how does each re-export a safe interface the safe fragment can use without proofs?",
+      "properties_in_tension": [
+        "Decidable AND proof-free in the SAFE FRAGMENT (ordinary code)",
+        "Sound re-import (no unsound obligation laundering UB into safe code)",
+        "Seam CONCENTRATION (ordinary code composes foundations without crossing the seam)"
+      ],
+      "timestamp": "2026-06-25T03:50:53+00:00"
+    },
+    {
+      "between": [
+        "Decidable AND proof-free in the SAFE FRAGMENT (ordinary code)",
+        "FIRST-CLASS MACHINE-CHECKED SEAM (sound re-import)"
+      ],
+      "severity": "hard",
+      "property_at_risk": "Decidable AND proof-free in the SAFE FRAGMENT (ordinary code), FIRST-CLASS MACHINE-CHECKED SEAM (sound re-import), Seam CONCENTRATION \u2014 ordinary code composes seam primitives without crossing the seam",
+      "description": "A seam interface sound enough to re-import is undecidable to compose proof-free \u2014 To soundly re-import the chosen primitives (allocators, atomics, lock-free queues, MMIO), the exported interface must carry shared/splittable/persistent, address-pinned, relaxed-memory resources \u2014 i.e. separation logic with sharing. But matching held resources against such a primitive's precondition at a use site IS SL frame inference (NP-complete to undecidable for fractions, persistent predicates, and nonlinear `n\u00b7size T` indices; Iris-grade interactive proof, not SMT-replayable), so the entailment supposedly confined to seam definitions reappears at every seam use \u2014 destroying the decidable, proof-free safe fragment. The only fix that restores decidability \u2014 indivisible opaque tokens \u2014 cannot express the shared-state concurrency those very primitives require (the multi-producer queue / Arc pattern), so seam concentration collapses: composing the primitives becomes a crossing. Decidable-proof-free and sound-expressive-re-import pull the interface in opposite directions, and seam concentration is what mechanically breaks.",
+      "source": "revision-exhaustion",
+      "from_question": "SEAM SOUNDNESS / re-import \u2014 the rule that makes crossing BACK sound: how does the safe fragment trust a seam-crossed primitive without re-verifying it, and what structurally stops an unsound obligation from laundering UB into safe code?",
+      "properties_in_tension": [
+        "Decidable AND proof-free in the SAFE FRAGMENT (ordinary code)",
+        "FIRST-CLASS MACHINE-CHECKED SEAM (sound re-import)",
+        "Seam CONCENTRATION \u2014 ordinary code composes seam primitives without crossing the seam"
+      ],
+      "timestamp": "2026-06-25T04:40:10+00:00"
+    },
+    {
+      "between": [
+        "Decidable AND proof-free in the SAFE FRAGMENT",
+        "Seam concentration with sound re-import (ordinary code composes seams without crossing)"
+      ],
+      "severity": "hard",
+      "property_at_risk": "Decidable AND proof-free in the SAFE FRAGMENT, Seam concentration with sound re-import (ordinary code composes seams without crossing), Ownership without GC, derived from the proof layer \u2014 holds in the safe fragment",
+      "description": "Proof-free decidable safe code cannot state the cross-seam relations sound composition needs \u2014 A safe fragment made decidable-and-proof-free has no relational vocabulary, so cross-seam side conditions \u2014 inter-seam region disjointness, physical aliasing under translation, Send/Sync of captured auxiliary state \u2014 are unstateable; therefore two individually-sound seams pointed at one shared resource compose into a data race in zero-obligation depth-0 code, and no obligation fires because none can be expressed. The recurring exhibit is identical each revision: two sound seams sharing an address/refcount/Cell/bit-band word race while the type system reports clean (ADC+ring, Rc::clone+spawn, &Cell capture, bit-band). The only repair \u2014 enrich the exterior to state and check the relation \u2014 reintroduces exactly what Property 4 forbids: QF-LIA-plus-separation-algebra / nonlinear / higher-order separation-logic obligations that are SMT-or-undecidable, and constructs the closed exterior cannot abstract, pushing obligations into ordinary code (the ATS2 cliff) and destroying both concentration and the 99%-seam-free claim.",
+      "source": "revision-exhaustion",
+      "from_question": "SEAM CONCENTRATION & ergonomics \u2014 the language mechanism and the argument that keep ordinary code from ever crossing the seam (the checked-interface boundary), and why the obligation stays with a handful of foundation authors. Exhibit a realistic program where ~99% of code is seam-free.",
+      "properties_in_tension": [
+        "Decidable AND proof-free in the SAFE FRAGMENT",
+        "Seam concentration with sound re-import (ordinary code composes seams without crossing)",
+        "Ownership without GC, derived from the proof layer \u2014 holds in the safe fragment"
+      ],
+      "timestamp": "2026-06-25T05:16:51+00:00"
+    },
+    {
+      "between": [
+        "Zero-cost \u2014 all proofs, including seam obligations, erase at compile time",
+        "Sound re-import \u2014 crossing back from a seam must restore the safe fragment's invariants with no laundered UB"
+      ],
+      "severity": "hard",
+      "property_at_risk": "Zero-cost \u2014 all proofs, including seam obligations, erase at compile time, Sound re-import \u2014 crossing back from a seam must restore the safe fragment's invariants with no laundered UB, Seam concentration in foundational effectful primitives (allocators, atomics, MMIO, lock-free)",
+      "description": "Erasing seam witnesses to reach zero-cost also erases the effects they gate \u2014 Zero-cost is delivered by erasure, a syntactic relevance/multiplicity judgment that deletes any grade-0 term and claims grade-0 implies no runtime trace. But seam concentration forces the effectful primitives (writes, atomics, MMIO) to live AT the seam, fused to the very proof witnesses that authorize them, so the term that must erase (the witness) and the term that must not (the effect) are one object. Every revision exhibits the same accepted program \u2014 `let x:^0 = store r v in body`, `box(close y):\u266fUnit`, `f(seal(r,()))` \u2014 where an erasable-graded seam term still fires a physical store or consumes an owned handle, and \u230a\u00b7\u230b silently drops it; pinning the primitive's operands at \u03c9 never helps because the effect rides out on the unpinned sequencing/bind combinator. No relevance lattice can separate 'proof, delete it' from 'fires a store, keep it' when the proof's purpose is to authorize that store.",
+      "source": "revision-exhaustion",
+      "from_question": "ZERO-COST SEAM ERASURE \u2014 how every seam obligation/witness erases at compile time with a formal guarantee it leaves no runtime trace.",
+      "properties_in_tension": [
+        "Zero-cost \u2014 all proofs, including seam obligations, erase at compile time",
+        "Sound re-import \u2014 crossing back from a seam must restore the safe fragment's invariants with no laundered UB",
+        "Seam concentration in foundational effectful primitives (allocators, atomics, MMIO, lock-free)"
+      ],
+      "timestamp": "2026-06-25T06:03:28+00:00"
+    }
+  ],
+  "blind_spot_flags": [],
+  "total_cost_usd": 61.7102
+}
