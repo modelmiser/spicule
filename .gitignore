@@ -7,6 +7,7 @@ INSIGHTS/
 
 # Raw per-call transcripts — large, regenerable, noisy
 runs/
+runs_seamful/
 
 # Python
 __pycache__/
