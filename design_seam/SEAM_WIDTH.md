@@ -40,19 +40,27 @@ A primitive whose precondition has a conjunct that *cannot* be internalized (one
 caller-owned state) would force the caller to carry it — pushing seam width from O(buffers)
 toward O(operations). That is the Phase-C contrast (MMIO; intrusive list).
 
-## All four primitives — and why seam width ≠ zero-cost
+## All five primitives — and why seam width misses *two* axes, not one
 
-| Primitive | Consumer seam width | Runtime cost (zero-cost #6) |
-|---|---|---|
-| SPSC ring buffer | **O(1)/buffer** (`split` once) | none — fully erased |
-| MMIO read-to-clear | **O(1)** with a foundation `Send` opt-in, else O(ISRs) | none — fully erased |
-| Generational slab | **O(1)** — `insert`/`get`/`remove` are all safe calls | **non-zero** — a generation word/slot + a compare branch/access, never erased |
-| Intrusive list (branded) | **O(accesses)** — the token threads through every access | (design A erases; the cost is seam width / lost reclaim) |
+| Primitive | Consumer seam width | Runtime cost (zero-cost #6) | Type surface (API-locality #5) |
+|---|---|---|---|
+| SPSC ring buffer | **O(1)/buffer** (`split` once) | none — fully erased | plain `'a` — non-viral |
+| MMIO read-to-clear | **O(1)** with a foundation `Send` opt-in, else O(ISRs) | none — fully erased | plain — non-viral |
+| Generational slab | **O(1)** — `insert`/`get`/`remove` are all safe calls | **non-zero** — a generation word/slot + a compare branch/access, never erased | plain `Key` — non-viral |
+| Branded index | **O(1)/slice** (`scope` once) | erases, but **deferred** — single-index `try_index` re-checks per element; the elision win needs range-branding | **viral `'id`** — infects every index/signature, traps indices in a `scope` closure |
+| Intrusive list (branded) | **O(accesses)** — the token threads through every access | (design A erases; the cost is seam width / lost reclaim) | **viral `'brand`** |
 
-**The slab is the instructive row: it *aces* seam width (horn 3) yet still pays — on a different
-axis (zero-cost / #6).** Concentration asks "how often does ordinary code touch the seam"; erasure
-asks "does the witness survive to run time." They are independent. The slab's witness is read once
-per access *inside* the seam (so the consumer never crosses — width O(1)) but it is a runtime
-load-and-branch (so it does not erase). That is precisely why the Seam Trilemma is a 3-of-4
-projection: bundling "concentrated & proof-free" hides that a concentrated seam can still be
-non-zero-cost. See `SYNTHESIS.md`.
+**Two instructive rows now show seam width is necessary but not sufficient.** The slab *aces* seam
+width (horn 3) yet pays on **zero-cost (#6)** — concentration asks "how often does ordinary *code*
+touch the seam," erasure asks "does the witness survive to run time," and they are independent (the
+slab's witness is read inside the seam — width O(1) — but is a runtime load-and-branch). The
+**branded index** *also* aces seam width (one `scope` per slice) yet pays on **API-locality (#5)**:
+its witness never appears in consumer *code* as a crossing, but it appears in every consumer *type*
+as a viral `'id`. So "concentration" was itself a bundle of two faces — a *code* face (seam-width,
+horn 3) and a *type* face (API-locality) — that the branded index pulls apart, exactly as the slab
+pulled zero-cost out of "concentrated & proof-free."
+
+That a primitive can be O(1) on this instrument and *still* impose a real consumer tax on two
+distinct hidden axes is precisely why the Seam Trilemma is a **3-of-N projection (N ≥ 6)**, not
+3-of-3. Seam-width measures one axis well and is blind to the rest. See `REALIZABILITY.md` for the
+full face lattice and `SYNTHESIS.md` for the cross-primitive map.

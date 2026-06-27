@@ -392,15 +392,24 @@ decidable trait bounds):
 | **MMIO read-to-clear** | SEAM-COSTS [horn 3] | sound+decidable, marked cost | O(1) *with* a foundation `Send` opt-in | *Sound modulo an external axiom* — "this address really is this register" is a physical-world fact, a TCB `assume` boundary (Low\*/seL4/CompCert), **not a fourth horn**. The price is a horn-3 `Send`-opt-in for the ISR use. |
 | **Generational slab** | SEAM-COSTS [#6 zero-cost] (one revision) | all 3 trilemma horns hold | **O(1)**, fully-safe interface | *`Copy`-handle validity — runtime-checkable* — a `Copy` key defeats affinity, but a per-slot generation+occupancy check carries it at run time. Closes the trilemma but spends **zero-cost erasure (#6)** — `RefCell`/`slotmap`'s move. |
 | **Intrusive linked list** | SEAM-BREAKS [horn 1] | horn 1 drops | O(accesses); repair forbids early reclaim | *Aliasing + liveness escapes to the caller* — the `GhostCell` brand carries L1/L4 (aliasing) but **not L2** (membership-vs-storage lifetime), so the rule type-accepts a use-after-free. |
+| **Branded index** | SEAM-COSTS [other] | all 3 horns hold | **O(1)/slice** code crossings, yet a *viral `'id`* in every type | *Cross-object identity via a generative brand* — closes all three horns (RustBelt-verified `runST`/`indexing` lineage) but un-bundles **concentration** itself: pays on **API-locality (#5)** (the brand infects consumer types, traps indices in a `scope` closure) and *defers* zero-cost (#6) to the range-branding it scopes out. |
 
-**The slab forced a deeper finding: the Seam Trilemma is a 3-of-4 projection.** The slab keeps
-all three horns yet still pays — on *zero runtime cost* (#6), the property the trilemma had
-folded into "concentrated & proof-free." So the four shapes are a taxonomy of *what the missing
-conjunct is*: floor-expressible → closes free (SPSC); runtime-checkable → closes at the cost of
-#6 (slab; `RefCell`); an external physical axiom → sound modulo a TCB `assume`, outside the
-trilemma (MMIO); whole-heap aliasing+liveness that escapes to the caller → a horn genuinely
-drops (intrusive). The recovered fourth axis is exactly the #6 that was a casualty back in the
-`unified` result — the constructive phase puts it back on the map.
+**Two primitives forced a deeper finding: the Seam Trilemma is a 3-of-N projection (N ≥ 6).** The
+**slab** keeps all three horns yet pays on *zero runtime cost* (#6), the property the trilemma had
+folded into "concentrated & proof-free." Then the **branded index** keeps all three horns *and* aces
+seam-width, yet the cold panel found a real cost "outside the three horns": its generative brand is a
+**viral type parameter** (API-locality, #5) — provably *not* seam-width, since the `runST` (PLDI'94)
+/ lightweight-capabilities (PLPV'06) lineage pays the identical tax in languages with no seam or
+`unsafe` at all. So "concentration" was itself a bundle of a *code* face (seam-width) and a *type*
+face (API-locality). The same primitive surfaced **#7 (AI-legibility)** — a brand is a nominal token —
+and the panel argued #5 and #7 dissociate (a refinement type is brand-free yet legible). The taxonomy
+of *what the missing conjunct is* and *which axis closing it spends*: floor-expressible → closes free
+(SPSC); runtime-checkable → spends #6 (slab; `RefCell`); cross-object identity via a brand → spends
+#5/API-locality, with a #5↔#6 *trade* (branded index; `indexing`); external physical axiom → sound
+modulo a TCB `assume`, outside the axes (MMIO); whole-heap aliasing+liveness escaping to the caller →
+a horn genuinely drops (intrusive). The recovered axes — #6, #5, #7 — are exactly the casualties of
+the original `unified` result, put back on the map one witness at a time. Full face lattice:
+`design_seam/REALIZABILITY.md`.
 
 **Decontamination, across primitives.** The seamful2 theorem predicted that a failing seam's
 obstruction *relocates* to the re-import boundary rather than vanishing. SPSC: it **vanished**
@@ -410,30 +419,40 @@ generation+occupancy check carries what affinity cannot, at a runtime cost). Int
 **moved and broke soundness** (L2 UAF), and every repair walks into another horn — collapse
 lifetimes → drop usability (the `seam/` implementation is this "design A": sound, but it forbids
 the early reclaim that is the primitive's purpose); full separation logic → drop decidability.
-"Moves, doesn't vanish" held for all three non-trivially-encapsulable primitives, and *where* it
-moved was the whole verdict.
+Branded index: it **moved onto the type surface** (a viral `'id`) and stayed sound — the
+obstruction went somewhere genuinely new, neither code-crossing nor runtime. "Moves, doesn't
+vanish" held for all four non-trivially-encapsulable primitives, and *where* it moved was the
+whole verdict.
 
-**The adversary earned its keep — three times.** On MMIO it named the axiom's category correctly
+**The adversary earned its keep — four times.** On MMIO it named the axiom's category correctly
 (a TCB boundary, not a horn) and surfaced a horn-3 cost the builder had under-weighted. On the
 intrusive list it proved something *worse* than the builder predicted: branding does not restore
 soundness at all (a brand is an *access* capability, not a *storage* lifetime), correcting a real
 overclaim. On the slab it found a genuine UB in the builder's *spec* (a generation-only guard
 authenticates a fresh slab's vacant gen-0 slot) — though the *implementation* checked occupancy
 first and a regression test proved it rejects the exact exploit; the revised spec then survived.
-A real spec↔impl divergence, which is exactly what build/break separation exists to surface.
+On the branded index it confirmed the fifth axis with four decades of grounding *and* corrected a
+zero-cost overclaim (single-index `try_index` relocates rather than eliminates the bounds check),
+then settled the sixth-axis probe (#5 and #7 dissociate). A real spec↔impl divergence and two
+sharpened overclaims — exactly what build/break separation exists to surface.
 
 **Mechanization.** `proof/SeamGap.lean` was upgraded from the one-direction triviality its own
 cold review had flagged to a genuine characterization — `seam_closes_iff_factors`: a seam
 closes **iff** its precondition factors through the safe witness — with the regimes as
-machine-checked instances (`spsc_seam_closes`, `intrusive_seam_does_not_close`, and the slab's
+machine-checked instances (`spsc_seam_closes`, `intrusive_seam_does_not_close`, the slab's
 `slab_runtime_closes_but_static_does_not`: the same precondition closes through a *runtime*
-witness but not the *static* one), `propext` only. Honest bound unchanged: the *math* is now a
-real characterization, but the faithfulness of "precondition" and "witness" to actual Rust
-primitives — and the static-vs-runtime (zero-cost) distinction — still lives in the prose
-modeling dictionary, not the kernel.
+witness but not the *static* one, and `branded_seam_closes`: closes like SPSC, the new axes
+invisible to the kernel), `propext` only. Honest bound unchanged: the *math* is now a real
+characterization, but the faithfulness of "precondition" and "witness" to actual Rust primitives —
+and *which axis a closing seam spends* (zero-cost, API-locality, legibility) — still lives in the
+prose modeling dictionary, not the kernel, which sees only whether a Boolean witness suffices.
 
 **The one-sentence upgrade.** The trilemma says a *seamless* language is impossible; the
 constructive phase says **which** seams you can build losslessly anyway — exactly the ones
 whose dangerous precondition is fully encapsulable — while the rest force you, predictably and
-measurably, to choose a horn, with the precondition's shape telling you in advance *which*
-horn and *how wide* the seam will be. Full write-up: `design_seam/SYNTHESIS.md`.
+measurably, to choose a horn *or pay one of the recovered axes* (zero-cost, API-locality,
+legibility), with the precondition's shape telling you in advance *which* horn or axis and *how
+wide* the seam will be. The three horns are one shadow of an ≥6-axis object; each constructive
+primitive lit up a folded dimension by being the witness that two trilemma-identical
+configurations differ. Full write-up: `design_seam/SYNTHESIS.md`; face lattice:
+`design_seam/REALIZABILITY.md`.

@@ -407,7 +407,7 @@ doesn't exist.
 
 ---
 
-# Part 9 — Build and break: four real seams (the heart of it)
+# Part 9 — Build and break: five real seams (the heart of it)
 
 Theory in hand, the project stopped arguing and *built*. Crucial design of the experiment:
 **build and break are different machines.** Construction is continuity, so a *stateful builder*
@@ -415,12 +415,15 @@ Theory in hand, the project stopped arguing and *built*. Crucial design of the e
 Demolition is coldness, so the cold harness is the **red team**, aimed *only* at the re-import
 rule. Each seam ships as a **text spec** (what the cold attackers attack) *and* a real,
 `rustc`-checked crate (`seam/`) whose consumer code is `#![forbid(unsafe_code)]` and whose UB-
-laundering attempts are `compile_fail` tests. Four primitives, chosen because their preconditions
-have four *different shapes*. The headline finding:
+laundering attempts are `compile_fail` tests. Five primitives: the first four chosen because their
+preconditions have four *different shapes*, the fifth because it reopened a deeper question — *how
+many axes is the trilemma actually a projection of?* The headline finding:
 
 > **Whether a seam closes is a function of the precondition's shape** — specifically, *what the
 > dangerous conjunct is*: can the cheap checker carry it, can a runtime check carry it, is it an
-> external axiom, or does it escape to the caller entirely?
+> external axiom, or does it escape to the caller entirely? **And when a seam *does* close, *which*
+> of several hidden axes it spends to do so is a second, independent question** — the one the fifth
+> primitive forced open.
 
 ### Primitive 1 — SPSC lock-free ring buffer → the seam CLOSES (`seam/src/lib.rs`)
 
@@ -468,13 +471,14 @@ decidable, concentrated — the whole interface is safe, seam width O(1)) — an
 axis the trilemma folded away: zero-cost erasure (property #6).** The generation word per slot
 and the compare-branch per access *do not erase*. Verdict: **SEAM-COSTS [zero-cost]**.
 
-This primitive forced the project's deepest result:
+This primitive forced the **first** of two un-bundlings:
 
 > **The Seam Trilemma is a 3-of-4 projection.** "Concentrated & proof-free" had quietly bundled
 > away *zero runtime cost*. The slab prises them apart: a *concentrated* seam can still be
 > *non-erasable*. Seam width (horn 3) and zero-cost (#6) are independent axes — the slab aces the
 > first and spends the second. And #6 was one of the casualties back in Part 7's unified result;
-> the constructive phase puts it back on the map.
+> the constructive phase puts it back on the map. *(The fifth primitive, below, forces the second
+> un-bundling — and turns "3-of-4" into "3-of-N".)*
 
 *(A teaching aside from the real run: the slab's **first** cold gauntlet FAILED on a genuine UB —
 but the bug was in the **spec** (a generation-only check authenticates a fresh pool's vacant
@@ -497,18 +501,56 @@ relocates the horn: tie nodes to one lifetime → lose early reclaim (drop *usab
 primitive's purpose); full separation-logic proof → drop *decidability*. The trilemma bites
 hardest here.
 
+### Primitive 5 — branded index → the seam CLOSES, and the *dimension count grows* (`seam/src/branded.rs`)
+
+This one was chosen as a deliberate probe. The slab proved zero-cost is a hidden fourth axis; the
+test for whether there is a *fifth* is to find a primitive that aces **all four** known axes —
+sound, decidable, concentrated, *and* zero-cost — yet still pays. **Sound unchecked indexing**
+(Beingessner/Gankra's thesis Ch. 6.3; bluss's `indexing` crate) is exactly that. A *branded* index
+is a raw `usize` tagged with a generative lifetime `'id` minted fresh per `scope(slice, |view| …)`;
+because `'id` is unique to one scope over one immutable (length-frozen) slice, an index that passed
+*one* bounds check is provably in-bounds forever — so indexing elides the check. It is the first
+seam here that is **faster than safe code**, and the brand is a zero-size `PhantomData` that erases
+completely. All three horns hold; zero-cost is aced. So what's left to pay?
+
+The cold panel — grounding the answer in four decades of literature — found a real cost *outside
+the three horns*: the brand `'id` is a **viral generative type parameter**. It never appears in
+consumer *code* as a seam crossing (seam width is O(1), one `scope` per slice), but it appears in
+every consumer *type*, and traps every index inside the `scope` closure (an `Idx<'id>` literally
+cannot be returned). That is **API-locality**, and it is provably *not* seam width: Launchbury &
+Peyton Jones's `runST` (1994) and Kiselyov & Shan's branded indices (2006) pay the identical tax in
+Haskell — a language with *no `unsafe` and no seam at all*. A cost that exists where seam width is
+undefined cannot *be* seam width. Verdict: **SEAM-COSTS [API-locality]**. (The panel also caught a
+builder overclaim — naive single-index `try_index` re-checks per element, so the zero-cost win
+needs the *range*-branding the toy scoped out — and noted that AI-legibility (#7) is yet another
+axis: a brand is a nominal token, whereas a refinement type `{v:Int | v < len}` is brand-free *and*
+legible, so #5 and #7 dissociate.)
+
+This forced the **second** un-bundling, and the project's deepest structural result:
+
+> **The Seam Trilemma is a 3-of-N projection, N ≥ 6.** The slab un-bundled zero-cost from
+> "concentrated & proof-free"; the branded index un-bundles **"concentration" itself** into a
+> *code* face (seam width) and a *type* face (API-locality). Beyond the three horns the constructive
+> primitives have now exposed three more independent axes — zero-cost (#6), API-locality (#5), and
+> AI-legibility (#7) — each proven real by a *witness that two trilemma-identical configurations
+> differ*. They even have structure: within the branded index, #5 and #6 **trade** (range-branding
+> buys erasure by deepening the brand tax). The full face lattice — which property-subsets have a
+> witness, and the one still-unwitnessed claim (#5 ⟂ #7) — is `design_seam/REALIZABILITY.md`.
+
 ### The taxonomy (the whole point, in one table)
 
 | Primitive | What the missing conjunct *is* | Fate | Pays with |
 |---|---|---|---|
-| SPSC queue | floor-expressible (affinity/NLL/`Send`) | **closes** | nothing |
+| SPSC queue | floor-expressible (affinity/NLL/`Send`) | **closes** | nothing — every axis ✓ |
 | Slab | runtime-checkable (generation) | **closes** | zero-cost (#6) |
+| Branded index | cross-object identity (generative brand) | **closes** | API-locality (#5); brand is illegible (#7); #6 deferred |
 | MMIO | external physical axiom | **sound modulo TCB** | a trusted `assume` |
 | Intrusive list | aliasing+liveness that escapes to the caller | **breaks** | a trilemma horn |
 
-The decontamination signal (Part 6) held across all four: the obstruction *vanished* (SPSC),
-*moved and stayed decidable* (MMIO), *moved onto a runtime witness* (slab), or *moved and broke
-soundness* (intrusive) — and **where it moves is the entire verdict.**
+The decontamination signal (Part 6) held across all five: the obstruction *vanished* (SPSC),
+*moved and stayed decidable* (MMIO), *moved onto a runtime witness* (slab), *moved onto the type
+surface* (branded index), or *moved and broke soundness* (intrusive) — and **where it moves is the
+entire verdict.**
 
 ---
 
@@ -521,9 +563,12 @@ The trilemma's logical skeleton is machine-checked in Lean 4 (`proof/SeamGap.lea
 > (`seam_closes_iff_factors`.)
 
 Instantiated: `spsc_seam_closes` (precondition = witness → closes); `intrusive_seam_does_not_close`
-(precondition is the gap → no closing decision exists); and the slab pairing
+(precondition is the gap → no closing decision exists); the slab pairing
 `slab_runtime_closes_but_static_does_not` (the *same* precondition closes through a *runtime*
-witness but not a *static* one — the zero-cost axis, made formal at the model level).
+witness but not a *static* one — the zero-cost axis, made formal at the model level); and
+`branded_seam_closes` (closes *indistinguishably from SPSC* in the kernel — which is the point: the
+branded index's whole difference, the viral type-parameter cost, is invisible to a kernel that sees
+only whether a Boolean witness suffices).
 
 **The honest bound — and why it matters as a lesson.** A cold adversarial review of the proof
 returned the right verdict: the *checked* math is a real characterization, but the *faithfulness*
@@ -561,8 +606,8 @@ You can forget every primitive and keep these.
    a cheap/checked world and a trusted/proven one. The amateur move is to pretend it isn't there;
    the professional move is to (a) put it in one place (concentration), (b) make the obligation
    at it as visible as possible, and (c) choose *consciously* whether the boundary costs you
-   soundness, decidability, concentration, or runtime. The four-primitive taxonomy is a decision
-   procedure for that choice.
+   soundness, decidability, concentration, runtime, or API surface. The five-primitive taxonomy is a
+   decision procedure for that choice.
 
 4. **Adversarial separation of build and break.** Construction wants continuity; demolition wants
    a cold, context-free skeptic. Keeping them as separate machines — and *calibrating* your
@@ -575,6 +620,14 @@ You can forget every primitive and keep these.
    and watch whether the failure *moves* or *vanishes*. Moving = structural; vanishing = you were
    just bad at it. This single discriminator is worth more than a week of debate.
 
+6. **A bundled property hides axes; the witness that splits them proves they were there.** "Pick 2
+   of 3" framings are clean, but a horn is often a *bundle* — "concentrated & proof-free" hid zero
+   runtime cost; "concentration" hid the difference between code crossings and type infection. You
+   discover a folded axis exactly one way: exhibit two artifacts the framing calls identical that
+   *measurably differ* on the candidate (the slab vs. SPSC on runtime; the branded index vs. the
+   slab on the type surface). Until you have that witness, a "new axis" is a hunch; with it, the
+   dimension is real. Your tidy trilemma may be a shadow — look for the object casting it.
+
 ---
 
 # Part 12 — Do it yourself: exercises and a reading path
@@ -586,13 +639,18 @@ You can forget every primitive and keep these.
 - `lean proof/SeamGap.lean` — read the characterization; change a definition and watch it break.
 - Skim `design_seam/REPORT_SEAM_SPEC_*.md` — the cold attackers' actual verdicts, in their words.
 
-**Build a fifth primitive (a day).** Pick a primitive whose precondition has a *new* shape — a
+**Build a sixth primitive (a day).** Pick a primitive whose precondition has a *new* shape — a
 typed atomic cell, a bump allocator handing out overlapping views, a `Pin`-based self-referential
-struct — write the spec + a `rustc`-checked toy, predict which horn it hits, and run it through
-the harness (`python3 -m orchestrator.seam_phase --spec ... --gauntlets 1 --prior-art-web`).
-Open question worth chasing: the trilemma is a 3-of-4 projection (the slab recovered #6). Is
-there a primitive that recovers a *different* folded axis (#2 no-seam, #7 AI-legibility)? That
-would make it 3-of-*N*.
+struct — write the spec + a `rustc`-checked toy, predict which horn (or recovered axis) it hits,
+and run it through the harness (`python3 -m orchestrator.seam_phase --spec ... --gauntlets 1
+--prior-art-web`). **The sharpest open target is the one claim the project argued but never
+witnessed:** the trilemma is now a 3-of-N projection (the slab recovered zero-cost #6; the branded
+index recovered API-locality #5 and surfaced AI-legibility #7). But in the five-primitive corpus #5
+and #7 still *co-vary* — the brand is both viral and illegible. A **refinement-typed seam** (a
+Flux-style `i: usize{i < len}` bounds proof) should sit at *brand-free yet legible* — the
+off-diagonal that would separate #7 from #5 for real. Build it; if the cold panel agrees it pays
+neither #5 nor #7, you have promoted a sixth axis from "argued" to "confirmed." (See
+`design_seam/REALIZABILITY.md` for exactly which cell is empty.)
 
 **Reading path, in dependency order:**
 1. *The Rust Book*, ownership/borrowing chapters — the affine system in practice.
@@ -602,10 +660,16 @@ would make it 3-of-*N*.
    parts, absorb the *unsafe-is-justified-not-checked* thesis.
 4. **GhostCell** (Yanovski et al., ICFP 2021) — the branding trick, and why it carries aliasing
    but not lifetime.
-5. **Verus** and **Creusot** docs — what "Rust but `unsafe` is proof" actually looks like when
+5. **Generativity, end to end** — Launchbury & Peyton Jones, "Lazy Functional State Threads"
+   (PLDI 1994, the `runST` brand); Kiselyov & Shan, "Lightweight Static Capabilities" (PLPV 2006,
+   branded indices for bounds-check elision, two decades early); Beingessner ("Gankra"), *You Can't
+   Spell Trust Without Rust* (MSc thesis, Ch. 6.3); bluss's `indexing` crate. This lineage *is* the
+   fifth primitive, and the source of its API-locality cost.
+6. **Verus** and **Creusot** docs — what "Rust but `unsafe` is proof" actually looks like when
    someone ships it (the productive horn from Part 8).
-6. This repo's `WRITEUP.md` (the full result), `design_seam/SYNTHESIS.md` (the four-primitive
-   map), and `THE-SAME-WALL.md` (the cross-field boundary/veil discipline).
+7. This repo's `WRITEUP.md` (the full result), `design_seam/SYNTHESIS.md` (the five-primitive map),
+   `design_seam/REALIZABILITY.md` (the face lattice / 3-of-N proof), and `THE-SAME-WALL.md` (the
+   cross-field boundary/veil discipline).
 
 **The one thing to remember.** Decidable, sound, expressive, seamless, zero-cost — pick your
 sacrifices on purpose. The seam isn't a failure of your design; it's the place your design tells
