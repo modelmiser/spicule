@@ -83,6 +83,14 @@ pub mod intrusive;
 /// (#6) — the constructive analog of `RefCell`. See `slab`.
 pub mod slab;
 
+/// Fifth seam (Phase D — the 3-of-N probe): branded indices / sound unchecked indexing. The
+/// first primitive here to *ace* zero-cost (#6) — bounds checks are elided, the brand erases —
+/// yet it still pays, on a new axis: the brand `'id` is a viral generative type parameter that
+/// infects consumer signatures and traps indices in a `scope` closure. Seam width is O(1), so the
+/// cost is neither runtime nor a seam crossing: a fifth axis (brand-freedom / API-locality). See
+/// `branded`.
+pub mod branded;
+
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 use core::sync::atomic::{AtomicUsize, Ordering};
