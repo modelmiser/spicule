@@ -380,10 +380,136 @@
       "outcome": "FAILED",
       "cost_usd": 1.816,
       "timestamp": "2026-06-27T14:22:53+00:00"
+    },
+    {
+      "round": 7,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_slab.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 generational slab allocator (re-import rule under attack)\n\nThis is a **design proposal** for a fourth *seam* in the same hypothetical systems language\n(same floor, same rules) as the SPSC, MMIO, and intrusive-list seams. A seam re-exports a\ndangerous primitive as a checked safe interface ordinary code uses with no `unsafe` and no\nproofs. Attack the re-export: can ordinary safe code, using only this interface, reach\nundefined behavior (UB)?\n\nYou are attacking a **text specification**, not source code.\n\n---\n\n## 0. The floor (stipulated, not under attack)\n\nRust's borrow checker exactly as shipped (NLL: moves, `&T`/`&mut T`, lifetimes, affinity,\n`Drop`, `Send`/`Sync`, trait resolution). Assume it is sound for the single-threaded safe\nfragment. **Do not attack the borrow checker.** Attack only what the seam adds: the slab and\nkey types, the insert/get/remove interface, and the re-import rule.\n\n## 1. The primitive\n\nA **slab allocator** of capacity `N` over element type `T`: a fixed pool of `N` slots with a\nfree list. `insert(T)` puts a value in a free slot and returns a **`Key`**; `get(Key)` borrows\nthe value; `remove(Key)` frees the slot and returns the value. Backing stor",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "This is slotmap \u2014 a proven-tolerable pattern; only Option-tax and under-reported redundant-lookup cost, neither disqualifying.",
+          "strongest_point": "The advertised price ('one gen word + one compare-branch per access') under-reports reality: cross-node operations like an intrusive-list splice force several redundant guarded re-lookups because you can't hold a get_mut borrow across another get_mut \u2014 but engineers tolerate exactly this in practice."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "Key carries no slab identity; a cross-slab key whose generation collides with a vacant slot passes the guard and hits assume_init on uninitialized storage.",
+          "strongest_point": "The generation guard witnesses 'same number,' not 'this slab's live slot' \u2014 independent per-slab counters make a cross-slab key match a vacant slot, so get() does assume_init_ref on uninitialized memory and returns Some(&garbage), exactly the in-scope cross-slab case."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Design (B) moves S1\u2013S3 to a runtime generation compare; every implied compiler pass (monomorphization, NLL, dropck) is standard and decidable.",
+          "strongest_point": "The proposal deliberately evacuates the hard validity obligation into a runtime word-compare returning Option, so no static pass is ever asked to prove Copy-handle validity \u2014 there is nothing left for an implementation attack to overwhelm."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Cross-slab Copy key (esp. generation 0) passes the bare generation compare on a vacant slot, reading uninitialized storage.",
+          "strongest_point": "The \u00a73(B) check is generation-equality only with no occupancy/slab-id guard, so a gen-0 key from one slab authenticates a vacant slot in another and triggers assume_init on uninitialized memory."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Re-import rule credits the generation compare alone; real slotmap soundness needs opaque keys, occupancy-in-generation, and saturation retirement \u2014 all unstated.",
+          "strongest_point": "A forged Key (public fields, in-scope per \u00a75) with generation equal to a vacant slot's generation passes the bare equality check and triggers assume_init on uninitialized storage \u2014 UB; slotmap blocks this only via parity-encoded occupancy plus non-forgeable keys, neither of which \u00a74 has."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "argued-past",
+          "attacker-expressiveness": "genuine-flaw",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Runtime cost is under-reported: cross-node operations force N redundant guarded re-lookups (no aliasing get_mut), plus an Option-syntax tax at every site and no panicking Index accessor \u2014 the non-erasing witness is wider than 'one word + one branch per access'.",
+          "Even once sound, B must store/compare a per-slab brand and/or spend parity-occupancy discipline (extra word + branch), and resolve u32 saturation (slot retirement or u64) \u2014 further widening the zero-cost-axis payment."
+        ],
+        "headline": "Bare generation equality, lacking occupancy+slab-identity, reaches assume_init UB on cross-slab/forged keys.",
+        "rationale": "Three attackers independently exhibit safe code hitting assume_init on a vacant slot via a cross-slab or forged Key whose generation collides \u2014 exactly the \u00a75 in-scope cases. The check witnesses 'same number,' not 'this slab's live slot'; the Option discharge is vacuous since UB precedes it."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.4842,
+      "timestamp": "2026-06-27T16:13:12+00:00"
+    },
+    {
+      "round": 8,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_slab.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 generational slab allocator (re-import rule under attack)\n\nThis is a **design proposal** for a fourth *seam* in the same hypothetical systems language\n(same floor, same rules) as the SPSC, MMIO, and intrusive-list seams. A seam re-exports a\ndangerous primitive as a checked safe interface ordinary code uses with no `unsafe` and no\nproofs. Attack the re-export: can ordinary safe code, using only this interface, reach\nundefined behavior (UB)?\n\nYou are attacking a **text specification**, not source code.\n\n---\n\n## 0. The floor (stipulated, not under attack)\n\nRust's borrow checker exactly as shipped (NLL: moves, `&T`/`&mut T`, lifetimes, affinity,\n`Drop`, `Send`/`Sync`, trait resolution). Assume it is sound for the single-threaded safe\nfragment. **Do not attack the borrow checker.** Attack only what the seam adds: the slab and\nkey types, the insert/get/remove interface, and the re-import rule.\n\n## 1. The primitive\n\nA **slab allocator** of capacity `N` over element type `T`: a fixed pool of `N` slots with a\nfree list. `insert(T)` puts a value in a free slot and returns a **`Key`**; `get(Key)` borrows\nthe value; `remove(Key)` frees the slot and returns the value. Backing stor",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Design (B) faithfully reproduces slotmap \u2014 already production-proven ergonomic; no proofs, no annotations, O(1) seam-free calls.",
+          "strongest_point": "The only ergonomic frictions (no insert-during-borrow, no disjoint-mut, mandatory Option/unwrap) are identical to Rust's shipped slotmap, which systems programmers already tolerate daily \u2014 the antithesis of the ATS2 failure."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Occupancy tag gates assume_init independent of generation; wraparound/ABA stay logic bugs, never reach uninitialized memory.",
+          "strongest_point": "assume_init is gated by tag==OCCUPIED, which implies initialized storage regardless of the generation field, so u32 wraparound yields ABA on a valid T (logic bug) but provably never an AM-UB read or double-drop."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Design B discharges key validity at runtime, so the implied compiler pass is just the floor's borrow/trait check \u2014 nothing super-polynomial or undecidable.",
+          "strongest_point": "By explicitly declining the static slab-id brand and pushing S1\u2013S3 to a runtime generation+occupancy branch, the seam removes the only construct (invariant-lifetime generativity) that could have forced a hard or undecidable compiler pass."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "No program forced to escape; disjoint-mut omission is minor and closable within the same re-import rule",
+          "strongest_point": "The generational runtime witness can soundly re-import even disjoint_mut and mid-iteration remove, so every expressiveness limit is Rust-universal and resolved by safe idioms\u2014never by escaping the type system."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Faithful re-spec of slotmap/generational-arena; precedent confirms memory safety, including the u32 wraparound horn.",
+          "strongest_point": "slotmap's own docs settle the proposal's 'live' u32-wraparound question \u2014 occupied slots are always initialized, so wraparound aliases a wrong occupant (logic bug) but never reads uninitialized storage: 'in all circumstances is the behavior safe.'"
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "argued-past",
+          "attacker-soundness": "argued-past",
+          "attacker-implementation": "argued-past",
+          "attacker-expressiveness": "argued-past",
+          "attacker-prior-art": "argued-past"
+        },
+        "decision": "SURVIVED",
+        "tradeoffs": [
+          "Spends the zero-runtime-cost / seam-erasure property: a generation word per slot plus a non-erasing occupancy+generation compare-branch per access (the constructive RefCell-flag analog) \u2014 the proposal pays on a fourth axis rather than breaking a trilemma horn.",
+          "Cross-slab key confusion is a conceded memory-safe logic bug; full closure needs a slab-id brand the proposal declines.",
+          "u32 generation wraparound (2^32 reuses of one slot) yields ABA on a valid occupant \u2014 memory-safe, never uninitialized read; spec should document a saturation/slot-retirement policy or adopt u64 to match shipped art (generational-arena).",
+          "Enumerated interface omits get_disjoint_mut; curable within the same runtime-witness rule, not a structural defect."
+        ],
+        "headline": "Generational occupancy-tag re-import is memory-safe; cost lands on the zero-cost axis.",
+        "rationale": "Occupancy tag gates assume_init independent of generation, so wraparound and cross-slab confusion stay logic bugs, never AM-UB; S4 is pure floor exclusion. No genuine flaw; the design confirms the trilemma by paying the runtime-witness (zero-cost) price."
+      },
+      "outcome": "SURVIVED",
+      "cost_usd": 1.5372,
+      "timestamp": "2026-06-27T16:19:30+00:00"
     }
   ],
   "settled": [],
   "incompatibilities": [],
   "blind_spot_flags": [],
-  "total_cost_usd": 11.423
+  "total_cost_usd": 15.4444
 }
