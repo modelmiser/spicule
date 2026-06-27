@@ -9,7 +9,7 @@
 //! step. That is a measurable horn-3 drop (seam width O(accesses), not O(lists)) and a horn-2
 //! cost (the consumer carries a token its logic must route correctly).
 //!
-//! This module is the minimal faithful core of `ghost-cell` (Yanovski et al., POPL'21),
+//! This module is the minimal faithful core of `ghost-cell` (Yanovski et al., ICFP 2021),
 //! reduced to exactly what the contrast needs. The `unsafe` is, again, concentrated in the
 //! foundation (two blocks); but unlike SPSC the *token* leaks into the caller.
 //!
