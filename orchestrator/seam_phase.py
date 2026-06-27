@@ -88,10 +88,15 @@ def run_seam_phase(spec_path: Path, gauntlets: int, prior_art_web: bool,
 def _write_report(spec_path: Path, design_dir: Path, classifications: list[dict],
                   streak: int, gauntlets: int) -> None:
     out = design_dir / f"REPORT_{spec_path.stem}.md"
-    held = streak == gauntlets and all(c["outcome"] == "SURVIVED" for c in classifications)
+    # A TRADEOFF is a survival-with-recorded-cost (no fatal flaw), so it counts toward the
+    # streak; only a FAILED stops early. "Held" = ran the full streak with no FAILED.
+    failed_early = streak < gauntlets
+    any_cost = any(c["outcome"] == "TRADEOFF" for c in classifications)
+    status = ("stopped early (a gauntlet FAILED)" if failed_early
+              else "SEAM HELD with recorded cost" if any_cost
+              else "SEAM HELD")
     lines = [f"# Seam phase report — {spec_path.name}", "",
-             f"*{streak}/{gauntlets} consecutive cold survivals. "
-             f"{'SEAM HELD' if held else 'stopped early / cost recorded'}.*", ""]
+             f"*{streak}/{gauntlets} consecutive cold survivals. {status}.*", ""]
     for c in classifications:
         h = c["horn"]
         mark = {"SURVIVED": "✅", "FAILED": "❌", "TRADEOFF": "⚖️"}.get(c["outcome"], "•")
