@@ -1,0 +1,13 @@
+[package]
+name = "seam-spsc"
+version = "0.1.0"
+edition = "2021"
+description = "One seam: an SPSC lock-free ring buffer re-exported as a checked safe interface, built on the stipulated NLL floor (real rustc)."
+publish = false
+
+[lib]
+name = "seam_spsc"
+path = "src/lib.rs"
+
+[profile.test]
+opt-level = 0
