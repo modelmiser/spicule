@@ -39,3 +39,20 @@ SPSC's rich precondition factors so that *no hard conjunct escapes to the caller
 A primitive whose precondition has a conjunct that *cannot* be internalized (one that names
 caller-owned state) would force the caller to carry it — pushing seam width from O(buffers)
 toward O(operations). That is the Phase-C contrast (MMIO; intrusive list).
+
+## All four primitives — and why seam width ≠ zero-cost
+
+| Primitive | Consumer seam width | Runtime cost (zero-cost #6) |
+|---|---|---|
+| SPSC ring buffer | **O(1)/buffer** (`split` once) | none — fully erased |
+| MMIO read-to-clear | **O(1)** with a foundation `Send` opt-in, else O(ISRs) | none — fully erased |
+| Generational slab | **O(1)** — `insert`/`get`/`remove` are all safe calls | **non-zero** — a generation word/slot + a compare branch/access, never erased |
+| Intrusive list (branded) | **O(accesses)** — the token threads through every access | (design A erases; the cost is seam width / lost reclaim) |
+
+**The slab is the instructive row: it *aces* seam width (horn 3) yet still pays — on a different
+axis (zero-cost / #6).** Concentration asks "how often does ordinary code touch the seam"; erasure
+asks "does the witness survive to run time." They are independent. The slab's witness is read once
+per access *inside* the seam (so the consumer never crosses — width O(1)) but it is a runtime
+load-and-branch (so it does not erase). That is precisely why the Seam Trilemma is a 3-of-4
+projection: bundling "concentrated & proof-free" hides that a concentrated seam can still be
+non-zero-cost. See `SYNTHESIS.md`.

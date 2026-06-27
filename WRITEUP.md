@@ -378,8 +378,8 @@ contaminated the result with almost-right rules). Construction is continuity, de
 coldness — so here a *stateful builder* writes the smallest thing that compiles, and the
 cold harness is the **red team**, pointed only at the re-import rule. Each seam ships as a
 text spec *and* a real `rustc`-checked crate (`seam/`) whose consumer code is
-`#![forbid(unsafe_code)]` and whose laundering paths are `compile_fail` tests. Three
-primitives were chosen because their preconditions have three different *shapes*.
+`#![forbid(unsafe_code)]` and whose laundering paths are `compile_fail` tests. Four
+primitives were chosen because their preconditions have four different *shapes*.
 
 The result is sharper than "seams are hard." **Whether a seam closes is a function of the
 precondition's shape** — specifically, whether every caller-observable conjunct of the true
@@ -390,30 +390,47 @@ decidable trait bounds):
 |---|---|---|---|---|
 | **SPSC ring buffer** | SEAM-HOLDS (4 cold panels) | none drops | **O(1)/buffer**, 0/element | *Fully encapsulable* — cardinality→affinity, storage→NLL `'a`, payload→decidable `T: Send`; happens-before leaves no caller-visible residue. This is `heapless::spsc`/`rtrb`; RustBelt machine-checked the class. |
 | **MMIO read-to-clear** | SEAM-COSTS [horn 3] | sound+decidable, marked cost | O(1) *with* a foundation `Send` opt-in | *Sound modulo an external axiom* — "this address really is this register" is a physical-world fact, a TCB `assume` boundary (Low\*/seL4/CompCert), **not a fourth horn**. The price is a horn-3 `Send`-opt-in for the ISR use. |
+| **Generational slab** | SEAM-COSTS [#6 zero-cost] (one revision) | all 3 trilemma horns hold | **O(1)**, fully-safe interface | *`Copy`-handle validity — runtime-checkable* — a `Copy` key defeats affinity, but a per-slot generation+occupancy check carries it at run time. Closes the trilemma but spends **zero-cost erasure (#6)** — `RefCell`/`slotmap`'s move. |
 | **Intrusive linked list** | SEAM-BREAKS [horn 1] | horn 1 drops | O(accesses); repair forbids early reclaim | *Aliasing + liveness escapes to the caller* — the `GhostCell` brand carries L1/L4 (aliasing) but **not L2** (membership-vs-storage lifetime), so the rule type-accepts a use-after-free. |
+
+**The slab forced a deeper finding: the Seam Trilemma is a 3-of-4 projection.** The slab keeps
+all three horns yet still pays — on *zero runtime cost* (#6), the property the trilemma had
+folded into "concentrated & proof-free." So the four shapes are a taxonomy of *what the missing
+conjunct is*: floor-expressible → closes free (SPSC); runtime-checkable → closes at the cost of
+#6 (slab; `RefCell`); an external physical axiom → sound modulo a TCB `assume`, outside the
+trilemma (MMIO); whole-heap aliasing+liveness that escapes to the caller → a horn genuinely
+drops (intrusive). The recovered fourth axis is exactly the #6 that was a casualty back in the
+`unified` result — the constructive phase puts it back on the map.
 
 **Decontamination, across primitives.** The seamful2 theorem predicted that a failing seam's
 obstruction *relocates* to the re-import boundary rather than vanishing. SPSC: it **vanished**
 (precondition factors through the witness). MMIO: it **moved and stayed decidable** (the
-`Send` opt-in). Intrusive: it **moved and broke soundness** (L2 UAF), and every repair walks
-into another horn — collapse lifetimes → drop usability (the `seam/` implementation is this
-"design A": sound, but it forbids the early reclaim that is the primitive's purpose); full
-separation logic → drop decidability. "Moves, doesn't vanish" held for both non-encapsulable
-primitives.
+`Send` opt-in). Slab: it **moved off the *static* witness onto a *runtime* one** (the
+generation+occupancy check carries what affinity cannot, at a runtime cost). Intrusive: it
+**moved and broke soundness** (L2 UAF), and every repair walks into another horn — collapse
+lifetimes → drop usability (the `seam/` implementation is this "design A": sound, but it forbids
+the early reclaim that is the primitive's purpose); full separation logic → drop decidability.
+"Moves, doesn't vanish" held for all three non-trivially-encapsulable primitives, and *where* it
+moved was the whole verdict.
 
-**The adversary earned its keep — twice.** On MMIO it named the axiom's category correctly (a
-TCB boundary, not a horn) and surfaced a horn-3 cost the builder had under-weighted. On the
-intrusive list it proved something *worse* than the builder predicted: branding does not
-restore soundness at all (a brand is an *access* capability, not a *storage* lifetime), which
-corrected a real overclaim in the build-side framing.
+**The adversary earned its keep — three times.** On MMIO it named the axiom's category correctly
+(a TCB boundary, not a horn) and surfaced a horn-3 cost the builder had under-weighted. On the
+intrusive list it proved something *worse* than the builder predicted: branding does not restore
+soundness at all (a brand is an *access* capability, not a *storage* lifetime), correcting a real
+overclaim. On the slab it found a genuine UB in the builder's *spec* (a generation-only guard
+authenticates a fresh slab's vacant gen-0 slot) — though the *implementation* checked occupancy
+first and a regression test proved it rejects the exact exploit; the revised spec then survived.
+A real spec↔impl divergence, which is exactly what build/break separation exists to surface.
 
 **Mechanization.** `proof/SeamGap.lean` was upgraded from the one-direction triviality its own
 cold review had flagged to a genuine characterization — `seam_closes_iff_factors`: a seam
-closes **iff** its precondition factors through the safe witness — with the two regimes as
-machine-checked instances (`spsc_seam_closes`, `intrusive_seam_does_not_close`), `propext`
-only. Honest bound unchanged: the *math* is now a real characterization, but the faithfulness
-of "precondition" and "witness" to actual Rust primitives still lives in the prose modeling
-dictionary, not the kernel.
+closes **iff** its precondition factors through the safe witness — with the regimes as
+machine-checked instances (`spsc_seam_closes`, `intrusive_seam_does_not_close`, and the slab's
+`slab_runtime_closes_but_static_does_not`: the same precondition closes through a *runtime*
+witness but not the *static* one), `propext` only. Honest bound unchanged: the *math* is now a
+real characterization, but the faithfulness of "precondition" and "witness" to actual Rust
+primitives — and the static-vs-runtime (zero-cost) distinction — still lives in the prose
+modeling dictionary, not the kernel.
 
 **The one-sentence upgrade.** The trilemma says a *seamless* language is impossible; the
 constructive phase says **which** seams you can build losslessly anyway — exactly the ones
