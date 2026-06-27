@@ -108,4 +108,73 @@ theorem concentrated_sound_not_usable :
       cases hr with
       | intro hc hu => exact no_decision_has_all_three ⟨d, hs, hu, hc⟩
 
+/- ──────────────────────────────────────────────────────────────────────────
+   THE CHARACTERIZATION (added in the constructive "build-and-break" phase).
+
+   The trilemma above is the negative half: when P does not factor through V, no
+   decision is sound+usable+concentrated. The constructive phase found the result
+   is primitive-dependent — some seams (SPSC) CLOSE, others (intrusive list) drop a
+   horn — and the dividing line is *exactly* whether the soundness precondition
+   factors through the safe witness. We mechanize that iff, parameterised over an
+   arbitrary precondition `Pr` and witness `Wt`, then instantiate the two regimes.
+
+   Honest bound (carrying forward proof/REVIEW.md): this upgrades the checked claim
+   from "P is not a function of V" to "the seam closes IFF P is a function of V" —
+   a genuine characterization whose CLOSING direction must construct the decision.
+   But what makes `Pr`/`Wt` faithful to a real Rust primitive (affinity carries
+   SPSC's cardinality; GhostCell's brand is the only carrier for intrusive aliasing)
+   still lives in the prose modeling dictionary, not in the kernel. The math is now
+   a true characterization; the PL faithfulness is still asserted, not verified.
+   ────────────────────────────────────────────────────────────────────────── -/
+
+section Characterization
+variable (Pr Wt : Prog → Bool)
+
+/-- Sound / Usable / Concentrated, parameterised over an arbitrary (precondition,
+    witness). `Sound`/`Usable`/`Concentrated` above are the `Pr=P, Wt=V` instances. -/
+def SoundW (d : Prog → Bool) : Prop := ∀ p, d p = true → Pr p = true
+def UsableW (d : Prog → Bool) : Prop := ∀ p, Pr p = true → d p = true
+def ConcW (d : Prog → Bool) : Prop := ∃ cert : Bool → Bool, ∀ p, d p = cert (Wt p)
+
+/-- A seam CLOSES (vends a sound, usable, proof-free/concentrated interface) **iff**
+    its soundness precondition factors through the safe witness. This is the exact
+    dividing line between SPSC (closes) and the intrusive list (drops a horn). -/
+theorem seam_closes_iff_factors :
+    (∃ d : Prog → Bool, SoundW Pr d ∧ UsableW Pr d ∧ ConcW Wt d) ↔
+    (∃ cert : Bool → Bool, ∀ p, Pr p = cert (Wt p)) := by
+  constructor
+  · rintro ⟨d, hsound, husable, cert, hcent⟩
+    exact ⟨cert, fun p => by
+      have : d p = Pr p := bool_eq_of_iff (hsound p) (husable p)
+      rw [← this]; exact hcent p⟩
+  · rintro ⟨cert, hfac⟩
+    exact ⟨Pr, fun _ hp => hp, fun _ hp => hp, cert, hfac⟩
+
+end Characterization
+
+/- ── The two regimes, instantiated as machine-checked verdicts. ── -/
+
+/-- SPSC shape: the soundness-critical fact IS carried by the safe witness (affinity
+    discharges cardinality; happens-before leaves no caller-visible residue), so the
+    precondition is literally `Wt`. The seam CLOSES — a sound, usable, concentrated
+    decision exists. -/
+def Pspsc (p : Prog) : Bool := V p
+
+theorem spsc_seam_closes :
+    ∃ d : Prog → Bool, SoundW Pspsc d ∧ UsableW Pspsc d ∧ ConcW V d := by
+  rw [seam_closes_iff_factors]
+  exact ⟨id, fun _ => rfl⟩
+
+/-- Intrusive shape: the soundness-critical fact (no aliasing `&mut` over caller-owned
+    nodes) is NOT carried by the witness — it is the very gap `P_not_V_measurable`
+    names. The seam does NOT close: any decision must drop sound-, usable-, or
+    concentrated-ness (the GhostCell token = giving up concentration). -/
+theorem intrusive_seam_does_not_close :
+    ¬ ∃ d : Prog → Bool, SoundW P d ∧ UsableW P d ∧ ConcW V d := by
+  rw [seam_closes_iff_factors]
+  intro h
+  apply P_not_V_measurable
+  rcases h with ⟨cert, hfac⟩
+  exact ⟨cert, fun p => (hfac p).symm⟩
+
 end SeamGap
