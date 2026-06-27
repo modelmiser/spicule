@@ -369,3 +369,54 @@ unified calibration control had *already proven costless* — removed the first 
 the second alone. A 0/N adversarial result is only as good as your ability to rule out
 "the proposer was just weak," and the cleanest way to do that is to *hand the proposer
 the known-good sub-component and watch the failure move, not disappear.*
+
+## 10. The constructive phase — build and break three real seams
+
+The trilemma is a map, so the next step was to stop arguing in the abstract and **build**.
+A different harness shape: the negative half used cold instances to *propose* (and they
+contaminated the result with almost-right rules). Construction is continuity, demolition is
+coldness — so here a *stateful builder* writes the smallest thing that compiles, and the
+cold harness is the **red team**, pointed only at the re-import rule. Each seam ships as a
+text spec *and* a real `rustc`-checked crate (`seam/`) whose consumer code is
+`#![forbid(unsafe_code)]` and whose laundering paths are `compile_fail` tests. Three
+primitives were chosen because their preconditions have three different *shapes*.
+
+The result is sharper than "seams are hard." **Whether a seam closes is a function of the
+precondition's shape** — specifically, whether every caller-observable conjunct of the true
+precondition can be carried by the floor's witness vocabulary (affinity, NLL lifetimes,
+decidable trait bounds):
+
+| Primitive | Cold verdict | Horn | Seam width (measured) | Why |
+|---|---|---|---|---|
+| **SPSC ring buffer** | SEAM-HOLDS (4 cold panels) | none drops | **O(1)/buffer**, 0/element | *Fully encapsulable* — cardinality→affinity, storage→NLL `'a`, payload→decidable `T: Send`; happens-before leaves no caller-visible residue. This is `heapless::spsc`/`rtrb`; RustBelt machine-checked the class. |
+| **MMIO read-to-clear** | SEAM-COSTS [horn 3] | sound+decidable, marked cost | O(1) *with* a foundation `Send` opt-in | *Sound modulo an external axiom* — "this address really is this register" is a physical-world fact, a TCB `assume` boundary (Low\*/seL4/CompCert), **not a fourth horn**. The price is a horn-3 `Send`-opt-in for the ISR use. |
+| **Intrusive linked list** | SEAM-BREAKS [horn 1] | horn 1 drops | O(accesses); repair forbids early reclaim | *Aliasing + liveness escapes to the caller* — the `GhostCell` brand carries L1/L4 (aliasing) but **not L2** (membership-vs-storage lifetime), so the rule type-accepts a use-after-free. |
+
+**Decontamination, across primitives.** The seamful2 theorem predicted that a failing seam's
+obstruction *relocates* to the re-import boundary rather than vanishing. SPSC: it **vanished**
+(precondition factors through the witness). MMIO: it **moved and stayed decidable** (the
+`Send` opt-in). Intrusive: it **moved and broke soundness** (L2 UAF), and every repair walks
+into another horn — collapse lifetimes → drop usability (the `seam/` implementation is this
+"design A": sound, but it forbids the early reclaim that is the primitive's purpose); full
+separation logic → drop decidability. "Moves, doesn't vanish" held for both non-encapsulable
+primitives.
+
+**The adversary earned its keep — twice.** On MMIO it named the axiom's category correctly (a
+TCB boundary, not a horn) and surfaced a horn-3 cost the builder had under-weighted. On the
+intrusive list it proved something *worse* than the builder predicted: branding does not
+restore soundness at all (a brand is an *access* capability, not a *storage* lifetime), which
+corrected a real overclaim in the build-side framing.
+
+**Mechanization.** `proof/SeamGap.lean` was upgraded from the one-direction triviality its own
+cold review had flagged to a genuine characterization — `seam_closes_iff_factors`: a seam
+closes **iff** its precondition factors through the safe witness — with the two regimes as
+machine-checked instances (`spsc_seam_closes`, `intrusive_seam_does_not_close`), `propext`
+only. Honest bound unchanged: the *math* is now a real characterization, but the faithfulness
+of "precondition" and "witness" to actual Rust primitives still lives in the prose modeling
+dictionary, not the kernel.
+
+**The one-sentence upgrade.** The trilemma says a *seamless* language is impossible; the
+constructive phase says **which** seams you can build losslessly anyway — exactly the ones
+whose dangerous precondition is fully encapsulable — while the rest force you, predictably and
+measurably, to choose a horn, with the precondition's shape telling you in advance *which*
+horn and *how wide* the seam will be. Full write-up: `design_seam/SYNTHESIS.md`.
