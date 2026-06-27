@@ -81,3 +81,15 @@ fn drops_occupied_payloads_exactly_once() {
     }
     assert_eq!(DROPS.load(Ordering::SeqCst), 2, "each payload dropped exactly once");
 }
+
+#[test]
+fn harness_exploit_fresh_slab_gen0_is_rejected_by_impl() {
+    // The cold harness's exact UB path against the SPEC (generation-only check). Verify the
+    // IMPLEMENTATION is not vulnerable: my `get` matches Entry::Occupied BEFORE comparing
+    // generations, so a fresh slab's vacant slot 0 yields None, never assume_init on uninit.
+    let mut a = Slab::<u64, 4>::new();
+    let key = a.insert(123).ok().unwrap(); // first-ever insert → {index:0, generation:0}
+    let mut b = Slab::<u64, 4>::new();     // fresh slab: slot 0 VACANT at generation 0
+    assert_eq!(b.get(key), None, "impl rejects fresh-slab gen-0 key (occupancy guards assume_init)");
+    assert_eq!(b.remove(key), None, "remove likewise rejects it");
+}

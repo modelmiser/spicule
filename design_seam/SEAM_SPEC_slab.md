@@ -62,26 +62,40 @@ sound designs exist, and they differ on **what they spend**:
   no longer be held across a `remove`, i.e. the `Copy`-survives-mutation power that motivates a
   slab is gone. (The intrusive seam met the same wall as "design A".)
 - **(B) Generational (runtime-checked).** `Key{index, generation}` (`Copy`). Each slot stores a
-  `generation: u32`, bumped on every `remove`. `get`/`remove` first check
-  `key.generation == slot.generation`; on mismatch they return `None` (stale key rejected); on
-  match the foundation does `unsafe { slot.storage.assume_init_ref() }`. **The generation check
-  is a runtime witness that makes the `unsafe` sound.** Keys stay `Copy` and survive removes
-  (ABA caught, returns `None`). Sound, decidable, proof-free, and the seam is crossed only at
-  the safe `get`/`insert`/`remove` calls.
+  `generation: u32` **and an occupied/vacant tag**, with the generation bumped on every
+  `remove`. `get`/`remove` perform the runtime witness in two parts: the slot must be **tagged
+  occupied** AND `key.generation == slot.generation`; if either fails they return `None`. Only
+  on a slot that is *verified occupied at the matching generation* does the foundation do
+  `unsafe { slot.storage.assume_init_ref() }`. **Both conjuncts are load-bearing** — a
+  generation-equality test *alone* authenticates a number, not occupancy of this slab's slot
+  (a fresh `Slab::new()` slot sits at generation 0, the value every first-ever key carries), so
+  the occupancy tag is what actually stops `assume_init` on uninitialized storage. (Equivalently,
+  `slotmap` encodes occupancy into the version's parity — `version | 1` — so a vacant even
+  version can never equal an occupied odd key; same effect, one field.) Keys stay `Copy` and
+  survive removes (ABA caught, returns `None`). Sound, decidable, proof-free, and the seam is
+  crossed only at the safe `get`/`insert`/`remove` calls.
 
-This proposal adopts **design (B)**.
+This proposal adopts **design (B)** with the occupancy conjunct explicit.
 
 ## 4. The re-import rule (THE THING UNDER ATTACK)
 
 > **Re-import.** A `Slab<T>` vends `Copy` `Key`s and a safe `get`/`get_mut`/`remove` interface.
 > The safe fragment may type these as ordinary safe methods — no `unsafe`, no proof — because
-> the foundation's `unsafe { assume_init }` is guarded by a **runtime generation check** that
-> rejects every stale or ABA key as `None` before any uninitialized slot is touched. The
-> `Option` return *is* the discharge of S1–S3 at the use site.
+> the foundation's `unsafe { assume_init }` is guarded by a **runtime occupancy-and-generation
+> check** that rejects every stale, ABA, or wrong-slot key as `None` before any uninitialized
+> slot is touched. The `Option` return *is* the discharge of S1–S3 at the use site.
 
 Structural + dynamic stoppers: `get` returns `Option`, forcing the consumer to handle the
-stale-key case; the generation bump on `remove` makes a reused slot's old keys mismatch (S3);
-`assume_init` is reached only on a verified-occupied slot (S2).
+stale-key case; `assume_init` is reached only on a slot **verified occupied** (S2) at the
+**matching generation** (S1), and the generation bump on `remove` makes a reused slot's old
+keys mismatch (S3).
+
+**Honest residual caveat (memory-safe, not UB).** Keys carry no slab identity, so a key from
+slab A used on slab B can, if B's slot at that index is occupied at the matching generation,
+return B's value (a valid `T`, wrong entry). This is a *logic* bug, not UB — `assume_init` only
+ever runs on B's own initialized storage — and it is the standard `slab`/`slotmap` position
+(cross-arena keys are memory-safe but logically unspecified). Closing it fully needs a slab-id
+brand; this proposal accepts the caveat and claims only **memory safety** across slabs.
 
 ## 5. Threat model
 
@@ -96,10 +110,14 @@ rely on it).
 ## 6. The scoring rubric — which horn does your attack hit?
 
 - **Horn 1 — sound re-import.** Exhibit safe consumer code that reads/drops uninitialized
-  storage, double-frees, or ABA-aliases via the `Copy` key — *despite* the generation check.
-  (E.g.: can a forged or cross-slab `Key` pass the check? Does generation wraparound alias?
-  Can a `remove` during iteration invalidate a `&T` the floor thinks is live?) Give the exact
-  sequence.
+  storage, double-frees, or ABA-aliases via the `Copy` key — *despite the occupancy-and-
+  generation check of §3(B)* (the check is occupancy AND generation; a vacant or
+  wrong-generation slot returns `None`, and `Key` fields are private so forgery is out).
+  Remaining live questions for AM-level UB: does `u32` generation *wraparound* (2³² removes of
+  one slot) let an old key alias a new occupant? Can a `remove` during a live `&T`/iteration
+  invalidate a reference the floor believes is live (S4)? Cross-slab key confusion is conceded
+  as a memory-safe logic bug (§4) — only flag it if you can turn it into actual AM-UB. Give the
+  exact sequence.
 - **Horn 2 — decidable & proof-free safe fragment.** Show the interface forces the consumer to
   write a proof or thread a token through ordinary code.
 - **Horn 3 — seam concentration.** Count the crossings: are `insert`/`get`/`remove` seam-free
