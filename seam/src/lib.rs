@@ -77,6 +77,12 @@ pub mod mmio;
 /// measurable horn-3 drop. See `intrusive`.
 pub mod intrusive;
 
+/// Fourth seam (Phase C contrast): a generational slab allocator. The handle (`Key`) is
+/// `Copy`, so affinity can't track its validity; the danger (stale/ABA keys) is resolved by a
+/// runtime generation check. Keeps all three trilemma horns but spends the zero-cost property
+/// (#6) — the constructive analog of `RefCell`. See `slab`.
+pub mod slab;
+
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 use core::sync::atomic::{AtomicUsize, Ordering};

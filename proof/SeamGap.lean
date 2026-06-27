@@ -177,4 +177,29 @@ theorem intrusive_seam_does_not_close :
   rcases h with ⟨cert, hfac⟩
   exact ⟨cert, fun p => (hfac p).symm⟩
 
+/-- Slab shape (the `Copy`-key / `RefCell` corner): the soundness fact is NOT a function of the
+    STATIC witness `V` — a `Copy` key, like an interior-mutability handle, defeats `V`, so by
+    `intrusive_seam_does_not_close` the seam cannot close through `V`. But unlike the intrusive
+    list, it DOES factor through a RUNTIME witness `Vrt` that reads the live exclusivity fact
+    (the generation check). Modelling that richer witness, the seam closes.
+
+    The whole zero-cost story lives in the *difference* between `V` and `Vrt`: `V` is static and
+    erasable, `Vrt` is computed at run time and does NOT erase. That distinction (which witness
+    is free) is the property #6 the trilemma folded away — and it is modeling-dictionary, not
+    kernel: the Lean only sees two Boolean witnesses, not their compile-time cost. -/
+def Vrt (p : Prog) : Bool := p.region_ok && (!p.aliased)  -- runtime witness: reads live state
+
+theorem slab_closes_through_runtime_witness :
+    ∃ d : Prog → Bool, SoundW P d ∧ UsableW P d ∧ ConcW Vrt d := by
+  rw [seam_closes_iff_factors]
+  exact ⟨id, fun _ => rfl⟩   -- P factors through Vrt (definitionally Vrt = P): closes at runtime cost
+
+/-- The pairing that IS the slab's lesson, machine-checked: the SAME precondition `P` does not
+    close through the static (erasable) witness, but does through the runtime (non-erasable) one.
+    Seam-width/concentration is aced either way; the price is which witness you had to read. -/
+theorem slab_runtime_closes_but_static_does_not :
+    (¬ ∃ d : Prog → Bool, SoundW P d ∧ UsableW P d ∧ ConcW V d) ∧
+    (∃ d : Prog → Bool, SoundW P d ∧ UsableW P d ∧ ConcW Vrt d) :=
+  ⟨intrusive_seam_does_not_close, slab_closes_through_runtime_witness⟩
+
 end SeamGap
