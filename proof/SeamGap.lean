@@ -202,4 +202,28 @@ theorem slab_runtime_closes_but_static_does_not :
     (∃ d : Prog → Bool, SoundW P d ∧ UsableW P d ∧ ConcW Vrt d) :=
   ⟨intrusive_seam_does_not_close, slab_closes_through_runtime_witness⟩
 
+/-- Branded-index shape (sound unchecked indexing — Beingessner/Gankra Ch. 6.3; bluss's `indexing`).
+    Like SPSC, the soundness-critical fact (B1∧B2∧B3: in-bounds ∧ length-frozen ∧ index-belongs-
+    to-THIS-slice) IS carried by the safe witness — here a *generative brand*: an invariant `'id`
+    that ties a proof-carrying index to one frozen-length slice. So the precondition factors through
+    the witness and the seam CLOSES, exactly as SPSC does: sound + usable + concentrated all hold.
+
+    `Pbrand` is definitionally `V`, just like `Pspsc` — and that identity is the POINT, not a
+    redundancy: in the kernel the branded index closes *indistinguishably* from SPSC. Their whole
+    difference lives where the kernel cannot see — the cold panel (REPORT_SEAM_SPEC_branded.md)
+    located it precisely: `V` here is a *viral generative type parameter* (the #5 API-locality cost,
+    attested across the `runST`/lightweight-capabilities lineage in languages with no seam at all,
+    hence provably NOT seam-width), the zero-cost win is *deferred* to out-of-scope range machinery
+    (#6, conditional on access pattern), and the brand is a *nominal* witness (#7 illegibility,
+    dissociable from #5 by refinement types). Same modeling-dictionary caveat as the slab's `Vrt`:
+    the math says "closes"; *which axes it spends to close* is prose, because the kernel sees only a
+    Boolean witness, never whether that witness erases, infects types, or carries reconstructible
+    meaning. This instance is what makes the trilemma a 3-of-N (N≥6), not 3-of-4, projection. -/
+def Pbrand (p : Prog) : Bool := V p
+
+theorem branded_seam_closes :
+    ∃ d : Prog → Bool, SoundW Pbrand d ∧ UsableW Pbrand d ∧ ConcW V d := by
+  rw [seam_closes_iff_factors]
+  exact ⟨id, fun _ => rfl⟩
+
 end SeamGap

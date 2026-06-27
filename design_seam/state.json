@@ -506,10 +506,73 @@
       "outcome": "SURVIVED",
       "cost_usd": 1.5372,
       "timestamp": "2026-06-27T16:19:30+00:00"
+    },
+    {
+      "round": 9,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_branded.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 branded indices / sound unchecked indexing (re-import rule under attack)\n\nThis is a **design proposal** for a fifth *seam* in the same hypothetical systems language (same\nfloor, same rules) as the SPSC, MMIO, intrusive-list, and slab seams. A seam re-exports a\ndangerous primitive as a checked safe interface ordinary code uses with no `unsafe` and no proofs.\nAttack the re-export: can ordinary safe code, using only this interface, reach undefined behavior\n(UB)?\n\nYou are attacking a **text specification**, not source code.\n\n---\n\n## 0. The floor (stipulated, not under attack)\n\nRust's borrow checker exactly as shipped (NLL: moves, `&T`/`&mut T`, lifetimes, affinity, `Drop`,\n`Send`/`Sync`, trait resolution, higher-ranked `for<'x>` bounds and lifetime invariance). Assume it\nis sound for the single-threaded safe fragment. **Do not attack the borrow checker.** Attack only\nwhat the seam adds: the branded-slice and index types, the `scope`/`try_index`/indexing interface,\nand the re-import rule.\n\n## 1. The primitive\n\n**Unchecked array indexing** \u2014 `slice.get_unchecked(i)`, which reads element `i` with **no bounds\ncheck**. Out of bounds is instant UB (reads arbitrary memory). It i",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Sound but mischaracterized: incomparable per-slice brands remove zero checks on multi-slice loops and lose to iterators; stored-index patterns barred outright.",
+          "strongest_point": "On the advertised multi-slice numeric loop, incomparable brands force a bounds check per extra slice\u2014eliminating none of them\u2014so the primitive is strictly dominated by zip-iterators it was meant to beat."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Read-only branded indexing is sound; B1/B2/B3 all discharged; checking decidable.",
+          "strongest_point": "Invariant generativity makes the brand\u21a6slice map a bijection, so no Idx can ever index a slice of a different (shorter) frozen length."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "No new compiler pass; unchecked access is library-internal unsafe, brands are erased lifetimes \u2014 nothing blows up.",
+          "strongest_point": "The undecidable proof-carrying-elision pass is never required because the get_unchecked sits inside the foundation's hidden unsafe, and brand virality is lifetime-level so it erases before monomorphization rather than exploding it."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Sound, but one-brand-per-slice forbids SoA parallel-array loops and stored indices \u2014 the canonical hot paths \u2014 forcing unsafe fallback.",
+          "strongest_point": "A single index reused across equal-length parallel arrays (the dominant data-oriented hot loop) is a type error because each scope mints one incomparable brand for exactly one slice."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Faithful re-implementation of RustBelt-verified generativity (ST-monad\u2192Kiselyov-Shan\u2192indexing\u2192GhostCell); sound, but cost is old, not novel.",
+          "strongest_point": "By bluss's own design history, the single-index try_index core relocates rather than eliminates the bounds check, so the headline 'faster than slice[i]' zero-cost claim holds only for the range API the proposal scopes out."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "argued-past",
+          "attacker-implementation": "argued-past",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "TRADEOFF",
+        "tradeoffs": [
+          "Brand-virality / API-locality is a genuine FIFTH independent axis, dissociated from seam-concentration (horn 3): crossing-count stays O(1) while the invariant brand contaminates every signature touching an index and confines all use to one non-escaping closure. Not an 'ergonomic wart' \u2014 it excludes the flagship workloads (multi-slice/SoA loops, stored/persistent index handles).",
+          "The zero-cost (#6) / 'faster than slice[i]' claim is FALSE for the specified single-index read-only core: per-element try_index relocates the bounds check rather than eliminating it. The speed win exists only for the Range<'id>/derived-index API the proposal scopes OUT, so as written it keeps 3 axes (sound, proof-free, concentrated) and DEFERS the fourth.",
+          "Brand witness pays on #7 (AI-legibility): Idx<'id> is a nominal token with no on-its-face predicate; #5 and #7 are separable (a refinement type pays #7 without #5), so a future variant could dissociate them."
+        ],
+        "headline": "Read-only branded indexing is sound, but a genuine fifth axis and an overstated zero-cost claim must be recorded.",
+        "rationale": "No attacker reached UB or undecidability; B1\u2227B2\u2227B3 hold (RustBelt-verified lineage). But ergonomics/expressiveness/prior-art jointly establish a real fifth axis (brand-virality) and show the single-index core relocates\u2014not eliminates\u2014the check, falsifying the 'keeps all four axes' framing. Sound, but costs."
+      },
+      "outcome": "TRADEOFF",
+      "cost_usd": 2.518,
+      "timestamp": "2026-06-27T20:58:42+00:00"
     }
   ],
   "settled": [],
   "incompatibilities": [],
   "blind_spot_flags": [],
-  "total_cost_usd": 15.4444
+  "total_cost_usd": 17.9624
 }
