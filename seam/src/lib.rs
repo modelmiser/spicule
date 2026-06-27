@@ -66,6 +66,17 @@
 
 #![forbid(unsafe_op_in_unsafe_fn)]
 
+/// Second seam (Phase C contrast): an MMIO read-to-clear register. Memory-safe seam
+/// closes to O(1) width like SPSC — but its soundness rests on an external physical-world
+/// axiom (M1/M4) no checker can discharge. See `mmio::StatusReg`.
+pub mod mmio;
+
+/// Third seam (Phase C contrast): an intrusive doubly-linked list. The affine re-import that
+/// closed SPSC is structurally inapplicable (nodes alias); the sound mechanism (GhostCell
+/// branding) threads a token through ordinary consumer code — seam width O(accesses), a
+/// measurable horn-3 drop. See `intrusive`.
+pub mod intrusive;
+
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 use core::sync::atomic::{AtomicUsize, Ordering};

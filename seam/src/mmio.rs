@@ -1,0 +1,99 @@
+//! # Second seam — an MMIO read-to-clear status register (Phase C contrast)
+//!
+//! Same floor, same rules as the SPSC seam. The point of this primitive is to show a seam
+//! whose *memory-safety* obstruction **closes** exactly like SPSC (affine singleton handle,
+//! encapsulated volatile access, O(1) seam width) — yet whose *soundness* rests on an axiom
+//! that is **outside the formal system entirely**: the claim that a given address really is
+//! this device register with these datasheet bit-semantics (M1/M4 in the spec). No checker,
+//! decidable or not, in this language or any, can discharge that — it is asserted by fiat in
+//! the one place the HAL author writes the base address.
+//!
+//! We cannot read real hardware in a unit test, so a static cell stands in for the physical
+//! MMIO region; the **affine + volatile + read-to-clear structure** is the real demonstration.
+//!
+//! Affine handle cannot be cloned (would break single-owner M3):
+//! ```compile_fail
+//! # use seam_spsc::mmio::StatusReg;
+//! let reg = StatusReg::take().unwrap();
+//! let _r2 = reg.clone(); // ERROR: StatusReg is affine — no Clone
+//! ```
+
+use core::cell::UnsafeCell;
+use core::sync::atomic::{AtomicBool, Ordering};
+
+/// Stand-in for the physical MMIO region. On hardware this is `0x4000_4400 as *mut u32`;
+/// the **M1/M4 axiom** is exactly the claim that that address is this register. Accessed by
+/// a single owner (M3), so the interior mutability is never raced.
+struct Mmio(UnsafeCell<u32>);
+// SAFETY: a real MMIO region is a fixed address; single-owner access (M3, enforced by the
+// affine singleton handle) means no data race despite the shared static.
+unsafe impl Sync for Mmio {}
+static REGION: Mmio = Mmio(UnsafeCell::new(0));
+
+static TAKEN: AtomicBool = AtomicBool::new(false);
+
+/// A status word read from the register.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Status(pub u32);
+
+/// A configuration word written to the register.
+#[derive(Debug, Clone, Copy)]
+pub struct Config(pub u32);
+
+/// Affine singleton handle to the status register. No `Clone`/`Copy`; not `Sync`.
+/// Holding one is the certificate that you are the unique owner of a real, datasheet-correct
+/// register (M1/M3/M4) — the parts the floor cannot check are folded into `take`.
+pub struct StatusReg {
+    _priv: (),
+}
+
+impl StatusReg {
+    /// Claim the register. Safe to call, but returns `None` if already taken — the run-time
+    /// singleton that discharges **M3** (at most one owner). The `unsafe`-by-fiat content is
+    /// the address baked into this HAL: by handing out a `StatusReg`, the HAL asserts M1/M4.
+    pub fn take() -> Option<StatusReg> {
+        if TAKEN.swap(true, Ordering::AcqRel) {
+            None
+        } else {
+            Some(StatusReg { _priv: () })
+        }
+    }
+
+    /// Read-to-clear: return the current status **and** clear the pending bits in hardware.
+    /// A plain safe method for the consumer — the volatile access is encapsulated (M2).
+    pub fn read_status(&mut self) -> Status {
+        // SAFETY (M2): exactly one volatile read of the register width, then the hardware
+        // clears the pending bits (modelled by the store). `&mut self` + the singleton give
+        // exclusive access, so this is the only accessor. M1/M4 are the trusted axiom.
+        let p = REGION.0.get();
+        let v = unsafe { core::ptr::read_volatile(p) };
+        unsafe { core::ptr::write_volatile(p, 0) } // read-to-clear side effect
+        Status(v)
+    }
+
+    /// Configure the peripheral (volatile write). Plain safe method for the consumer.
+    pub fn configure(&mut self, cfg: Config) {
+        // SAFETY (M2): one volatile write; exclusive access via `&mut self` + singleton.
+        let p = REGION.0.get();
+        unsafe { core::ptr::write_volatile(p, cfg.0) }
+    }
+}
+
+/// Test/demo helper: simulate the device asserting status bits between reads.
+#[doc(hidden)]
+pub fn __device_raise(bits: u32) {
+    let p = REGION.0.get();
+    // SAFETY: single-threaded test helper standing in for a hardware event.
+    unsafe {
+        let cur = core::ptr::read_volatile(p);
+        core::ptr::write_volatile(p, cur | bits);
+    }
+}
+
+/// Test/demo helper: reset the singleton between tests.
+#[doc(hidden)]
+pub fn __reset_for_test() {
+    TAKEN.store(false, Ordering::Release);
+    let p = REGION.0.get();
+    unsafe { core::ptr::write_volatile(p, 0) }
+}
