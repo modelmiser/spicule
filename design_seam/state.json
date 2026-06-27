@@ -65,10 +65,262 @@
       "outcome": "SURVIVED",
       "cost_usd": 2.8172,
       "timestamp": "2026-06-27T13:53:56+00:00"
+    },
+    {
+      "round": 2,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_spsc.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 SPSC lock-free ring buffer (re-import rule under attack)\n\nThis is a **design proposal** for one *seam* in a hypothetical systems language. A seam\nis the boundary where a dangerous primitive \u2014 whose true safety precondition lives in a\nrich, undecidable concurrent separation logic \u2014 is implemented once by a *foundation\nauthor* behind an `unsafe` block, then **re-exported as a checked safe interface** that\nordinary code uses with no proofs and no `unsafe`. Your job is to attack the re-export\n(the \"re-import rule\"): can ordinary safe code, using only this interface, be made to\nexhibit undefined behavior (UB)?\n\nYou are attacking a **text specification**, not source code. Reason about the rules as\nstated.\n\n---\n\n## 0. The floor (stipulated, not under attack)\n\nThe safe fragment is **Rust's borrow checker exactly as shipped** (Non-Lexical Lifetimes:\nmoves, shared `&T` vs. unique `&mut T` borrows, lifetimes as region constraints, affine\nownership, `Drop` glue, the `Send`/`Sync` auto-trait system, trait resolution). Assume it\nis sound for the single-threaded safe fragment \u2014 that is *given*, proven by the fact that\nhundreds of thousands of programs rely on it. **Do not attack the",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Move-based push/pop is maximally ergonomic \u2014 zero proofs, one seam crossing; only gap is missing zero-copy/batch methods.",
+          "strongest_point": "The interface forces move-in/move-out of T, denying the zero-copy in-place fill that motivates choosing a ring buffer over a channel \u2014 but this is a missing-method scope gap, not annotation burden, and is no worse than Rust's own move-based channels."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Affinity discharges P4, T:Send + !Sync tightly discharges P5; P1\u2013P3 legitimately trusted; no laundering path found",
+          "strongest_point": "Separating the two handles onto different threads requires at least one handle to be Send, which is gated on T: Send, so no !Send payload (Rc, MutexGuard, &Cell) can ever cross a thread boundary."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Seam adds no new compiler pass; all checks reduce to floor-resident decidable mechanisms, undecidable CSL is trusted not checked.",
+          "strongest_point": "The only undecidable content (P1\u2013P3) is never handed to the compiler \u2014 it is hand-discharged in unsafe and trusted, so the safe-side checking reduces entirely to polynomial-time floor passes (affinity, auto-trait resolution, visibility)."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Re-import is sound, but by-value/move-in-out/lifetime-free design cannot express no-alloc embedded, zero-copy, peek, or EOF.",
+          "strongest_point": "split consumes the buffer by value and returns two independently-Send, lifetime-free handles, so in no_std-without-allocator there is nowhere for the shared backing store to live \u2014 the canonical interrupt\u2194main-loop SPSC cannot be implemented behind this signature without escaping to unsafe static mut."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Standard verified pattern (heapless/rtrb/mpsc, RustBelt); but spec under-specifies backing-store ownership where thread::scoped died.",
+          "strongest_point": "By-value split with unstated storage reclamation risks Leakpocalypse: if safety leans on a handle's Drop, mem::forget/Rc-cycles in safe code reopen the thread::scoped use-after-free."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "argued-past",
+          "attacker-soundness": "argued-past",
+          "attacker-implementation": "argued-past",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "TRADEOFF",
+        "tradeoffs": [
+          "Backing-store ownership/reclamation is unspecified: the seam MUST commit to leak-safe reclamation (borrowed storage, or refcount freed on last Drop) and state that safety never depends on a handle's Drop running \u2014 otherwise mem::forget / Rc-cycles in safe code reopen the thread::scoped use-after-free.",
+          "The token is strictly weaker than the usable SPSC primitive: move-in/move-out, by-value, lifetime-free split cannot express zero-copy in-place fill, no_std-without-allocator static backing, peek, or producer-closed/EOF \u2014 sound, but a different and thinner primitive than the one it names."
+        ],
+        "headline": "Sound proof-free re-import, admissible only with committed leak-safe storage ownership and acknowledged thin API.",
+        "rationale": "No attacker exhibited safe-code UB within scope; soundness, implementation, ergonomics landed nothing. Expressiveness concedes the rule is sound. Prior-art's storage-reclamation gap and the move-only API weakness are real costs needing the proposer's explicit commitment, so admissible-with-tradeoffs rather than clean survival."
+      },
+      "outcome": "TRADEOFF",
+      "cost_usd": 1.6768,
+      "timestamp": "2026-06-27T14:00:59+00:00"
+    },
+    {
+      "round": 3,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_spsc.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 SPSC lock-free ring buffer (re-import rule under attack)\n\nThis is a **design proposal** for one *seam* in a hypothetical systems language. A seam\nis the boundary where a dangerous primitive \u2014 whose true safety precondition lives in a\nrich, undecidable concurrent separation logic \u2014 is implemented once by a *foundation\nauthor* behind an `unsafe` block, then **re-exported as a checked safe interface** that\nordinary code uses with no proofs and no `unsafe`. Your job is to attack the re-export\n(the \"re-import rule\"): can ordinary safe code, using only this interface, be made to\nexhibit undefined behavior (UB)?\n\nYou are attacking a **text specification**, not source code. Reason about the rules as\nstated.\n\n---\n\n## 0. The floor (stipulated, not under attack)\n\nThe safe fragment is **Rust's borrow checker exactly as shipped** (Non-Lexical Lifetimes:\nmoves, shared `&T` vs. unique `&mut T` borrows, lifetimes as region constraints, affine\nownership, `Drop` glue, the `Send`/`Sync` auto-trait system, trait resolution). Assume it\nis sound for the single-threaded safe fragment \u2014 that is *given*, proven by the fact that\nhundreds of thousands of programs rely on it. **Do not attack the",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Move-based push/pop seam is sound and ergonomic \u2014 it is the real rtrb/ringbuf API; all three horns hold.",
+          "strongest_point": "The interface only covers move-in/move-out, forfeiting the zero-copy bulk-grant access that is the actual reason to use a lock-free ring over a channel \u2014 but that is an unclaimed-scope limitation, not a break of any stated horn."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Affine + Send(T:Send) + !Sync is the canonical sound SPSC recipe; no safe laundering path found.",
+          "strongest_point": "P4's 'one thread at a time' weakening is sound because every safe cross-thread ownership transfer of an affine handle necessarily carries happens-before, yielding the total order SPSC requires."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Seam implies no new decision procedure; P1\u2013P3 are trusted, not compiled, so no pass exists to blow up.",
+          "strongest_point": "The only consumer-side checks are the stipulated floor (affinity, Send/Sync resolution) plus trivial privacy; the undecidable predicate is sealed in trusted unsafe and never submitted to any compiler pass."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Move-only interface forbids zero-copy/in-place ring usage, but move-based SPSC code expresses fully without unsafe.",
+          "strongest_point": "The performance motive for choosing a lock-free ring \u2014 in-place/zero-copy slot writes (io_uring/DPDK/audio rings) \u2014 is inexpressible, forcing a different seam, yet ordinary move-based SPSC needs no escape, so it's a scope choice not a forced fall-out."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Faithful instance of RustBelt's proven pattern; shipped soundly as rtrb/heapless/crossbeam; no prior-art defect found.",
+          "strongest_point": "The re-import rule is RustBelt's POPL'18 soundness theorem restated, and the \u00a73 token is rtrb's production API verbatim \u2014 prior art certifies rather than condemns it, the only caveat being the leakpocalypse trap (destructor-dependence) which the spec must explicitly disclaim by jointly owning the backing store."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "argued-past",
+          "attacker-implementation": "argued-past",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "argued-past"
+        },
+        "decision": "SURVIVED",
+        "tradeoffs": [
+          "Move-only interface: push(T)/pop()->T forfeit zero-copy/in-place bulk-grant access (io_uring/DPDK/audio rings) and peek(&self)->&T; recovering them requires a distinct, harder seam that relocates a P1 obligation to the borrow boundary.",
+          "The trusted unsafe core must jointly own the backing store (freed only when both endpoints drop) and the re-import rule must not depend on Drop running \u2014 leakpocalypse precedent; currently implicit, must be stated.",
+          "Editorial: \u00a76 'conjecture' framing is inaccurate \u2014 the rule is RustBelt's POPL'18 theorem instantiated; and Consumer: Send must be explicitly gated impl<T: Send>, not merely 'by symmetry'."
+        ],
+        "headline": "Move-based affine SPSC endpoints soundly re-import trusted atomics, proof-free.",
+        "rationale": "No laundering path exists: affinity discharges P4, !Sync blocks sharing, Send(T:Send) discharges P5, P1\u2013P3 trusted in the stipulated-correct core. Both tradeoff attacks surface real costs (no zero-copy; implicit joint-ownership) but neither breaks any horn nor gates admissibility."
+      },
+      "outcome": "SURVIVED",
+      "cost_usd": 1.5727,
+      "timestamp": "2026-06-27T14:06:29+00:00"
+    },
+    {
+      "round": 4,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_spsc.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 SPSC lock-free ring buffer (re-import rule under attack)\n\nThis is a **design proposal** for one *seam* in a hypothetical systems language. A seam\nis the boundary where a dangerous primitive \u2014 whose true safety precondition lives in a\nrich, undecidable concurrent separation logic \u2014 is implemented once by a *foundation\nauthor* behind an `unsafe` block, then **re-exported as a checked safe interface** that\nordinary code uses with no proofs and no `unsafe`. Your job is to attack the re-export\n(the \"re-import rule\"): can ordinary safe code, using only this interface, be made to\nexhibit undefined behavior (UB)?\n\nYou are attacking a **text specification**, not source code. Reason about the rules as\nstated.\n\n---\n\n## 0. The floor (stipulated, not under attack)\n\nThe safe fragment is **Rust's borrow checker exactly as shipped** (Non-Lexical Lifetimes:\nmoves, shared `&T` vs. unique `&mut T` borrows, lifetimes as region constraints, affine\nownership, `Drop` glue, the `Send`/`Sync` auto-trait system, trait resolution). Assume it\nis sound for the single-threaded safe fragment \u2014 that is *given*, proven by the fact that\nhundreds of thousands of programs rely on it. **Do not attack the",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Sound, ceremony-free for owned-message SPSC; only gap is no zero-copy/batch slice API, which is additive not intolerable",
+          "strongest_point": "By-value push/pop forecloses the zero-copy chunk idiom real audio/DMA rings need, but that's an additive expressiveness gap that threatens no horn \u2014 the common owned-message case is actually more ergonomic than today's Rust."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Affine handles + T:Send + !Sync soundly discharge P4/P5; migration's happens-before closes the weak-memory gap. No safe-code UB.",
+          "strongest_point": "Every producer-thread change is a Send, which simultaneously enforces one-producer-at-a-time (P4) and supplies the transitive happens-before edge that makes payload publication sound across migration \u2014 so the only configuration that breaks weak-memory reasoning is exactly the two-producer case affinity already forbids."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Seam pushes all undecidable obligations (P1-P3) into trusted unsafe; compiler only runs floor-stipulated affinity + Send resolution, neither blows up.",
+          "strongest_point": "The re-import rule is a trust declaration, not a verification pass \u2014 the compiler is never asked to check P1-P3, so no undecidable or super-polynomial pass is implied beyond the stipulated decidable floor."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Value-only push/pop omits the zero-copy slot access that motivates the primitive, but that gap is soundly patchable within the same affine+borrow framework.",
+          "strongest_point": "The interface forces a full move of T per operation, so the zero-copy in-place ring use cases are inexpressible \u2014 yet borrow-scoped slot guards would add them soundly and proof-free, so this is a narrowed surface, not a failure of the re-import rule."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Verbatim reproduction of rtrb/crossbeam/std-mpsc; RustBelt (POPL'18) formally proved exactly this re-import sound in Coq.",
+          "strongest_point": "Every horn was already settled prior art \u2014 RustBelt certified the re-import theorem and rtrb ships this exact affine Send/!Sync split \u2014 and the proposal stipulates out of scope (the atomics/ordering body) precisely the only half that ever broke in practice."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "argued-past",
+          "attacker-implementation": "argued-past",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "argued-past"
+        },
+        "decision": "SURVIVED",
+        "tradeoffs": [
+          "Value-move-only push/pop forecloses zero-copy/batch slice access (audio/DMA/packet rings); soundly addable later via borrow-scoped slot guards but absent from the certified surface.",
+          "Novelty is nil: the re-import rule is a verbatim reproduction of rtrb/crossbeam/std-mpsc, already proven sound by RustBelt (POPL'18); \u00a76's 'conjecture' framing should be downgraded to settled prior art.",
+          "Spec text tightening (non-fatal, raised out-of-scope by \u00a75): P2 names only the tail Release/Acquire and omits the consumer's head-Release reclamation edge."
+        ],
+        "headline": "Affine !Sync Send handles soundly re-export proof-free SPSC push/pop; value-only API the sole cost.",
+        "rationale": "No safe-code UB path survives: P4 and the migration happens-before edge are discharged by the same Send/affinity mechanism, matching RustBelt-certified rtrb. Only recordable cost is the move-only surface, which is additively fixable and threatens no horn."
+      },
+      "outcome": "SURVIVED",
+      "cost_usd": 1.6341,
+      "timestamp": "2026-06-27T14:10:54+00:00"
+    },
+    {
+      "round": 5,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_mmio.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 MMIO read-to-clear device register (re-import rule under attack)\n\nThis is a **design proposal** for a second *seam* in the same hypothetical systems language\n(same floor, same rules) as the SPSC ring-buffer seam. A seam re-exports a dangerous\nprimitive \u2014 whose true safety precondition lives outside the decidable safe fragment \u2014 as a\nchecked safe interface ordinary code uses with no `unsafe` and no proofs. Attack the\nre-export: can ordinary safe code, using only this interface, reach undefined behavior (UB)?\n\nYou are attacking a **text specification**, not source code.\n\n---\n\n## 0. The floor (stipulated, not under attack)\n\nRust's borrow checker exactly as shipped (NLL: moves, `&T`/`&mut T`, lifetimes, affinity,\n`Drop`, `Send`/`Sync`, trait resolution). Assume it is sound for the single-threaded safe\nfragment. **Do not attack the borrow checker.** Attack only what the seam adds: the handle\ntype, the `take` constructor, and the read/write interface.\n\n## 1. The primitive\n\nA **memory-mapped I/O (MMIO) \"read-to-clear\" status register** on a microcontroller. A\nfixed physical address `ADDR` (e.g. `0x4000_4400`) is wired to a peripheral. Reading it\nreturns the current status bi",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "No-unsafe promise excludes the ISR path, but the burden equals accepted shipped embedded-Rust practice; no AM-UB found.",
+          "strongest_point": "For the primitive's flagship use (interrupt-status registers), the affine &mut self singleton forces either repeated unsafe static mut or a Send-opt-in global-critical-section per read \u2014 yet this is exactly the cortex-m/svd2rust pattern programmers already tolerate and RTIC layers over."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "No AM-UB from safe code; !Sync/!Send close the interrupt data race; M1/M4 failures are non-UB functional bugs.",
+          "strongest_point": "The only AM-UB vector (cross-context read-to-clear data race via an ISR) is structurally unreachable from safe code because !Sync/!Send block every safe route to share the handle into an interrupt handler."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Seam imposes no nontrivial compiler pass; volatile is flag-level, axiom is zero-cost trust, nothing to blow up.",
+          "strongest_point": "The unverifiable M1/M4 axiom imposes zero compilation work \u2014 it is the cheapest possible thing to compile, the opposite of a decidability blow-up, so no compiler pass exists to attack."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Default !Send makes the register's headline ISR read-to-clear use inexpressible in safe code; consumer must escape per-ISR",
+          "strongest_point": "The primitive's defining use\u2014reading the interrupt-status register inside the ISR\u2014requires consumer unsafe (static mut) under the spec's stated !Send default, since !Send blocks placement in a critical-section Mutex static."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "This is shipped cortex-m/svd2rust PAC pattern; sound within floor, but 'carries M2' claim and 'novel axiom class' framing are both wrong.",
+          "strongest_point": "The seam is the battle-tested embedded-Rust take()/PAC pattern, and its 'physical axiom' obligation class is just the standard TCB `assume` boundary already named by Low*, seL4, and CompCert \u2014 not a new trilemma shape."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "argued-past",
+          "attacker-implementation": "argued-past",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "TRADEOFF",
+        "tradeoffs": [
+          "Headline ISR use is unsafe-free only if the HAL opts StatusReg into Send and the consumer threads it through a critical-section Mutex; under the bare !Send default the consumer falls back to per-ISR unsafe static mut. The 'no unsafe' promise holds fully only for polling or post-opt-in.",
+          "M2 is NOT 'carried' by the token (the \u00a73 claim is too strong); writing read_volatile does not guarantee one-load-of-right-width (Eide-Regehr volatile miscompilation), so M2 belongs in the trusted base beside M1/M4 \u2014 as \u00a74 itself already concedes. \u00a73 wording must be corrected.",
+          "The 'fourth obligation class' is real and correctly framed as 'sound relative to a trusted external axiom,' but it is the standard TCB `assume` boundary (Low*/seL4/CompCert), not a novel trilemma shape.",
+          "Out-of-scope-but-noted: if foundation glue types Status as niche-bearing, a correctly-mapped read can produce an invalid value -> AM-UB from safe code; this TCB caveat should be stated explicitly rather than left implicit in \u00a75."
+        ],
+        "headline": "Re-import rule is AM-sound but only relative to a trusted external axiom, with recorded ISR-ergonomics and M2-trust caveats.",
+        "rationale": "No attacker reached AM-UB; the soundness and implementation specialists confirm the structural stoppers hold. Expressiveness overreaches (the Send opt-in is specified; ceremony is soundness-required). Prior-art and ergonomics surface real costs and one false 'carries M2' claim \u2014 recordable tradeoffs, not fatal flaws."
+      },
+      "outcome": "TRADEOFF",
+      "cost_usd": 1.9062,
+      "timestamp": "2026-06-27T14:16:22+00:00"
     }
   ],
   "settled": [],
   "incompatibilities": [],
   "blind_spot_flags": [],
-  "total_cost_usd": 2.8172
+  "total_cost_usd": 9.607
 }
