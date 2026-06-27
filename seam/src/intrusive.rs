@@ -13,6 +13,34 @@
 //! reduced to exactly what the contrast needs. The `unsafe` is, again, concentrated in the
 //! foundation (two blocks); but unlike SPSC the *token* leaks into the caller.
 //!
+//! ## Honest scope — this is "design A", and the cold gauntlet found why that matters
+//!
+//! The cold harness (see `../design_seam/REPORT_SEAM_SPEC_intrusive.md`) proved a sharper
+//! fact than "the token threads through consumer code": **the brand alone does not make an
+//! intrusive list sound at all.** `'brand` is an *access* capability (who may form `&mut`),
+//! not a *storage lifetime*. It discharges L1/L4 but leaves **L2 (no dangling links)** wholly
+//! open — a still-linked node could drop while linked, and a later traversal is a UAF.
+//!
+//! This module sidesteps L2 the only way the affine+brand vocabulary can: the links are real
+//! `&'arena` borrows, so NLL forbids a linked node from dropping early. That is **design A** —
+//! sound, but it collapses every node to one arena lifetime and so **forbids early reclaim**,
+//! which is the entire point of an intrusive list ("design B": erased `NonNull` links, like
+//! `intrusive-collections`). So design A pays for soundness by *dropping usability*; design B
+//! keeps usability but *drops soundness* (the harness's L2 UAF). Either way a horn falls — the
+//! trilemma biting hardest. The compile_fail just below is design A refusing early reclaim:
+//! ```compile_fail
+//! # use seam_spsc::intrusive::{GhostToken, Node};
+//! GhostToken::new(|mut token| {
+//!     let arena = vec![Node::new(1)];
+//!     let a = &arena[0];
+//!     {
+//!         let short = Node::new(2);          // a short-lived node, not in the arena
+//!         a.link_after(&short, &mut token);  // ERROR: `short` does not live long enough
+//!     }                                      // (design B would allow this — and then UAF)
+//!     let _ = *a.next.borrow(&token);
+//! });
+//! ```
+//!
 //! L4 (no aliasing `&mut`) is enforced by the *floor*, via token uniqueness — two
 //! simultaneous mutable accesses to the aliased node graph do not compile:
 //! ```compile_fail
