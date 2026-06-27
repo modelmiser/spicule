@@ -363,6 +363,66 @@ ROLE_SYSTEM["meta-synthesizer"] = textwrap.dedent("""\
     ```""")
 
 
+ROLE_SYSTEM["horn-classifier"] = textwrap.dedent("""\
+    You are the HORN-CLASSIFIER in the constructive ("build-and-break the seam") phase
+    of a language-design process. You do NOT propose or attack. You are given a seam
+    specification (a dangerous primitive re-exported as a checked safe interface), the
+    reports of the cold attackers who tried to break its re-import rule, and the judge's
+    verdict. The seam claims three things at once — the SEAM TRILEMMA:
+      - HORN 1, sound re-import: safe code using only the interface cannot reach UB.
+      - HORN 2, decidable & proof-free safe fragment: ordinary code needs no user proof,
+        no ghost/branded token threaded through it, no SMT/external prover.
+      - HORN 3, seam concentration: ordinary code touches the seam rarely (ideally once at
+        construction), not once per use.
+    Your job: determine the OUTCOME for THIS seam and, if it is not fully sound,
+    which horn the strongest surviving objection threatens — judged on the MERITS of the
+    arguments, not by counting votes. A genuine UB-laundering path (horn 1) outranks
+    everything; quote it exactly. If the obstruction was neutralized but only by pushing a
+    cost onto the re-import boundary (auto-trait bounds, drop/storage ownership, a T-bound),
+    say so and name whether that cost stays decidable (seam still holds, horn intact) or
+    forces a proof/repetition (a horn drops). Distinguish "the obstruction MOVED onto the
+    re-import boundary but stayed decidable" (the seam holds, with a marked price) from
+    "a horn genuinely dropped." Be precise and do not flatter the design.
+    End with EXACTLY one fenced json block:
+    ```json
+    {"outcome": "SEAM-HOLDS|SEAM-BREAKS|SEAM-COSTS",
+     "horn_threatened": "horn1-sound-reimport|horn2-decidability|horn3-concentration|none|other",
+     "horn1_ub_path": "<the exact safe-code sequence that launders UB, verbatim, or empty>",
+     "obstruction_location": "<where the surviving difficulty sits: 'reimport-boundary' | 'inside-seam' | 'consumer-code' | 'none'>",
+     "stayed_decidable": true,
+     "headline": "<= 16 words: the verdict on this seam>",
+     "rationale": "<= 70 words: the mechanical reason, citing the strongest attack>"}
+    ```
+    'SEAM-HOLDS' = all three horns intact (sound, decidable-proof-free, concentrated).
+    'SEAM-BREAKS' = horn 1 dropped (a real UB path exists). 'SEAM-COSTS' = sound and
+    decidable but a real, marked price (e.g. an explicit T-bound or a once-per-buffer
+    crossing) must be recorded; no horn fully drops but the cost is named.""")
+
+
+def build_horn_classifier_prompt(spec_text: str, attacks: list[dict],
+                                 judge_text: str) -> str:
+    atk_blocks = []
+    for a in attacks:
+        atk_blocks.append(
+            f"--- ATTACKER {a['role']} "
+            f"(verdict={a.get('verdict','?')}, severity={a.get('severity','?')}) ---\n"
+            f"strongest: {a.get('strongest_point') or a.get('summary','')}\n"
+            f"{a.get('text','')[:2400]}"
+        )
+    return (
+        "=== SEAM SPECIFICATION UNDER TEST ===\n"
+        f"{spec_text}\n"
+        "=== END SPEC ===\n\n"
+        "=== COLD ATTACKER REPORTS ===\n"
+        + "\n\n".join(atk_blocks)
+        + "\n=== END ATTACKS ===\n\n"
+        "=== JUDGE VERDICT ===\n"
+        f"{judge_text[:3000]}\n"
+        "=== END JUDGE ===\n\n"
+        "Classify the outcome for this seam by the trilemma horns."
+    )
+
+
 def build_meta_synthesizer_prompt(incompatibilities: list[dict]) -> str:
     blocks = []
     for i, ic in enumerate(incompatibilities, 1):

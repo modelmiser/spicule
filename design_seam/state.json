@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "created": "2026-06-27T13:49:51+00:00",
+  "rounds": [
+    {
+      "round": 1,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_spsc.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 SPSC lock-free ring buffer (re-import rule under attack)\n\nThis is a **design proposal** for one *seam* in a hypothetical systems language. A seam\nis the boundary where a dangerous primitive \u2014 whose true safety precondition lives in a\nrich, undecidable concurrent separation logic \u2014 is implemented once by a *foundation\nauthor* behind an `unsafe` block, then **re-exported as a checked safe interface** that\nordinary code uses with no proofs and no `unsafe`. Your job is to attack the re-export\n(the \"re-import rule\"): can ordinary safe code, using only this interface, be made to\nexhibit undefined behavior (UB)?\n\nYou are attacking a **text specification**, not source code. Reason about the rules as\nstated.\n\n---\n\n## 0. The floor (stipulated, not under attack)\n\nThe safe fragment is **Rust's borrow checker exactly as shipped** (Non-Lexical Lifetimes:\nmoves, shared `&T` vs. unique `&mut T` borrows, lifetimes as region constraints, affine\nownership, `Drop` glue, the `Send`/`Sync` auto-trait system, trait resolution). Assume it\nis sound for the single-threaded safe fragment \u2014 that is *given*, proven by the fact that\nhundreds of thousands of programs rely on it. **Do not attack the",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Sound, proof-free, seam-concentrated; this is rtrb. Only ding: move-only API forecloses hot-path zero-copy batch access.",
+          "strongest_point": "Affinity discharges exactly P4 (the sole floor-expressible conjunct) while P1\u2013P3 stay genuinely seam-local, so no \u00a73-only safe path launders a race, UAF, or double-free \u2014 the four I constructed all fail by borrowck or affine accounting."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Affine + !Sync + Send-where-T:Send is the precise sound bound set for SPSC ownership transfer; no laundering path found.",
+          "strongest_point": "Every dangerous case (non-Send payload, &mut smuggling, cross-thread drop, lost happens-before) is filtered exactly by the trait/borrow floor or licensed precisely by T: Send, leaving no safe-code path to UB."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Seam implies no new decision procedure; hard invariants are encapsulated, only affinity and conditional trait resolution remain \u2014 both decidable.",
+          "strongest_point": "The SPSC precondition factors so that P1\u2013P3 leak no caller-visible proposition, so there is no implied compiler pass to drive undecidable or super-polynomial."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Re-import rule is sound; mirrors audited SPSC crates. Only gap is missing zero-copy/batch access, which is extensible, not an unsafe-escape.",
+          "strongest_point": "The minimal push/pop interface cannot express the ring buffer's defining zero-copy bulk-I/O use, but the consumer is walled off from raw storage rather than forced into unsafe \u2014 so this is an extensible capability gap, not a break in the affine re-import rule."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Identical to shipped heapless::spsc/rtrb; soundness is RustBelt's machine-checked boundary theorem, not an open conjecture",
+          "strongest_point": "The 'design conjecture' is settled engineering \u2014 heapless::spsc::split() ships this exact API and RustBelt (POPL'18) already mechanized the affine-handle, Send+!Sync re-import soundness for this class."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "argued-past",
+          "attacker-implementation": "argued-past",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "SURVIVED",
+        "tradeoffs": [
+          "Move-only push(T)/pop()->T forecloses the zero-copy/batch slot access (write_chunk/read_chunk) that motivates a lock-free ring; extensible but absent from \u00a73.",
+          "\u00a74's structural stoppers must explicitly state that safety is destructor-independent (RFC-1066/leakpocalypse): mem::forget leaks but cannot launder UB \u2014 the property holds but the argument is currently incomplete.",
+          "Drop-of-payload-on-shutdown and the value-consuming split's shared backing-store ownership (Arc-like last-drop dealloc) are pushed inside unsafe/out of scope; the rule's soundness is conditional on those being correct.",
+          "The 'open design conjecture' framing overstates novelty: this is shipped heapless::spsc/rtrb and RustBelt (POPL'18) already mechanized the affine, Send+!Sync re-import boundary theorem for this class."
+        ],
+        "headline": "Affine Send+!Sync SPSC re-import is sound; survives with scope and framing tradeoffs",
+        "rationale": "No attacker exhibits safe-code UB, a forced caller proof, or repeated seam crossing; all concede Horn 1. Findings are real costs \u2014 zero-copy foreclosure, unstated dtor-independence, scoped-out hard parts, overstated novelty \u2014 that must be recorded but do not make the rule inadmissible."
+      },
+      "outcome": "SURVIVED",
+      "cost_usd": 2.8172,
+      "timestamp": "2026-06-27T13:53:56+00:00"
+    }
+  ],
+  "settled": [],
+  "incompatibilities": [],
+  "blind_spot_flags": [],
+  "total_cost_usd": 2.8172
+}
