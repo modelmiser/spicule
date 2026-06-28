@@ -1,12 +1,13 @@
 # The realizability table — the Seam Trilemma is a 3-of-N projection
 
-*Phases D–H. The constructive question the slab opened, the branded index extended, the refined index
-closed, the shared-ownership seam pushed to seven, and the take-and-replace seam pushed to eight: is the
-Seam Trilemma the whole story (3 horns), or a low-dimensional shadow of a larger tension? Answer: it is
-a **3-of-N projection with N ≥ 8** — where the recovered axes are known PL boundaries, not novel
-discoveries (see the meta-pattern below). Each constructive primitive lit up one more axis by being the
-**witness that two configurations the trilemma treated as identical actually differ** — and one probe
-(type-level index → checker-tractability) was **rejected**, proving the method discriminates rather than
+*Phases D–I. The constructive question the slab opened, the branded index extended, the refined index
+closed, the shared-ownership seam pushed to seven, the take-and-replace seam to eight, and the
+drain-and-yield seam to nine: is the Seam Trilemma the whole story (3 horns), or a low-dimensional
+shadow of a larger tension? Answer: it is a **3-of-N projection with N ≥ 9** — where the recovered axes
+are known PL boundaries, not novel discoveries (see the meta-pattern below). Each constructive primitive
+lit up one more axis by being the **witness that two configurations the trilemma treated as identical
+actually differ** — and one probe (type-level index → checker-tractability) was **rejected**, proving
+the method discriminates rather than
 merely accumulates.*
 
 > **A note on the "#5/#6/#7" shorthand (and a numbering collision).** `#6` (zero-cost) and `#7`
@@ -35,8 +36,8 @@ verdict** (`REPORT_SEAM_SPEC_*.md`), never asserted by the builder.
 
 The original seed had seven properties. In the *seam* framing the floor concedes #1 (executable
 spec) and #3 (derived ownership) by construction (the floor is a fixed checker). The live,
-per-primitive axes — note **seed #5 (bare-metal) and the eighth axis (unwind-safety) are not
-uniform**: the shared-ownership seam pays the first, the take-and-replace seam the second:
+per-primitive axes — note **bare-metal (#5), unwind-safety (8th), and leak-freedom (9th) are not
+uniform**: the shared-ownership seam pays the first, take-and-replace the second, drain-and-yield the third:
 
 | Axis | Seed # | What it asks | Folded into the trilemma as |
 |---|---|---|---|
@@ -48,6 +49,7 @@ uniform**: the shared-ownership seam pays the first, the take-and-replace seam t
 | **AI-legible** | #7 | Is the witness's *meaning* reconstructible (a readable predicate), not a nominal token? | not in the trilemma at all — surfaced by the branded index, **confirmed independent by the refined index** |
 | **Bare-metal (runtime-freedom)** | **#5** | Does sound re-import avoid a *runtime memory manager* (no global allocator / GC)? Operationally: compiles under `#![no_std]` with no `alloc`? | not in the trilemma — surfaced by the shared-ownership seam; **= Rust's `core`/`alloc` boundary (RFC 2480)**, real & independent but pre-existing, *not* a novel dimension |
 | **Unwind-safety (exception-safety-guarantee-level)** | — | Does sound re-import survive a `panic`/unwind *through a transiently-broken invariant* without downgrading the basic guarantee? | not in the trilemma nor the seed — surfaced by the take-and-replace seam; **= Abrahams' basic/strong/nothrow guarantees** (C++ `noexcept`, Rust `UnwindSafe`/`catch_unwind`/`Mutex` poisoning, `take_mut`↔`replace_with`), real & independent but pre-existing. **Carries a *discharge menu*** (abort / placeholder-repair / poisoning), not a fixed cost |
+| **Leak-freedom** | — | Does sound re-import survive the witness being *leaked* (its `Drop` **never** running, e.g. `mem::forget`)? | not in the trilemma nor the seed — surfaced by the drain-and-yield seam; **= Rust's leakpocalypse** (`mem::forget`-is-safe; leak amplification; `Vec::drain`; RFC 1066 / `thread::scoped` removal; linear-vs-affine types), real & independent but pre-existing. **Distinct from unwind-safety** (leak = `Drop` never runs; unwind = `Drop` runs at a bad time). The *thinnest* axis — cost invisible in non-leak code |
 
 Two separate "cost" categories sit *outside* the axes and must not be miscounted as horns:
 - **TCB axiom** (MMIO): a physical-world fact ("this address really is this register") no checker
@@ -57,17 +59,18 @@ Two separate "cost" categories sit *outside* the axes and must not be miscounted
 
 Legend: ✓ holds / aced · ✗ paid or dropped · ◐ conditional · *(plain)* a non-viral ordinary lifetime.
 
-| Primitive | Sound | Decidable | Concentration | **API-locality** | **Zero-cost** | **AI-legible** | **Bare-metal** | **Unwind-safe** | What it costs |
-|---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|---|
-| **SPSC ring buffer** | ✓ | ✓ | ✓ O(1) | ✓ *(plain `'a`)* | ✓ | ✓ | ✓ | ✓ | nothing — the fully-encapsulable corner |
-| **MMIO read-to-clear** | ✓ | ✓ | ✓ O(1)¹ | ✓ | ✓ | ✓ | ✓ | ✓ | a **TCB axiom** (outside the axes) |
-| **Generational slab** | ✓ | ✓ | ✓ O(1) | ✓ *(plain `Key`)* | **✗** | **✗**² | ✓⁹ | ✓ | **zero-cost (#6)** — runtime generation+occupancy check |
-| **Branded index** | ✓ | ✓ | ✓ O(1) | **✗** *(viral `'id`)* | ◐³ | **✗**⁴ | ✓ | ✓ | **API-locality (#5)** + deferred zero-cost; brand is nominal |
-| **Refined index** | ✓ | ◐⁶ | ✓ O(1) | ✓ *(brand-free; `Refined` escapes)* | ◐⁷ | **✓**⁸ | ✓ | ✓ | **horn-2 solver-freedom** (SMT in the TCB) + the R2 trade |
-| **Shared (Rc)** | ✓ | ✓ | ✓ O(1) | ✓ *(plain `Shared`)* | **✗** | ✓ | **✗**¹⁰ | ✓ | **bare-metal (seed #5)** — needs a global-allocator refcount manager |
-| **Type-level index** | ✓ | ◐¹¹ | ✓ O(1) | ✓ *(plain turbofish)* | ✓ | ✓ | ✓ | ✓ | **eighth-axis probe FAILED** — sound, but the "new axis" is confounded + encoding-relative (see below) |
-| **Take-and-replace** | ✓ | ✓ | ✓ O(1) | ✓ *(plain `take`)* | ◐¹² | ✓ | ✓ | **◐**¹³ | **unwind-safety (8th axis)** — sound via an abort-bomb; basic guarantee downgraded |
-| **Intrusive list** (branded) | **✗**⁵ | ✓ | ✗ O(accesses) | ✗ | ◐ | ✗ | ✓ | ✓ | a **horn genuinely drops** — no sound+usable+concentrated decision exists |
+| Primitive | Sound | Decidable | Concentration | **API-locality** | **Zero-cost** | **AI-legible** | **Bare-metal** | **Unwind-safe** | **Leak-safe** | What it costs |
+|---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|---|
+| **SPSC ring buffer** | ✓ | ✓ | ✓ O(1) | ✓ *(plain `'a`)* | ✓ | ✓ | ✓ | ✓ | ✓ | nothing — the fully-encapsulable corner |
+| **MMIO read-to-clear** | ✓ | ✓ | ✓ O(1)¹ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | a **TCB axiom** (outside the axes) |
+| **Generational slab** | ✓ | ✓ | ✓ O(1) | ✓ *(plain `Key`)* | **✗** | **✗**² | ✓⁹ | ✓ | ✓ | **zero-cost (#6)** — runtime generation+occupancy check |
+| **Branded index** | ✓ | ✓ | ✓ O(1) | **✗** *(viral `'id`)* | ◐³ | **✗**⁴ | ✓ | ✓ | ✓ | **API-locality (#5)** + deferred zero-cost; brand is nominal |
+| **Refined index** | ✓ | ◐⁶ | ✓ O(1) | ✓ *(brand-free; `Refined` escapes)* | ◐⁷ | **✓**⁸ | ✓ | ✓ | ✓ | **horn-2 solver-freedom** (SMT in the TCB) + the R2 trade |
+| **Shared (Rc)** | ✓ | ✓ | ✓ O(1) | ✓ *(plain `Shared`)* | **✗** | ✓ | **✗**¹⁰ | ✓ | ✓ | **bare-metal (seed #5)** — needs a global-allocator refcount manager |
+| **Type-level index** | ✓ | ◐¹¹ | ✓ O(1) | ✓ *(plain turbofish)* | ✓ | ✓ | ✓ | ✓ | ✓ | **eighth-axis probe FAILED** — sound, but the "new axis" is confounded + encoding-relative (see below) |
+| **Take-and-replace** | ✓ | ✓ | ✓ O(1) | ✓ *(plain `take`)* | ◐¹² | ✓ | ✓ | **◐**¹³ | ✓ | **unwind-safety (8th axis)** — sound via an abort-bomb; basic guarantee downgraded |
+| **Drain-and-yield** | ✓ | ✓ | ✓ O(1) | ✓ *(plain `Drain<'a>`)* | ✓ | ✓ | ✓ | ✓ | **◐**¹⁴ | **leak-freedom (9th axis)** — sound via pre-pessimization; a leaked guard loses the tail |
+| **Intrusive list** (branded) | **✗**⁵ | ✓ | ✗ O(accesses) | ✗ | ◐ | ✗ | ✓ | ✓ | ✓ | a **horn genuinely drops** — no sound+usable+concentrated decision exists |
 
 ¹ with a foundation `Send` opt-in, else O(ISRs). ² **reclassified legible→illegible** (cold panel,
 endorsed by two independent attackers vs the slotmap/generational-arena precedent): a `Copy` `Key`'s
@@ -111,7 +114,18 @@ guarantee-level alone), deflated to **pre-existing** (Abrahams basic/strong/noth
 `UnwindSafe`/`catch_unwind`; `Mutex` poisoning; RFC #1508 *rejected* this exact `take_mut` from std on
 this very cost). Mandatory relabel: the axis is the **guarantee-level**, and abort is *this seam's*
 discharge of it — a `replace_with` sentinel discharges the same obligation soundly-and-recoverably by
-paying **API-surface** instead, so the axis carries a **discharge menu**, not a fixed cost.
+paying **API-surface** instead, so the axis carries a **discharge menu**, not a fixed cost. ¹⁴ **the
+ninth axis — leak-freedom ◐.** Sound re-import of a guard whose `Drop` does load-bearing cleanup
+survives the guard being *leaked* (`mem::forget` is safe — the Rust leakpocalypse) only by paying: this
+seam **pre-pessimizes** (sets the buffer length to 0 *before* yielding), so a forgotten guard leaves a
+valid empty buffer (the un-yielded tail leaks, no double-free). The cold panel confirmed it a **real,
+independent ninth axis (N ≥ 9)** and a *clean* off-diagonal vs SPSC, **distinct from unwind-safety**
+(the off-diagonal is populated both ways — take is unwind-sensitive/leak-safe, drain is
+leak-sensitive/unwind-safe). Deflated to **pre-existing** (leakpocalypse / PPYP / leak amplification;
+RFC 1066; `thread::scoped`/`JoinGuard` removal; linear-vs-affine types). Recorded nuance: the
+**thinnest, most-deflatable** axis — its cost (leaked-tail data loss) is invisible in all non-leak code
+— but a genuinely populated off-diagonal, and it aces API-locality precisely *because* the guard owns
+its data (a free-standing `Drain<'a>`, no closure), unlike the scoped-thread leak-freedom witness.
 
 ## What the table proves
 
@@ -130,6 +144,7 @@ SPSC-shaped preconditions.
 | AI-legible ⟂ API-locality | **the off-diagonal, now built.** Refined index = (brand-free, **legible**) vs slab = (brand-free, **illegible**): holds #5 fixed, flips #7. Branded index = (viral, illegible) vs slab = (brand-free, illegible): holds #7 fixed, flips #5. Both directions witnessed. | **gauntlet-confirmed** (refined phase): the judge ruled "#5⟂#7 close? — **YES**", and the slab→illegible reclassification was endorsed by two independent attackers. Promoted argued→**confirmed**. |
 | Bare-metal ⟂ Zero-cost | slab (zero-cost ✗ runtime check, **bare-metal ✓** fixed pool) vs Shared (zero-cost ✗ refcount, **bare-metal ✗** global heap): agree on #6, flip bare-metal. A runtime *check* ≠ a runtime *manager*. | **gauntlet-confirmed** (shared phase): the judge ruled bare-metal a real, independent seventh axis — *but* "reduces-to-X for novelty": X = Rust's `core`/`alloc` boundary (RFC 2480); `heapless::pool` already witnesses the bare-metal⟂capacity trade. **Real and independent, but pre-existing — not a new dimension.** |
 | Unwind-safety ⟂ all seven | **take-and-replace (unwind-safe ◐, all seven ✓) vs SPSC (all eight ✓): agree on every named axis, flip unwind-safety alone.** The cleanest off-diagonal in the set — and the panel explicitly contrasted it with the *failed* typed_nat probe (which secretly co-flipped expressiveness). | **gauntlet-confirmed** (take phase): the judge ruled unwind-safety a real, independent **eighth** axis (N ≥ 8), deflated to **pre-existing** (Abrahams basic/strong/nothrow; `noexcept`; `UnwindSafe`; `Mutex` poisoning). Mandatory relabel: the axis is the **guarantee-level**; abort is one **discharge** of it (see the discharge-menu note below). |
+| Leak-freedom ⟂ unwind-safety | **take-and-replace (unwind-sensitive ◐, leak-safe ✓) vs drain-and-yield (leak-sensitive ◐, unwind-safe ✓): the off-diagonal is populated *both* directions.** "`Drop` never runs" (leak) vs "`Drop` runs at a bad time" (unwind) are independently witnessed. And drain vs SPSC flips leak-freedom alone (all eight else ✓). | **gauntlet-confirmed** (drain phase): the judge ruled leak-freedom a real, independent **ninth** axis (N ≥ 9), **distinct from unwind-safety — do not merge**, deflated to **pre-existing** (leakpocalypse / PPYP / leak amplification; RFC 1066). No confound: aces API-locality *because* the guard owns its data (free-standing, no closure). The **thinnest** axis (cost invisible in non-leak code), but a genuinely populated off-diagonal. |
 
 **3. The trilemma is exactly ONE forbidden pattern in this space.** {Sound ∧ Decidable ∧
 Concentrated} is unachievable *only* when the precondition factors through no available witness — and
@@ -226,10 +241,13 @@ typednat│  PROBES checker-tractability ⇒ REJECTED (off-diagonal confounded b
    take │  recovers unwind-safety       ⇒ 3-of-≥8  (exception-safety-guarantee-level; clean off-diagonal
         │                              vs SPSC — splits on it ALONE; = Abrahams/noexcept/UnwindSafe,
         │                              pre-existing; carries a DISCHARGE MENU: abort / repair / poisoning)
+  drain │  recovers leak-freedom        ⇒ 3-of-≥9  (leakpocalypse; pre-pessimization; clean off-diagonal
+        │                              vs SPSC AND vs take — leak ⟂ unwind, both directions; = mem::forget-
+        │                              is-safe/RFC 1066, pre-existing; the THINNEST axis but genuinely distinct)
         ▼
-Realizability table         N ≥ 8 axes (sound, decidable, concentration, API-locality, #6, #7,
-                            bare-metal, unwind-safety) — and the rejected probe (checker-tractability)
-                            proves the method also has a falsification mode, not just a discovery one
+Realizability table         N ≥ 9 axes (sound, decidable, concentration, API-locality, #6, #7,
+                            bare-metal, unwind-safety, leak-freedom) — and the rejected probe
+                            (checker-tractability) proves the method also has a falsification mode
 ```
 
 Each constructive primitive is the **witness that two trilemma-identical configurations differ** —
@@ -242,19 +260,21 @@ runtime-manager axis, distinct from runtime *cost* (#6).
 
 **The honest meta-pattern.** *Every* axis the method recovers turns out to be an **already-named PL
 concern**: zero-cost abstraction (#6), generativity/API-locality, refinement-legibility (#7), the
-`core`/`alloc` bare-metal split (RFC 2480), and now exception-safety (Abrahams' basic/strong/nothrow;
-`noexcept`; `UnwindSafe`). The constructive phase did not discover new physics. What it found is that
-the trilemma's three horns silently *bundle together a set of independently known PL design axes*, and
-that one rubric — **"what does the safe witness cost?"** — unifies them. The contribution is the
-unification and the method that recovers each axis (build the dissociating witness, let a cold panel
-adjudicate), not the novelty of any single axis. The adjudicator showed **all three modes**, which is
-exactly what makes it an instrument and not a rubber stamp: it **confirmed-but-deflated** two new
-dimensions (bare-metal, unwind-safety → "real, but pre-existing", growing N to 8); it **sharpened
-without extending** once (solver-freedom = horn 2's "keep" face, not a new axis); and it **rejected
-outright** once (checker-tractability — off-diagonal confounded with expressiveness, cost
-encoding-relative). The seam tension is where *known* axes meet, and the panel that recovers them also
-refuses the confounded ones. A discovery procedure with no rejection mode discovers nothing; this one
-both confirmed an eighth axis and threw a different eighth candidate out, on the record.
+`core`/`alloc` bare-metal split (RFC 2480), exception-safety (Abrahams' basic/strong/nothrow;
+`noexcept`; `UnwindSafe`), and now leak-freedom (the leakpocalypse; `mem::forget`-is-safe; linear-vs-
+affine types). The constructive phase did not discover new physics. What it found is that the trilemma's
+three horns silently *bundle together a set of independently known PL design axes*, and that one rubric
+— **"what does the safe witness cost?"** — unifies them. The contribution is the unification and the
+method that recovers each axis (build the dissociating witness, let a cold panel adjudicate), not the
+novelty of any single axis. The adjudicator showed **all three modes**, which is exactly what makes it
+an instrument and not a rubber stamp: it **confirmed-but-deflated** three new dimensions (bare-metal,
+unwind-safety, leak-freedom → "real, but pre-existing", growing N to 9); it **sharpened without
+extending** once (solver-freedom = horn 2's "keep" face, not a new axis); and it **rejected outright**
+once (checker-tractability — off-diagonal confounded with expressiveness, cost encoding-relative). The
+seam tension is where *known* axes meet, and the panel that recovers them also refuses the confounded
+ones. A discovery procedure with no rejection mode discovers nothing; this one confirmed three axes
+(the latest, leak-freedom, distinct from its sibling unwind-safety) and threw a confounded candidate
+out, on the record.
 
 ## Structure among the axes (not just a count)
 
@@ -284,29 +304,36 @@ The axes are not independent toggles you can set freely — **two trades and a d
 
 ## Honest bounds
 
-- N ≥ 8 is a **lower bound**: eight gauntlet-confirmed live axes — sound, decidable, concentration,
-  API-locality, zero-cost (#6), AI-legibility (#7), bare-metal (#5, shared phase), and unwind-safety
-  (exception-safety-guarantee-level, take phase). More may exist; the method (build a dissociating
-  witness, let the cold panel adjudicate) is open-ended, not exhausted. **But "open-ended" is not
-  "everything is an axis":** the eighth axis took *two* probes. The first (type-level index →
-  checker-tractability) was built, attacked, and **rejected** — confounded with expressiveness,
-  encoding-relative, a mislabeled re-name of a pre-existing terminating-resolution concern (Paterson /
-  `UndecidableInstances`). The second (take-and-replace → unwind-safety) supplied a *clean* off-diagonal
-  and was **confirmed**. So N reached 8 only on a witness that holds every other axis fixed — the
-  rejection of the first candidate is what makes the confirmation of the second trustworthy.
+- N ≥ 9 is a **lower bound**: nine gauntlet-confirmed live axes — sound, decidable, concentration,
+  API-locality, zero-cost (#6), AI-legibility (#7), bare-metal (#5, shared phase), unwind-safety
+  (exception-safety-guarantee-level, take phase), and leak-freedom (drain phase). More may exist; the
+  method (build a dissociating witness, let the cold panel adjudicate) is open-ended, not exhausted.
+  **But "open-ended" is not "everything is an axis":** the eighth axis took *two* probes. The first
+  (type-level index → checker-tractability) was built, attacked, and **rejected** — confounded with
+  expressiveness, encoding-relative, a mislabeled re-name of a pre-existing terminating-resolution
+  concern (Paterson / `UndecidableInstances`). The second (take-and-replace → unwind-safety) supplied a
+  *clean* off-diagonal and was **confirmed**; the ninth (drain-and-yield → leak-freedom) likewise. So N
+  reached 9 only on witnesses that hold every other axis fixed — the rejection of the confounded
+  candidate is what makes the confirmations trustworthy.
 - The #5⟂#7 dissociation **is witnessed** (refined index = brand-free + legible; slab = brand-free +
   illegible). Bare-metal ⟂ #6 **is witnessed** (slab = bare-metal + runtime-cost; Shared = global-heap
-  + runtime-cost). Unwind-safety ⟂ all seven **is witnessed** (take-and-replace = unwind-safe ◐ but all
-  seven ✓, vs SPSC = all eight ✓: the cleanest single-coordinate flip in the set). The refined phase
-  surfaced that horn 2 un-bundles into decidability + solver-freedom — that face is the original "keep"
-  horn, so it sharpens the map rather than extending N.
+  + runtime-cost). Unwind-safety ⟂ all seven **is witnessed** (take-and-replace vs SPSC: the cleanest
+  single-coordinate flip). Leak-freedom ⟂ unwind-safety **is witnessed both directions** (take =
+  unwind-sensitive/leak-safe; drain = leak-sensitive/unwind-safe) — the two destructor-execution
+  siblings are genuinely distinct, not one merged axis. The refined phase surfaced that horn 2
+  un-bundles into decidability + solver-freedom — that face is the original "keep" horn, so it sharpens
+  the map rather than extending N.
 - **Novelty is bounded, and that is the honest headline.** Every recovered axis the cold panel deflated
   to "real but *pre-existing*" — solver-freedom (Liquid-Types' solver-in-TCB), bare-metal (RFC 2480's
-  `core`/`alloc`), and unwind-safety (Abrahams' exception-safety; RFC #1508 rejected the very `take_mut`
-  scored here). The lattice's value is *unification under one cost rubric*, not novel dimensions. Treat
-  "N ≥ 8" as "at least eight *known* PL axes are all faces of the seam tension," not "eight discoveries."
+  `core`/`alloc`), unwind-safety (Abrahams' exception-safety; RFC #1508 rejected the very `take_mut`
+  scored here), and leak-freedom (Rust's leakpocalypse; RFC 1066; the `Vec::drain` leak-amplification
+  fix). The lattice's value is *unification under one cost rubric*, not novel dimensions. Treat "N ≥ 9"
+  as "at least nine *known* PL axes are all faces of the seam tension," not "nine discoveries." A note
+  on *thinness*: the panel flagged leak-freedom as the thinnest, most-deflatable axis (its cost is
+  invisible in non-leak code), yet still real — a reminder that "deflatable" and "not an axis" are
+  different verdicts (the rejected checker-tractability probe is the latter; leak-freedom the former).
 - The Lean kernel (`../proof/SeamGap.lean`) sees only whether a precondition factors through a
-  Boolean witness — so it certifies *closure* (`spsc`/`branded`/`refined`/`shared`/`typed_nat`/`take`
+  Boolean witness — so it certifies *closure* (`spsc`/`branded`/`refined`/`shared`/`typed_nat`/`take`/`drain`
   all close, like SPSC) but is blind to *which axis a closing seam spends*. Every column past
   "concentration" lives in this modeling-dictionary, by the same honest caveat the slab's `Vrt` carries.
 - One artifact caveat the panel found and we fixed: the reference model's R2 used `bound == len`
