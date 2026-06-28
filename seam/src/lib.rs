@@ -146,6 +146,15 @@ pub mod take;
 /// distinct from unwind-safety (leak = `Drop` never runs; unwind = `Drop` runs at a bad time). See `drain`.
 pub mod drain;
 
+/// Eleventh seam (Phase J — the move-stability probe): a self-referential cell. A new danger class —
+/// a value whose **address is load-bearing** (it holds a pointer into itself), so *moving* it dangles
+/// the self-pointer. None of the nine confirmed axes is about address stability. The floor's witness is
+/// `Pin` (a `!Unpin` cell, stack-pinned to stay `core`-only). The open question the spec poses: is
+/// move-stability a clean tenth axis, does it *reduce* to API-locality (the `Pin` wrapper is viral), or
+/// is it **real-but-structurally-inseparable** (no free-standing witness exists) — a new kind of
+/// verdict. See `selfref`.
+pub mod selfref;
+
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 use core::sync::atomic::{AtomicUsize, Ordering};
