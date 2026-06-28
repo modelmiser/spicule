@@ -91,6 +91,15 @@ pub mod slab;
 /// `branded`.
 pub mod branded;
 
+/// Sixth seam (Phase E — closing the #5⟂#7 cell): refinement-typed bounds (Flux / Liquid Haskell
+/// style). The witness is a *visible predicate* `value < bound` carried by a plain, brand-free value
+/// that can be stored and returned — the exact opposite corner from the branded index. It occupies
+/// (brand-free ✓, legible ✓), and paired against the slab (brand-free, illegible) it proves
+/// AI-legibility (#7) is independent of API-locality (#5). Its distinctive price is the
+/// external-solver / one-toolchain cost — a refinement floor needs an SMT solver in the trusted
+/// loop — which un-bundles horn 2 the way the branded index un-bundled horn 3. See `refined`.
+pub mod refined;
+
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 use core::sync::atomic::{AtomicUsize, Ordering};
