@@ -826,10 +826,72 @@
       "outcome": "TRADEOFF",
       "cost_usd": 1.9996,
       "timestamp": "2026-06-28T15:10:46+00:00"
+    },
+    {
+      "round": 14,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_drain.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 drain-and-yield with a leaked guard (re-import rule under attack)\n\nThis is a **design proposal** for a tenth *seam* in the same hypothetical systems language (same floor,\nsame rules) as the SPSC, MMIO, intrusive-list, slab, branded-index, refined-index, shared-ownership,\ntype-level-index, and take-and-replace seams. A seam re-exports a dangerous primitive as a checked safe\ninterface ordinary code uses with no `unsafe` and no proofs. Attack the re-export: can ordinary safe\ncode, using only this interface, reach undefined behavior (UB)? **And** adjudicate the axis question\nthis primitive was built to settle (\u00a76).\n\nYou are attacking a **text specification** backed by real `rustc`-checked code (`seam/src/drain.rs`).\n\n> **Context the builder is being honest about.** The lattice already has **eight** confirmed axes; the\n> eighth (unwind-safety) was confirmed by the take-and-replace seam. The previous *checker-tractability*\n> probe was **rejected** because its off-diagonal silently flipped *expressiveness*. This primitive was\n> chosen specifically to avoid that failure mode \u2014 it is a *free-standing* guard (no closure, no viral\n> type), so it should ace API-locality, the axis",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Sound, zero-ceremony (it is Rust's Vec::drain); ninth axis holds but is the thinnest, experientially-invisible cost.",
+          "strongest_point": "The leak-freedom 'cost' is pure data-loss-on-leak measured against an unsound baseline, so it never registers in real code\u2014making it real but the most deflatable axis, unlike unwind-safety's felt abort-bomb."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Pre-pessimization (len=0 before yield) discharges D2 without relying on Drain::drop; keystone forget-attack leaks tail but never double-frees.",
+          "strongest_point": "After mem::forget mid-iteration, every slot's drop-count is 0 (leaked tail) or 1 (transferred head) and buf.len stays 0, so the buffer's Drop touches nothing \u2014 no double-free is reachable."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Brand-free guard adds no checker machinery; D2 paid at runtime, not in any compiler pass.",
+          "strongest_point": "The design's no-closure/no-brand choice means the only implied pass is stock NLL borrow-checking plus monomorphization \u2014 both polynomial and decidable, with no input shape triggering super-polynomial or undecidable behavior."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Pre-pessimization replicates real-Rust Vec::drain fix; sound; cost is leak-path data-loss, not an expressiveness escape",
+          "strongest_point": "The only inexpressible pattern (early-break-and-retain) is the unsound leakpocalypse design itself and is still writable in safe code, so no program is forced out of the type system."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Sound; it is std::vec::Drain's leak-amplification fix verbatim. Axis is real but wholly pre-existing, and genuinely distinct from unwind-safety.",
+          "strongest_point": "Pre-pessimization is the canonical PPYP/leak-amplification fix Rust shipped post-leakpocalypse, so prior art confirms its soundness and the leak\u2260unwind distinction rather than breaking either \u2014 only novelty is deflated."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "argued-past",
+          "attacker-implementation": "argued-past",
+          "attacker-expressiveness": "argued-past",
+          "attacker-prior-art": "argued-past"
+        },
+        "decision": "SURVIVED",
+        "tradeoffs": [
+          "Guarantee downgrade: a leaked guard silently drops/leaks the un-yielded tail (data loss, never UB) \u2014 the named price of leak-freedom on a leak-permitting affine floor.",
+          "The ninth axis (leak-freedom) is real but wholly pre-existing (leakpocalypse/PPYP/leak-amplification, RFC 1066) and its cost is experientially invisible in non-leak code, making it the thinnest, most-deflatable axis in the lattice."
+        ],
+        "headline": "Leak-freedom confirmed as real ninth axis (N\u22659), distinct from unwind-safety",
+        "rationale": "Pre-pessimization (len=0 before yield) discharges D2 without relying on Drain::drop; forget leaks tail, never double-frees. No horn broken, no hidden ace flipped. Axis real but pre-existing and the thinnest; off-diagonal vs take-and-replace keeps it distinct from unwind-safety."
+      },
+      "outcome": "SURVIVED",
+      "cost_usd": 1.7628,
+      "timestamp": "2026-06-28T15:41:00+00:00"
     }
   ],
   "settled": [],
   "incompatibilities": [],
   "blind_spot_flags": [],
-  "total_cost_usd": 28.0508
+  "total_cost_usd": 29.8136
 }
