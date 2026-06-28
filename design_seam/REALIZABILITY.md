@@ -1,14 +1,16 @@
 # The realizability table — the Seam Trilemma is a 3-of-N projection
 
-*Phases D–I. The constructive question the slab opened, the branded index extended, the refined index
+*Phases D–J. The constructive question the slab opened, the branded index extended, the refined index
 closed, the shared-ownership seam pushed to seven, the take-and-replace seam to eight, and the
 drain-and-yield seam to nine: is the Seam Trilemma the whole story (3 horns), or a low-dimensional
 shadow of a larger tension? Answer: it is a **3-of-N projection with N ≥ 9** — where the recovered axes
 are known PL boundaries, not novel discoveries (see the meta-pattern below). Each constructive primitive
 lit up one more axis by being the **witness that two configurations the trilemma treated as identical
-actually differ** — and one probe (type-level index → checker-tractability) was **rejected**, proving
-the method discriminates rather than
-merely accumulates.*
+actually differ** — and the method's discrimination is now demonstrated in **four** modes, not just
+accumulation: it **confirmed** axes (cleanly deflated to pre-existing), **sharpened** a horn without
+extending N (solver-freedom), **rejected** a confounded candidate (checker-tractability → not an axis),
+and — newest — found one **real but structurally inseparable** (move-stability → a distinct danger with
+no isolable cost; the self-referential-cell phase). N stays 9; the inseparable category is the find.*
 
 > **A note on the "#5/#6/#7" shorthand (and a numbering collision).** `#6` (zero-cost) and `#7`
 > (AI-legible) are the literal seed-property numbers. The "**#5⟂#7 cell**" shorthand, coined for the
@@ -70,6 +72,7 @@ Legend: ✓ holds / aced · ✗ paid or dropped · ◐ conditional · *(plain)* 
 | **Type-level index** | ✓ | ◐¹¹ | ✓ O(1) | ✓ *(plain turbofish)* | ✓ | ✓ | ✓ | ✓ | ✓ | **eighth-axis probe FAILED** — sound, but the "new axis" is confounded + encoding-relative (see below) |
 | **Take-and-replace** | ✓ | ✓ | ✓ O(1) | ✓ *(plain `take`)* | ◐¹² | ✓ | ✓ | **◐**¹³ | ✓ | **unwind-safety (8th axis)** — sound via an abort-bomb; basic guarantee downgraded |
 | **Drain-and-yield** | ✓ | ✓ | ✓ O(1) | ✓ *(plain `Drain<'a>`)* | ✓ | ✓ | ✓ | ✓ | **◐**¹⁴ | **leak-freedom (9th axis)** — sound via pre-pessimization; a leaked guard loses the tail |
+| **Self-ref cell** | ✓ | ✓ | ✓ O(1) | **✗**¹⁵ *(viral, `&mut`-revoking `Pin`)* | ✓ | ✓ | ✓ | ✓ | ✓ | **move-stability — REAL but INSEPARABLE**, *not* a new axis (N stays 9); cost = *immovability*, non-uniform (stack-pin→API-locality, heap-pin→bare-metal) |
 | **Intrusive list** (branded) | **✗**⁵ | ✓ | ✗ O(accesses) | ✗ | ◐ | ✗ | ✓ | ✓ | ✓ | a **horn genuinely drops** — no sound+usable+concentrated decision exists |
 
 ¹ with a foundation `Send` opt-in, else O(ISRs). ² **reclassified legible→illegible** (cold panel,
@@ -126,6 +129,14 @@ RFC 1066; `thread::scoped`/`JoinGuard` removal; linear-vs-affine types). Recorde
 **thinnest, most-deflatable** axis — its cost (leaked-tail data loss) is invisible in all non-leak code
 — but a genuinely populated off-diagonal, and it aces API-locality precisely *because* the guard owns
 its data (a free-standing `Drain<'a>`, no closure), unlike the scoped-thread leak-freedom witness.
+¹⁵ **API-locality ✗, and the *cost itself* is the find.** The self-ref cell's `Pin<&Self>`/`Pin<&mut Self>`
+is the viral-*restrictive* wrapper (it infects every receiver **and revokes `&mut`** — that revocation
+is the load-bearing soundness mechanism), so it flips API-locality. But the deeper finding (see the
+inseparable-axis section below) is that move-stability is a **distinct danger with no isolable cost** —
+its real price is *immovability* (heavier than API-locality), and it is *non-uniform* across witnesses
+(stack-pin spends API-locality, `Box::pin` spends bare-metal). So this row does **not** add a 10th axis
+column; it adds a new *category*. Soundness held (the move is unconstructible: `Pin::get_mut` needs
+`Unpin`, the cell is `!Unpin`).
 
 ## What the table proves
 
@@ -219,6 +230,37 @@ is not measuring anything — this one has a STOP. Probe 2 (take-and-replace, ab
 two probes together show both halves of a working instrument: it **rejects** the confounded candidate
 and **confirms** the clean one.
 
+## The fourth verdict: a *real but structurally inseparable* axis (move-stability)
+
+Three verdict modes were on the table — **confirm** (a clean axis, deflated to pre-existing),
+**sharpen** (a sub-face, not a new axis), **reject** (a confounded non-axis). The self-referential-cell
+phase found a **fourth**: an axis that is a **genuinely distinct danger** yet has **no isolable cost**.
+
+The **self-ref cell** holds a pointer into itself; *moving* it dangles that pointer — a danger no other
+axis touches (none concerns a value's *address*). The seam is sound: `Pin` over a `!Unpin` cell makes
+the post-`init` move unconstructible in safe code (every move path needs `Unpin`; `PhantomPinned` denies
+it). So the danger is real, distinct, and soundly handled. **But it is not a clean tenth axis**, and the
+cold panel ruled — all five attackers converging — exactly *why*:
+
+- **It does not ace API-locality**, so the cost cannot be isolated. `Pin<&Self>` is the
+  viral-*restrictive* wrapper (it infects every receiver **and revokes `&mut`**), and that revocation
+  *is* the soundness mechanism — you cannot have the safety without the type-surface cost.
+- **Its cost is *non-uniform across witnesses*** — stack-pin (`pin!`) spends **API-locality**, `Box::pin`
+  spends **bare-metal**, a hypothetical `?Move` immovable type would spend an ambient bound. One danger,
+  several different costs ⇒ not one mapped axis "wearing a hat" (so it is *not* the reduction the
+  `typed_nat` probe was either).
+- **So the honest cost is *immovability* — the revocation of the move/return/store capability**, which
+  is distinct from and *heavier* than API-locality (a merely leaked type surface). Move-stability funds
+  itself by *being* immovable; there is no separate coordinate to read.
+
+Two caveats the panel insisted on, both now recorded: (a) the inseparability is **contingent, not
+necessary** — RFC 2349's *rejected* `?Move`/`Move` immovable types *were* a designed free-standing
+witness; Rust **chose** hookless `memcpy` moves + a library `Pin`, so "no free-standing witness can
+exist" overstates it. (b) The crisp `core`-only reading is the isolation of a **non-composable**
+single-frame toy; any real intrusive node / `Future` / slab entry forces `unsafe` pin-projection or
+`Box::pin`. **N stays 9.** The find is the *category*: the lattice's first axis that is real yet
+inseparable — a distinct danger with no clean coordinate, only a menu of *other* axes to spend.
+
 ## The recursion: each primitive un-bundled one folded axis
 
 ```
@@ -244,10 +286,13 @@ typednat│  PROBES checker-tractability ⇒ REJECTED (off-diagonal confounded b
   drain │  recovers leak-freedom        ⇒ 3-of-≥9  (leakpocalypse; pre-pessimization; clean off-diagonal
         │                              vs SPSC AND vs take — leak ⟂ unwind, both directions; = mem::forget-
         │                              is-safe/RFC 1066, pre-existing; the THINNEST axis but genuinely distinct)
+ selfref│  PROBES move-stability        ⇒ INSEPARABLE (a distinct danger — a value's address — with NO
+        │                              isolable cost: stack-pin→API-locality, heap-pin→bare-metal; cost is
+        │                              immovability, heavier than API-locality. N stays 9. NEW VERDICT CATEGORY)
         ▼
 Realizability table         N ≥ 9 axes (sound, decidable, concentration, API-locality, #6, #7,
-                            bare-metal, unwind-safety, leak-freedom) — and the rejected probe
-                            (checker-tractability) proves the method also has a falsification mode
+                            bare-metal, unwind-safety, leak-freedom) — plus the method's FOUR modes:
+                            confirm (clean), sharpen (sub-face), reject (confounded), inseparable (no isolable cost)
 ```
 
 Each constructive primitive is the **witness that two trilemma-identical configurations differ** —
@@ -266,15 +311,17 @@ affine types). The constructive phase did not discover new physics. What it foun
 three horns silently *bundle together a set of independently known PL design axes*, and that one rubric
 — **"what does the safe witness cost?"** — unifies them. The contribution is the unification and the
 method that recovers each axis (build the dissociating witness, let a cold panel adjudicate), not the
-novelty of any single axis. The adjudicator showed **all three modes**, which is exactly what makes it
-an instrument and not a rubber stamp: it **confirmed-but-deflated** three new dimensions (bare-metal,
+novelty of any single axis. The adjudicator showed **four distinct modes**, which is exactly what makes
+it an instrument and not a rubber stamp: it **confirmed-but-deflated** three new dimensions (bare-metal,
 unwind-safety, leak-freedom → "real, but pre-existing", growing N to 9); it **sharpened without
-extending** once (solver-freedom = horn 2's "keep" face, not a new axis); and it **rejected outright**
-once (checker-tractability — off-diagonal confounded with expressiveness, cost encoding-relative). The
-seam tension is where *known* axes meet, and the panel that recovers them also refuses the confounded
-ones. A discovery procedure with no rejection mode discovers nothing; this one confirmed three axes
-(the latest, leak-freedom, distinct from its sibling unwind-safety) and threw a confounded candidate
-out, on the record.
+extending** once (solver-freedom = horn 2's "keep" face, not a new axis); it **rejected outright** once
+(checker-tractability — off-diagonal confounded with expressiveness); and it found one **real but
+structurally inseparable** (move-stability — a distinct danger with no isolable cost; N stays 9, a new
+category). The seam tension is where *known* axes meet, and the panel both recovers the clean ones,
+refuses the confounded one, and — the subtlest call — recognises a real danger that *cannot* be made a
+clean coordinate. A discovery procedure with only a "yes" is a rubber stamp; this one has "yes", "yes
+but pre-existing", "no — confounded", "sharpens not extends", and "real but inseparable", each on the
+record.
 
 ## Structure among the axes (not just a count)
 
@@ -314,7 +361,10 @@ The axes are not independent toggles you can set freely — **two trades and a d
   concern (Paterson / `UndecidableInstances`). The second (take-and-replace → unwind-safety) supplied a
   *clean* off-diagonal and was **confirmed**; the ninth (drain-and-yield → leak-freedom) likewise. So N
   reached 9 only on witnesses that hold every other axis fixed — the rejection of the confounded
-  candidate is what makes the confirmations trustworthy.
+  candidate is what makes the confirmations trustworthy. A tenth probe (self-ref cell → move-stability)
+  then found the **inseparable** category: a distinct danger with no isolable cost (N stays 9). So the
+  bound is "≥ 9 *clean* axes, plus at least one real-but-inseparable danger" — and "more may exist" now
+  covers *three* possible shapes, not one: another clean axis, another confound, or another inseparable.
 - The #5⟂#7 dissociation **is witnessed** (refined index = brand-free + legible; slab = brand-free +
   illegible). Bare-metal ⟂ #6 **is witnessed** (slab = bare-metal + runtime-cost; Shared = global-heap
   + runtime-cost). Unwind-safety ⟂ all seven **is witnessed** (take-and-replace vs SPSC: the cleanest
@@ -333,8 +383,10 @@ The axes are not independent toggles you can set freely — **two trades and a d
   invisible in non-leak code), yet still real — a reminder that "deflatable" and "not an axis" are
   different verdicts (the rejected checker-tractability probe is the latter; leak-freedom the former).
 - The Lean kernel (`../proof/SeamGap.lean`) sees only whether a precondition factors through a
-  Boolean witness — so it certifies *closure* (`spsc`/`branded`/`refined`/`shared`/`typed_nat`/`take`/`drain`
-  all close, like SPSC) but is blind to *which axis a closing seam spends*. Every column past
+  Boolean witness — so it certifies *closure* (`spsc`/`branded`/`refined`/`shared`/`typed_nat`/`take`/`drain`/`selfref`
+  all close, like SPSC) but is blind to *which axis a closing seam spends* — or whether that "axis" is
+  even separable (the self-ref cell closes in the kernel exactly like the rest; its inseparability is
+  pure modeling-dictionary). Every column past
   "concentration" lives in this modeling-dictionary, by the same honest caveat the slab's `Vrt` carries.
 - One artifact caveat the panel found and we fixed: the reference model's R2 used `bound == len`
   (strictly stronger than safety's `bound ≤ len`); relaxed to `≤` (predicate subtyping). The shipped
