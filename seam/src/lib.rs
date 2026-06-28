@@ -137,6 +137,15 @@ pub mod typed_nat;
 /// `typed_nat` probe could not produce. See `take`.
 pub mod take;
 
+/// Tenth seam (Phase I — the leak-freedom probe): drain-and-yield with a leaked guard. The danger is
+/// the canonical *leakpocalypse* — `mem::forget` is safe, so a seam whose soundness leans on a guard's
+/// `Drop` must survive that `Drop` never running. The sound witness is **pre-pessimization**
+/// (`Vec::drain`'s trick): empty the buffer up front, so a leaked guard loses the tail but never
+/// double-frees. Free-standing (no closure → aces API-locality, unlike the scoped-thread witness), it
+/// aces all eight prior axes and pays only on **leak-freedom** — a ninth-axis probe, sibling to but
+/// distinct from unwind-safety (leak = `Drop` never runs; unwind = `Drop` runs at a bad time). See `drain`.
+pub mod drain;
+
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 use core::sync::atomic::{AtomicUsize, Ordering};
