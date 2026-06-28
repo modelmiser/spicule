@@ -399,6 +399,7 @@ decidable trait bounds):
 | **Type-level index** | **FAILED** [axis deliverable]; sound | all 3 horns hold; pays a recorded horn-2 cost | **O(1)**, brand-free, erases | *In-bounds via a compile-time trait proof `I: Lt<Len>`.* Sound (sealed `Nat` + orphan rule, unanimous), zero-cost, solver-free. Pitched as recovering an eighth **checker-tractability** axis — **rejected**: the off-diagonal is confounded with a strict expressiveness loss (static-index-only), the `recursion_limit` cost is encoding-relative (binary numerals erase it), and the axis is mislabeled (`Lt` is *linear* — the real concern is **terminating-resolution**, Paterson / `UndecidableInstances`). No new axis; **N stays 7**. |
 | **Take-and-replace** | SEAM-COSTS [none] (TRADEOFF) | all 3 horns hold; pays the 8th axis | **O(1)**, brand-free, zero-cost happy path | *Transient broken invariant across an unwind, via an abort-bomb (`take_mut`).* Moving a value out of a `&mut T` and back leaves a duplicate in the gap; an unwinding panic drags the caller into a double-drop. Aces all seven prior axes, pays on **unwind-safety (8th axis)** alone — the *clean* off-diagonal the type-level index lacked. Confirmed **N ≥ 8**, deflated to pre-existing (Abrahams; `noexcept`; `UnwindSafe`; RFC #1508 rejected this exact `take_mut` from std on this cost). The axis = *exception-safety-guarantee-level*; abort is one **discharge** (vs `replace_with` paying API-surface) — a discharge menu. |
 | **Drain-and-yield** | SEAM-HOLDS (SURVIVED) | all 3 horns hold; pays the 9th axis | **O(1)**, brand-free, no closure | *The leakpocalypse: `mem::forget` is safe, so a guard whose `Drop` does load-bearing cleanup can be leaked → double-free.* Sound via **pre-pessimization** (`Vec::drain`'s trick — empty up front, so a leaked guard loses the tail, never double-frees). Aces all eight prior axes, pays on **leak-freedom (9th axis)** alone. Confirmed **N ≥ 9**, **distinct from unwind-safety** (off-diagonal both ways: take is unwind-sensitive/leak-safe, drain is leak-sensitive/unwind-safe). Deflated to pre-existing (leakpocalypse / RFC 1066). The *thinnest* axis but real; aces API-locality *because* the guard owns its data (no closure — the confound that would sink a scoped-thread witness). |
+| **Self-ref cell** | SEAM-HOLDS (TRADEOFF) | all 3 horns hold; pays an **inseparable** danger | **O(1)**, but a viral `&mut`-revoking `Pin` | *A value whose **address** is load-bearing (a self-pointer); moving it dangles it.* Sound via `Pin` over a `!Unpin` cell (the post-`init` move is unconstructible). **Ruled REAL-BUT-INSEPARABLE (outcome 3, N stays 9)** — a distinct danger (no other axis concerns a value's address) with **no isolable cost**: the price is *immovability* (heavier than API-locality), **non-uniform** across witnesses (stack-pin → API-locality, `Box::pin` → bare-metal). A new verdict category. Caveats: contingent (RFC 2349 rejected `?Move` immovable types); crisp only for a non-composable toy. |
 
 **Six primitives forced a deeper finding: the Seam Trilemma is a 3-of-N projection (N ≥ 9).** The
 **slab** keeps all three horns yet pays on *zero runtime cost* (#6), the property the trilemma had
@@ -431,20 +432,23 @@ spends solver-freedom, R2 trade again (refined index; Flux); dynamic shared owne
 bare-metal, bare-metal↔capacity trade (shared; `Rc`/`heapless`); transient broken invariant across an
 unwind → spends unwind-safety via a *discharge menu* (abort / repair / poisoning)
 (take; `take_mut`↔`replace_with`); a load-bearing guard `Drop` on a leak-permitting floor → spends
-leak-freedom via pre-pessimization (drain; `Vec::drain`); external physical axiom → sound modulo a TCB
-`assume`, outside the axes (MMIO); whole-heap aliasing+liveness escaping to the caller → a horn
-genuinely drops (intrusive). The recovered axes are exactly the casualties of the
+leak-freedom via pre-pessimization (drain; `Vec::drain`); a value whose *address* is load-bearing →
+spends **immovability**, which has *no clean coordinate* (self-ref cell; `Pin`); external physical axiom
+→ sound modulo a TCB `assume`, outside the axes (MMIO); whole-heap aliasing+liveness escaping to the
+caller → a horn genuinely drops (intrusive). The recovered axes are exactly the casualties of the
 original `unified` result, put back on the map one witness at a time — **and, the honest headline,
 each turns out to be an already-named PL boundary** (zero-cost abstraction, generativity, refinement-
-legibility, `core`/`alloc`, exception-safety, leak-freedom). The panel showed all three adjudication
+legibility, `core`/`alloc`, exception-safety, leak-freedom). The panel showed **four** adjudication
 modes. It **confirmed-but-deflated** three new dimensions to "real but pre-existing" (bare-metal;
 unwind-safety, on take-and-replace; and leak-freedom, on drain-and-yield). It **sharpened without
-extending** once (solver-freedom = horn 2's "keep" face). And on the *first* eighth-axis probe — a
-type-level-proof index pitched as *checker-tractability* — it **rejected the axis outright**: that
-candidate's off-diagonal was confounded with a strict expressiveness loss (the seam is
-static-index-only), its cost was encoding-relative (binary type-level naturals erase it), and it was
-mislabeled (terminating-resolution — Paterson / `UndecidableInstances` — `Lt` resolution being
-*linear*, cheaper than refined's QF-LIA). It was the *second* eighth-axis probe (take-and-replace) that
+extending** once (solver-freedom = horn 2's "keep" face). It **rejected outright** once — the *first*
+eighth-axis probe, a type-level-proof index pitched as *checker-tractability*: that candidate's
+off-diagonal was confounded with a strict expressiveness loss (the seam is static-index-only), its cost
+was encoding-relative (binary type-level naturals erase it), and it was mislabeled (terminating-resolution
+— Paterson / `UndecidableInstances` — `Lt` resolution being *linear*, cheaper than refined's QF-LIA).
+And it ruled one danger **real but structurally inseparable** — the self-referential cell's
+*move-stability*: a distinct danger (a value's address) with no isolable cost (immovability, non-uniform
+across `Pin` witnesses), N staying 9, a new category. It was the *second* eighth-axis probe (take-and-replace) that
 supplied the clean off-diagonal carrying the count to N ≥ 8, and the drain seam carried it to **N ≥ 9**.
 So the result is the *unification* of known PL axes under one "what does the witness cost?" rubric, not
 their discovery — by a method that both *confirms* clean witnesses and *refuses* a confounded one. Full
@@ -468,11 +472,14 @@ landing site turned out **not to be a clean axis** (it confounds with expressive
 encoding-relative). Take-and-replace: it **moved onto the unwind path** (a mid-take panic becomes a
 process abort) and stayed sound — and *that* site **was** a clean axis (unwind-safety). Drain-and-yield:
 it **moved onto the leak path** (a forgotten guard loses the un-yielded tail) and stayed sound — and
-*that* site was a clean axis too, distinct from the unwind one (leak-freedom). "Moves, doesn't vanish"
-held for all nine non-trivially-encapsulable primitives, and *where* it moved was the whole verdict —
-including the one case where the destination was a mirage and the two where it was a genuine new axis.
+*that* site was a clean axis too, distinct from the unwind one (leak-freedom). Self-ref cell: it
+**moved onto immovability** (a `Pin`-revoked move capability) and stayed sound — but *that* site is a
+real danger with **no clean coordinate** (its cost is non-uniform: API-locality for stack-pin, bare-metal
+for heap-pin). "Moves, doesn't vanish" held for all ten non-trivially-encapsulable primitives, and
+*where* it moved was the whole verdict — including the one mirage (the fuel knob), the two genuine new
+axes (unwind, leak), and the one *real-but-inseparable* destination (immovability).
 
-**The adversary earned its keep — nine times.** On MMIO it named the axiom's category correctly
+**The adversary earned its keep — ten times.** On MMIO it named the axiom's category correctly
 (a TCB boundary, not a horn) and surfaced a horn-3 cost the builder had under-weighted. On the
 intrusive list it proved something *worse* than the builder predicted: branding does not restore
 soundness at all (a brand is an *access* capability, not a *storage* lifetime), correcting a real
@@ -502,23 +509,30 @@ argument. And on the **ninth axis** (drain-and-yield) it confirmed leak-freedom 
 *and* ruled it **distinct from** unwind-safety — refusing the tempting merge of the two
 destructor-execution siblings (leak = `Drop` never runs; unwind = `Drop` runs at a bad time) — while
 flagging it the thinnest, most-deflatable axis in the lattice (yet still real: a populated off-diagonal,
-not the non-axis the checker-tractability probe was). Spec↔impl divergences, sharpened overclaims, three
-novelty-deflations, one outright axis-rejection, one axis-confirmation-with-relabel, and one
-axis-confirmation-with-distinctness-ruling — exactly what build/break separation exists to surface. A
-discovery procedure that can say "no", "yes but here's the right name", and "yes and here's why it
-doesn't merge with its neighbor" is measuring something; this one did all three.
+not the non-axis the checker-tractability probe was). And on the **self-referential cell** it did the
+subtlest thing of all: conceded soundness, conceded that move-stability is a *genuinely distinct danger*,
+yet ruled it **real but structurally inseparable** — no isolable cost (the price is immovability,
+non-uniform across `Pin` witnesses) — and corrected three builder framings (the cost is immovability not
+"API-locality alone"; the inseparability is *contingent*, RFC 2349 having rejected `?Move` immovable
+types; the crisp reading is a non-composable toy). Spec↔impl divergences, sharpened overclaims, three
+novelty-deflations, one outright axis-rejection, one relabel, one distinctness-ruling, and one
+*inseparable-category* finding — exactly what build/break separation exists to surface. A discovery
+procedure that can say "no", "yes but here's the right name", "yes and here's why it doesn't merge with
+its neighbor", and "this is real but cannot be made a clean coordinate" is measuring something real; this
+one did all four.
 
 **Mechanization.** `proof/SeamGap.lean` was upgraded from the one-direction triviality its own
 cold review had flagged to a genuine characterization — `seam_closes_iff_factors`: a seam
 closes **iff** its precondition factors through the safe witness — with the regimes as
 machine-checked instances (`spsc_seam_closes`, `intrusive_seam_does_not_close`, the slab's
 `slab_runtime_closes_but_static_does_not`: the same precondition closes through a *runtime*
-witness but not the *static* one, and `branded_seam_closes`/`refined_seam_closes`/`shared_seam_closes`/`typed_nat_seam_closes`/`take_seam_closes`/`drain_seam_closes`:
+witness but not the *static* one, and `branded_seam_closes`/`refined_seam_closes`/`shared_seam_closes`/`typed_nat_seam_closes`/`take_seam_closes`/`drain_seam_closes`/`selfref_seam_closes`:
 all close like SPSC, the recovered axes invisible to the kernel), `propext` only. Honest bound unchanged: the
 *math* is now a real characterization, but the faithfulness of "precondition" and "witness" to
-actual Rust primitives — and *which axis a closing seam spends* (zero-cost, API-locality,
-legibility, solver-freedom, bare-metal, unwind-safety, leak-freedom) — still lives in the prose modeling
-dictionary, not the kernel, which sees only whether a Boolean witness suffices.
+actual Rust primitives — *which axis a closing seam spends* (zero-cost, API-locality, legibility,
+solver-freedom, bare-metal, unwind-safety, leak-freedom), and whether that "axis" is even *separable*
+(the self-ref cell closes identically yet its move-stability cost is inseparable) — still lives in the
+prose modeling dictionary, not the kernel, which sees only whether a Boolean witness suffices.
 
 **The one-sentence upgrade.** The trilemma says a *seamless* language is impossible; the
 constructive phase says **which** seams you can build losslessly anyway — exactly the ones
