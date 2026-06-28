@@ -28,20 +28,32 @@
 //! so the caller never drops the duplicate: the broken slot is *never observed*. On the happy path the
 //! bomb is `mem::forget`-ten and nothing residual runs.
 //!
-//! ## The cost that isolates the axis
+//! ## The axis it isolates — and how the cold panel sharpened it (REPORT_SEAM_SPEC_take)
 //!
-//! Soundness here is bought with **process abort on a mid-take panic**: a panic in the closure cannot
-//! be `catch_unwind`-ed — it takes the whole process down. That is a real, consumer-visible behavioral
-//! cost (you lose unwinding/recovery for that window), and it is *the* price of soundly re-importing a
-//! transient-invariant-breaking operation on an unwinding floor. It is **not** any of the seven prior
-//! axes: the seam is sound, decidable & proof-free, O(1)-concentrated, brand-free, `core`-only, and
-//! **zero-cost on the happy path** (the bomb erases) — it aces all seven and pays only here. That makes
-//! it the off-diagonal: identical to SPSC on every named axis, split on unwind-safety alone.
+//! The cold gauntlet ruled this a **real, independent eighth axis (N ≥ 8)** — but with two corrections
+//! that are now part of the result:
 //!
-//! The alternative designs pay elsewhere, which is what makes "unwind-safety" the right name for the
-//! shared obligation rather than any one mechanism: a `T: Default` sentinel (`replace_with`-style)
-//! fills the gap with a valid value and stays unwind-recoverable — but pays **expressiveness** (needs a
-//! `Default`); a naive move-out/move-back with no guard is **outright unsound** under `panic=unwind`.
+//! 1. **The axis is the *exception-safety-guarantee-level*** (Abrahams' basic/strong/nothrow), **not
+//!    "the abort cost".** Abort is merely *this seam's chosen position* on the axis. The obligation U2
+//!    has a **discharge menu**: this seam pays it by **aborting** (sound, but downgrades the basic
+//!    guarantee to "abort", non-`catch_unwind`-recoverable); a `T: Default` sentinel
+//!    (`replace_with`-style) pays it by **placeholder-repair** (sound *and* recoverable, but charges
+//!    **API-surface / expressiveness** — needs a `Default`); a lock pays it by **poisoning**. So,
+//!    unlike a fixed cost, this axis has a free design variable: *where* you discharge it. (A naive
+//!    move-out/move-back with no guard at all is **outright unsound** under `panic=unwind`.)
+//! 2. **The off-diagonal is genuinely clean** (the panel explicitly contrasted it with the rejected
+//!    `typed_nat` probe, which secretly flipped expressiveness *within the same seam*). Under
+//!    abort-discharge this seam adds no brand, no API surface, and no happy-path runtime cost — it
+//!    splits from SPSC on the guarantee-level *alone*. So it is a slab-grade isolation, and
+//!    unwind-safety is a confirmed axis, **deflated to pre-existing** (C++ `noexcept`, Rust
+//!    `UnwindSafe`/`catch_unwind`/`Mutex` poisoning, the `take_mut`↔`replace_with` lineage).
+//!
+//! **Honest historical note the panel surfaced:** RFC #1508 *rejected* exactly this `take_mut` from
+//! `std` on precisely the abort-downgrade cost scored here — the "ace all seven, pay one" framing was
+//! the historically *losing* argument. And two recorded qualifications on the "aces": the live bomb
+//! forces an unwind landing pad, an **optimization barrier**, so "zero-cost on the happy path" holds at
+//! the *runtime* level but is mildly dented at *codegen*; and the mandatory `(T, R)` return forbids
+//! `?`-bailing, so a fallible transform must reconstruct-`T`-on-error or panic (which aborts).
 //!
 //! ### CF1 — `take` does not hand the closure a second `&mut` to the slot (no aliasing the gap):
 //! ```compile_fail

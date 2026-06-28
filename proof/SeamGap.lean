@@ -297,4 +297,30 @@ theorem typed_nat_seam_closes :
   rw [seam_closes_iff_factors]
   exact ⟨id, fun _ => rfl⟩
 
+/-- Take-and-replace shape (`take_mut`'s sound abort-bomb pattern). The soundness fact (U1∧U2: no
+    aliasing the gap ∧ no unwind through the gap) is carried — U1 by the `&mut` borrow, U2 by an
+    abort-bomb that converts a mid-take panic into a process abort before the broken slot is observed —
+    so the seam CLOSES, once more indistinguishably from SPSC in the kernel (`Ptake` is definitionally
+    `V`). Soundness is the load-bearing claim, adjudicated by the cold panel (REPORT_SEAM_SPEC_take):
+    the only UB window is the gap, and the bomb forecloses the only gap-observer the floor admits
+    (unwinding).
+
+    The axis this primitive probes — **exception-safety-guarantee-level** (Abrahams' basic/strong/nothrow;
+    Rust's `UnwindSafe`/`catch_unwind`) — is, like every column past "concentration", invisible to the
+    kernel: the Lean sees only that a Boolean witness suffices, never that the witness is an abort-guard
+    whose price is a non-recoverable panic. The cold panel (REPORT_SEAM_SPEC_take) ruled it a **real,
+    independent eighth axis (N ≥ 8)**, deflated to pre-existing (C++ `noexcept`, `UnwindSafe`, the
+    `take_mut`↔`replace_with` lineage) — and crucially a *clean* off-diagonal (the seam splits from SPSC
+    on the guarantee-level alone), unlike the rejected `typed_nat` probe. The panel's one mandatory
+    correction: the axis is the guarantee-level, and the abort is merely *this seam's* discharge of U2;
+    a `replace_with` sentinel discharges the same U2 soundly-and-recoverably by paying API-surface
+    instead — so the axis carries a discharge menu, not a fixed cost. All modeling dictionary; the
+    kernel sees only that V suffices. -/
+def Ptake (p : Prog) : Bool := V p
+
+theorem take_seam_closes :
+    ∃ d : Prog → Bool, SoundW Ptake d ∧ UsableW Ptake d ∧ ConcW V d := by
+  rw [seam_closes_iff_factors]
+  exact ⟨id, fun _ => rfl⟩
+
 end SeamGap
