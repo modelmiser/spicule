@@ -97,24 +97,27 @@ pub fn refine(value: usize, bound: usize) -> Option<Refined> {
 }
 
 /// Index `slice` by a refined index with **no bounds check**. Sound because `Refined` guarantees
-/// `value < bound` (its private invariant) and this binds the refinement to *this* slice by checking
-/// `bound == slice.len()`; together they imply `value < slice.len()`.
+/// `value < bound` (its private invariant) and this binds the refinement to a slice **at least as
+/// long as `bound`** by checking `bound <= slice.len()`; together they imply `value < slice.len()`.
 ///
-/// The `bound == len` compare is the residual runtime cost a real refinement floor erases (it shares
-/// the length variable `n` statically). It is **not** a bounds check — it is the length-binding a
-/// solver does in the types; the per-access `value < len` bounds check *is* eliminated. Panics on a
-/// foreign-length slice (a logic error, never UB).
+/// The bound here is `<=`, not `==`: safety needs only `bound <= len` (a `Refined` proven `value <
+/// bound` is in-bounds for *any* slice of length `>= bound`), and a real refinement floor admits this
+/// by predicate subtyping `{v < bound} <: {v < len}` for `bound <= len`. Using `==` would reject the
+/// provably-in-bounds `Refined{1,3}` on a length-5 slice — strictly less expressive than the floor
+/// modelled (the cold panel's R2-equality finding). The `bound <= len` compare is the residual
+/// runtime cost a real refinement floor erases (it relates the length variables statically); it is
+/// **not** a bounds check — the per-access `value < len` check *is* eliminated. Panics on a too-short
+/// slice (a logic error, never UB).
 #[inline]
 pub fn at<T>(slice: &[T], i: Refined) -> &T {
-    assert_eq!(
-        i.bound,
-        slice.len(),
-        "refined index proven against length {} used on a slice of length {}",
+    assert!(
+        i.bound <= slice.len(),
+        "refined index proven against length {} used on a slice of length {} (too short)",
         i.bound,
         slice.len()
     );
     // SAFETY: `Refined`'s invariant is `value < bound` (established by `refine`, unforgeable: private
-    // fields), and the assert above proves `bound == slice.len()`. Therefore `value < slice.len()`.
-    // The per-access bounds check is elided; only the length-binding equality remains (the floor gap).
+    // fields), and the assert proves `bound <= slice.len()`. Therefore `value < bound <= slice.len()`,
+    // so `value < slice.len()`. The per-access bounds check is elided; only the length-binding remains.
     unsafe { slice.get_unchecked(i.value) }
 }

@@ -42,21 +42,26 @@ fn a_refined_index_escapes_its_constructor() {
 }
 
 /// The brand-free *trade*: a `Refined` binds to a length, not a slice identity, so it is valid
-/// against any same-length slice (memory-safe; the identity-binding the brand would have given up).
+/// against any slice of length `>= bound` (memory-safe; the identity-binding the brand gives up).
 #[test]
 fn refinement_binds_length_not_identity() {
     let a = [10u8, 11, 12];
     let b = [20u8, 21, 22]; // different data, same length
     let r = refine(1, 3).unwrap();
     assert_eq!(*at(&a, r), 11);
-    assert_eq!(*at(&b, r), 21); // sound on both — bound matches len; "wrong slice" is logic, not UB
+    assert_eq!(*at(&b, r), 21); // sound on both — "wrong slice" is logic, not UB
+
+    // Predicate subtyping ({v<3} <: {v<5}): a Refined proven < 3 is in-bounds on a LONGER slice.
+    // The `==`-based model the cold panel flagged would have wrongly panicked here.
+    let longer = [0u8, 1, 2, 3, 4];
+    assert_eq!(*at(&longer, r), 1);
 }
 
-/// Using a refined index on a *different-length* slice is a caught logic error (panic), never UB.
+/// Using a refined index on a *too-short* slice is a caught logic error (panic), never UB.
 #[test]
-#[should_panic(expected = "refined index proven against length 5 used on a slice of length 3")]
-fn foreign_length_slice_panics_not_ub() {
+#[should_panic(expected = "proven against length 5 used on a slice of length 3 (too short)")]
+fn too_short_slice_panics_not_ub() {
     let short = [1u32, 2, 3];
-    let r = refine(4, 5).unwrap(); // proven < 5
-    let _ = at(&short, r); // bound (5) != len (3) → assert fires before any unchecked access
+    let r = refine(4, 5).unwrap(); // proven < 5; value 4 is out of bounds for a length-3 slice
+    let _ = at(&short, r); // bound (5) > len (3) → assert fires before any unchecked access
 }
