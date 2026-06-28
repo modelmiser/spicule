@@ -18,6 +18,24 @@ scratch, with the state of the art woven in. Parts 6–10 are the project itself
 the transferable meta-lessons. Each part stands alone; skip what you know. Code references
 point at real files in this repo (`seam/`, `proof/`, `design_seam/`).
 
+> **Catch-up note (2026-06-28) — what's new since the first version.** This tutorial originally
+> ended at the seven-property impossibility result and its first four worked seams. It has since
+> been carried through the project's *constructive* arc, and the story got materially deeper. Two
+> additions, both in Parts 9–11:
+> 1. **The trilemma turned out to be a *projection*.** Its three horns are a low-dimensional shadow
+>    of an object with **at least seven axes** — and each of those axes is an *already-named* PL
+>    concern (zero-cost abstraction, generativity, refinement-legibility, the `core`/`alloc` split).
+>    Four more primitives (5–8) recovered them one at a time, so the result is a **unification** of
+>    known axes under one question — *what does the safe witness cost?* — not a pile of new
+>    discoveries. That honest deflation is the spine of the new material.
+> 2. **The method learned to say "no."** The eighth seam (Primitive 8, Part 9) was built to push the
+>    count to eight — and the cold panel **rejected the new axis**. That rejection, not a triumphant
+>    "N = 8", is the capstone: a discovery procedure that only ever confirms is measuring nothing.
+>
+> If you read the earlier version, the genuinely new content is **Primitives 5–8** (Part 9), the
+> four "un-bundlings" + the one rejection, and **meta-lessons 6–8** (Part 11). Everything in Parts
+> 1–8 is unchanged prerequisite material.
+
 > **One-paragraph spoiler.** A type system that is *decidable* (the compiler always halts with
 > yes/no and never asks you to write a proof) fundamentally cannot also be *expressive enough*
 > to derive all of memory safety, concurrency, and zero-cost abstraction from first principles.
@@ -343,7 +361,9 @@ and watch whether the failure *moves* or *disappears*.** They stipulated "use Ru
 checker exactly as shipped" — a concession the good control had *already proven costless* — and
 the failure did not vanish. It **relocated** onto the seam itself. A failure that *moves* is a
 real structural obstruction; one that *disappears* was just proposer weakness. (You will see
-this exact move pay off four more times in Part 9.)
+this exact move pay off across all eight primitives in Part 9 — where the obstruction *vanishes*,
+*moves and stays decidable*, *moves onto a runtime witness*, or *moves and breaks* is the entire
+verdict each time.)
 
 ---
 
@@ -416,8 +436,10 @@ Demolition is coldness, so the cold harness is the **red team**, aimed *only* at
 rule. Each seam ships as a **text spec** (what the cold attackers attack) *and* a real,
 `rustc`-checked crate (`seam/`) whose consumer code is `#![forbid(unsafe_code)]` and whose UB-
 laundering attempts are `compile_fail` tests. Eight primitives: the first four chosen because their
-preconditions have four *different shapes*, the last three because they reopened a deeper
-question — *how many axes is the trilemma actually a projection of?* The headline finding:
+preconditions have four *different shapes*; the next three (5–7) because they reopened a deeper
+question — *how many axes is the trilemma actually a projection of?* — each recovering one; and the
+**eighth** built to push that question one axis further, where the method finally answered *no*. The
+headline finding:
 
 > **Whether a seam closes is a function of the precondition's shape** — specifically, *what the
 > dangerous conjunct is*: can the cheap checker carry it, can a runtime check carry it, is it an
@@ -479,7 +501,8 @@ This primitive forced the **first** of four un-bundlings:
 > first and spends the second. And #6 was one of the casualties back in Part 7's unified result;
 > the constructive phase puts it back on the map. *(The fifth, sixth, and seventh primitives, below,
 > force three more un-bundlings — API-locality, then legibility/solver-freedom, then bare-metal —
-> turning "3-of-4" into "3-of-≥7".)*
+> turning "3-of-4" into "3-of-≥7". The **eighth** then probes for one axis more and is **rejected**:
+> the un-bundling stops at seven, and where it stops is itself a result.)*
 
 *(A teaching aside from the real run: the slab's **first** cold gauntlet FAILED on a genuine UB —
 but the bug was in the **spec** (a generation-only check authenticates a fresh pool's vacant
