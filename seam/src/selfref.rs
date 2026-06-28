@@ -15,21 +15,32 @@
 //! [`core::marker::PhantomPinned`]) statically forbids moving the pointee. The seam re-exports the raw
 //! self-pointer deref as a safe [`SelfRef::get`], sound because `Pin` guarantees no move.
 //!
-//! ## The axis it probes — and the confound the builder is being upfront about
+//! ## The axis it probes — and the cold panel's ruling (REPORT_SEAM_SPEC_selfref)
 //!
 //! **move-stability** (address stability; self-referential structs; `Pin`; the async/`Future` use case)
-//! is a genuinely distinct danger from the nine recovered axes. *But* — and this is the load-bearing
-//! question for the cold panel — every Rust witness for it appears to spend *another* axis:
-//! - `Pin<&mut Self>` / `Pin<&Self>` are **viral in every signature** ⇒ it looks like **API-locality**.
-//! - `Box::pin` (a stable heap address) would spend **bare-metal**; this module uses stack pinning
-//!   (`core::pin::pin!`) to stay `core`-only, *isolating the confound to API-locality alone*.
-//! - a `with_pinned(value, |p| …)` scope would be a **closure** ⇒ API-locality again.
+//! is a genuinely distinct danger from the nine recovered axes — no other axis concerns a value's
+//! *address*. The cold panel ruled it **real but STRUCTURALLY INSEPARABLE (outcome 3)** — a *new
+//! verdict category*: neither a clean tenth axis nor a confounded non-axis (the `typed_nat` outcome).
+//! **N stays 9.** The reasoning, and three corrections the panel extracted (now part of the record):
 //!
-//! So unlike the drain seam (which dodged its confound by owning its data — a *free-standing* guard),
-//! move-stability may have **no** free-standing, non-viral, `core`-only witness. The honest hypotheses
-//! for §6: move-stability is (a) a clean tenth axis, (b) *reduces to* API-locality (the `Pin` wrapper
-//! *is* the cost), or (c) **real but structurally inseparable** — a distinct danger reachable only by
-//! spending API-locality (or bare-metal), which would be a *new kind* of verdict for the lattice.
+//! - **Not a clean axis (1).** `Pin<&Self>` is the viral-*restrictive* (`'id`-flavor) wrapper: it
+//!   infects every receiver **and revokes `&mut`** — and that revocation is the load-bearing mechanism
+//!   of the soundness proof. So the seam cannot ace API-locality; the cost cannot be isolated.
+//! - **Not a reduction-to-API-locality (2).** The cost is **non-uniform across witnesses**: stack-pin
+//!   (`pin!`) spends API-locality, `Box::pin` spends **bare-metal**, a hypothetical `?Move` immovable
+//!   type would spend an ambient bound. One danger, several different costs ⇒ not one axis "wearing a hat."
+//! - **The real cost is *immovability*, not "API-locality alone".** *(Correction to this module's
+//!   earlier framing.)* What M2 pays is the **revocation of the move/return/store capability** —
+//!   move-stability funding itself — which is distinct from and *heavier* than API-locality (a merely
+//!   leaked type surface).
+//! - **Inseparability is *contingent*, not necessary.** *(Correction.)* RFC 2349's **rejected**
+//!   `?Move`/`Move` immovable-types design *was* a free-standing witness; Rust **chose** to deny
+//!   address-stability a free-standing form (hookless `memcpy` moves + a library `Pin`). So "no
+//!   free-standing witness can exist" overstates it — "this floor chose not to provide one" is exact.
+//! - **The crisp isolation is a *toy*.** *(Correction.)* The `core`-only, `unsafe`-free safe fragment
+//!   here covers only a **single-frame, non-composable** cell. Any real use move-stability exists to
+//!   serve — an intrusive node, a `Future`, a slab entry — forces `unsafe` pin-projection or `Box::pin`
+//!   (bare-metal). The crispness the adjudication leans on is the crispness of this minimal example.
 //!
 //! ### CF1 — a pinned `SelfRef` cannot be moved out (that move would dangle the self-pointer):
 //! ```compile_fail

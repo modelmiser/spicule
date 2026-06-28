@@ -351,4 +351,30 @@ theorem drain_seam_closes :
   rw [seam_closes_iff_factors]
   exact ⟨id, fun _ => rfl⟩
 
+/-- Self-referential-cell shape (a `Pin`-guarded self-pointer; `Pin` — RFC 2349; async/`Future`;
+    intrusive collections). The soundness fact (M1∧M2: the self-pointer is established ∧ the cell has
+    not moved since) is carried by the safe witness — here `Pin` over a `!Unpin` cell, which statically
+    forbids the move — so the seam CLOSES, once more indistinguishably from SPSC in the kernel
+    (`Pselfref` is definitionally `V`). Soundness adjudicated by the cold panel (REPORT_SEAM_SPEC_selfref):
+    the keystone is that no safe path can move the cell after `init`.
+
+    The axis this primitive probes — **move-stability** (a value whose *address* is load-bearing) — is,
+    like every column past "concentration", invisible to the kernel: the Lean sees only that a Boolean
+    witness suffices, never that the witness is a viral, `&mut`-revoking `Pin`. The cold panel
+    (REPORT_SEAM_SPEC_selfref) ruled **outcome (3): real but STRUCTURALLY INSEPARABLE** — a *new verdict
+    category*. Move-stability is a distinct danger (no other axis concerns a value's address) yet has no
+    isolable cost: its price is *immovability* (revocation of move/return/store, heavier than
+    API-locality), non-uniform across witnesses (stack-pin ⇒ API-locality, `Box::pin` ⇒ bare-metal). So
+    it is neither a clean tenth axis nor a confounded non-axis (the `typed_nat` outcome): **N stays 9**,
+    with an "inseparable" category added. Honest caveats the panel extracted: the inseparability is
+    *contingent* (RFC 2349's rejected `?Move` immovable types were a free-standing witness Rust chose not
+    to adopt), and the crisp `core`-only reading holds only for this *non-composable* single-frame cell.
+    All modeling dictionary; the kernel sees only that V suffices. -/
+def Pselfref (p : Prog) : Bool := V p
+
+theorem selfref_seam_closes :
+    ∃ d : Prog → Bool, SoundW Pselfref d ∧ UsableW Pselfref d ∧ ConcW V d := by
+  rw [seam_closes_iff_factors]
+  exact ⟨id, fun _ => rfl⟩
+
 end SeamGap
