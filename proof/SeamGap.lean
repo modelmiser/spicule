@@ -226,4 +226,25 @@ theorem branded_seam_closes :
   rw [seam_closes_iff_factors]
   exact ⟨id, fun _ => rfl⟩
 
+/-- Refinement-typed shape (Flux — Lehmann et al., PLDI 2023; Liquid Haskell — Vazou et al., ICFP
+    2014). The soundness fact (R1∧R2: `value < bound ≤ len`) is carried by the safe witness — here a
+    *legible predicate* rather than a brand — so the seam CLOSES, again indistinguishably from SPSC
+    in the kernel (`Prefined` is definitionally `V`).
+
+    This instance is the one that CLOSES the #5⟂#7 cell, and the closure is what proves the axes
+    independent — but, like every column past "concentration", the proof lives in the modeling
+    dictionary, not here: the kernel cannot see that this witness is *brand-free* (a `Refined` escapes
+    its constructor, unlike `Idx<'id>`) and *legible* (the predicate `value < bound` is the type's
+    contract), while the slab's witness is *brand-free yet illegible*. Holding #5 fixed (refined and
+    slab both brand-free) and flipping #7 is the off-diagonal the cold panel (REPORT_SEAM_SPEC_refined)
+    confirmed. The kernel sees only that all three close; that they close on *different recovered
+    axes* — and that horn 2 itself un-bundles into decidability (✓) vs solver-freedom (✗, the
+    external SMT in the TCB — the original `unified` "keep" horn, NOT a new axis) — is prose. -/
+def Prefined (p : Prog) : Bool := V p
+
+theorem refined_seam_closes :
+    ∃ d : Prog → Bool, SoundW Prefined d ∧ UsableW Prefined d ∧ ConcW V d := by
+  rw [seam_closes_iff_factors]
+  exact ⟨id, fun _ => rfl⟩
+
 end SeamGap

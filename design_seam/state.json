@@ -569,10 +569,75 @@
       "outcome": "TRADEOFF",
       "cost_usd": 2.518,
       "timestamp": "2026-06-27T20:58:42+00:00"
+    },
+    {
+      "round": 10,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_refined.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 refinement-typed bounds (re-import rule under attack)\n\nThis is a **design proposal** for a sixth *seam* in the same hypothetical systems language (same\nfloor, same rules) as the SPSC, MMIO, intrusive-list, slab, and branded-index seams. A seam\nre-exports a dangerous primitive as a checked safe interface ordinary code uses with no `unsafe` and\nno proofs. Attack the re-export: can ordinary safe code, using only this interface, reach undefined\nbehavior (UB)? **And** adjudicate the axis question this primitive was built to settle (\u00a76).\n\nYou are attacking a **text specification**, not source code.\n\n---\n\n## 0. The floor (stipulated, not under attack)\n\nRust's borrow checker exactly as shipped (NLL: moves, `&T`/`&mut T`, lifetimes, affinity, `Drop`,\n`Send`/`Sync`, trait resolution). **Crucially, the floor has no SMT solver and no refinement types.**\nThis proposal therefore describes a primitive as it would exist on a *refinement-typed* floor (Flux,\nLiquid Haskell, F\\*, Dafny), and is explicit about which parts the bare NLL floor can only *model* at\nrun time (\u00a73). Do not attack the borrow checker; attack the re-import rule and the axis claims.\n\n## 1. The primitive\n\n**Unchecked",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "On masking/arithmetic indexing (ring buffers, allocators, slabs) the QF-LIA solver can't prove bounds, so refine degrades to runtime-checked Option ceremony worse than Rust.",
+          "strongest_point": "The decidable fragment named (QF-LIA/UTVPI) cannot discharge the bitwise/modular/stride index math of the very performance structures motivating get_unchecked, collapsing the seam to a runtime bounds check plus an impossible None branch plus silent cross-buffer reads."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Erasing R2 while keeping Refined brand-free/storable admits OOB UB; sound only with runtime check or re-introduced length brand.",
+          "strongest_point": "A storable, escaping Refined makes its bound existential, so erasing the bound==len check (the advertised zero-cost end-state) lets at(b,r) read out of bounds when bound\u2260len."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Refinement discharge is NIA-undecidable on strided/2D indexing and NP-complete on linear; QF-LIA/UTVPI claim false for admitted operations.",
+          "strongest_point": "Any index multiplying two program variables (i*stride+j) generates nonlinear integer constraints \u2014 undecidable by Hilbert's 10th \u2014 so the solver returns unknown and Horn 2's decidability sub-claim collapses for ordinary array code."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "R2 enforces bound==len, stronger than \u00a72's true i<len; rejects sound accesses on longer slices, killing brand-free reuse",
+          "strongest_point": "A Refined{i,n} proven i<n cannot index any slice of length m>n despite i<n<=m being provably in-bounds \u2014 at() panics on bound!=len, an undisclosed over-restriction that contradicts the \u00a72 precondition and negates the storable/reusable value of brand-freedom."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "SURVIVES",
+          "severity": "serious",
+          "summary": "Sound but a faithful re-derivation of DML/Flux; its 'new' horn-2 axis is refinement typing's known solver-in-TCB cost.",
+          "strongest_point": "The marquee 'un-bundling' of horn 2 and the length-not-identity caveat are the founding, documented properties of Dependent ML (1998) and Flux (2023), not novel discoveries."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "tradeoff",
+          "attacker-implementation": "tradeoff",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "TRADEOFF",
+        "tradeoffs": [
+          "R2 trilemma: zero-cost erasure + brand-free + sound cannot coexist \u2014 must pay a runtime bound==len check (brand-free, not zero-cost; the shipped artifact) OR tie length at the type level (zero-cost, but a viral length-index brand). The \u00a76 'zero-cost erasure with no brand' claim is downgraded to SEAM-COSTS.",
+          "Decidable-fragment weakness: QF-LIA/UTVPI discharges only single-variable value<bound; masked (&), modular, strided and 2D indices yield bitvector/NIA constraints (NIA undecidable), forcing rejection (effective proof obligation) or runtime fallback \u2014 losing zero-cost exactly where get_unchecked is motivated. Horn 2(a) holds only on the trivial fragment.",
+          "R2-equality over-restriction: bound==len is strictly stronger than \u00a72's true i<len; a Refined proven against length n is rejected on any slice of length m>n though in-bounds. Undisclosed dual of the same-length caveat; narrows the brand-free reuse benefit. Fixable to bound<=len.",
+          "Novelty/attribution: horn-2's solver-in-TCB 'un-bundling' and the length-not-identity caveat are documented properties of DML (1998) and Flux (2023); \u00a76.3's 'needs Z3' is the impossibility result's keep-horn, not a genuine 7th axis.",
+          "Adoption costs: static erasure for runtime-sized buffers forces capacity into the type (const-N virality replacing 'id virality); length-not-identity admits silent cross-buffer reads in multi-buffer hot paths."
+        ],
+        "headline": "Sound brand-free bounds seam, but zero-cost erasure demands a length-brand; #5\u27c2#7 cell closes.",
+        "rationale": "No attacker reaches UB; the runtime-R2 rule is sound. But the R2 trilemma forces SEAM-COSTS \u2014 erasure requires a length-index brand, not the advertised plain value \u2014 and the named decidable fragment can't discharge computed indices. Off-diagonal (refined vs slab) closes #5\u27c2#7."
+      },
+      "outcome": "TRADEOFF",
+      "cost_usd": 2.8732,
+      "timestamp": "2026-06-28T10:32:29+00:00"
     }
   ],
   "settled": [],
   "incompatibilities": [],
   "blind_spot_flags": [],
-  "total_cost_usd": 17.9624
+  "total_cost_usd": 20.8356
 }
