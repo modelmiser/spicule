@@ -761,10 +761,75 @@
       "outcome": "FAILED",
       "cost_usd": 2.783,
       "timestamp": "2026-06-28T14:39:09+00:00"
+    },
+    {
+      "round": 13,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_take.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 take-and-replace across a possible unwind (re-import rule under attack)\n\nThis is a **design proposal** for a ninth *seam* in the same hypothetical systems language (same\nfloor, same rules) as the SPSC, MMIO, intrusive-list, slab, branded-index, refined-index,\nshared-ownership, and type-level-index seams. A seam re-exports a dangerous primitive as a checked safe\ninterface ordinary code uses with no `unsafe` and no proofs. Attack the re-export: can ordinary safe\ncode, using only this interface, reach undefined behavior (UB)? **And** adjudicate the axis question\nthis primitive was built to settle (\u00a76).\n\nYou are attacking a **text specification** backed by real `rustc`-checked code (`seam/src/take.rs`).\n\n> **Context the builder is being honest about.** The previous probe (`typed_nat`, the type-level\n> index) was *sound* but its proposed eighth axis (\"checker-tractability\") was **rejected** by the cold\n> panel: its off-diagonal silently flipped *expressiveness* (it indexed only compile-time constants),\n> so it did not isolate one coordinate. This primitive is the retry, chosen specifically to avoid that\n> confound \u2014 but do not take the builder's word for it. The load-beari",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Featherweight to write; real friction is fallible-transform `?`-wall and an invisible non-catchable abort, but neither is disqualifying.",
+          "strongest_point": "The closure's mandatory `(T,R)` return forbids `?`-bailing, so fallible transforms (alloc/syscall \u2014 the common systems case) must either reconstruct-T-on-error or panic-to-escape, and panicking silently aborts the whole process with nothing in the signature warning the caller."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Canonical sound take_mut bomb pattern; abort structurally precedes caller's drop; no UB path or undecidability found.",
+          "strongest_point": "The duplicate lives in the caller's outer frame while the armed bomb lives in take's inner frame, so inner-to-outer unwind order guarantees the double-panic abort fires before the caller can drop the broken slot."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Imposes no new compiler pass; the undecidable nounwind check is sidestepped by a runtime abort-bomb.",
+          "strongest_point": "Statically discharging U2 would require deciding whether arbitrary f can panic (halting-reducible), but the seam pays it at runtime instead, so it implies no intractable pass and Horn 2 holds."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "minor",
+          "summary": "Sound, but abort isn't U2's inherent price; a sound recover-with-placeholder variant defeats \u00a76.1's 'split-on-unwind-safety-alone' clean-axis claim.",
+          "strongest_point": "replace_with-style repair discharges U2 soundly without aborting and stays catch_unwind-recoverable, proving the abort is an avoidable design choice that smears the off-diagonal into expressiveness/API-obligation rather than isolating one coordinate."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Sound \u2014 exactly take_mut::take; unwind-safety is a real but fully pre-existing axis (Abrahams), not novel.",
+          "strongest_point": "The replace_with crate discharges the same U2 obligation without aborting (via a recovery closure), so 'abort is the price of U2' and 'split on unwind-safety alone' are overstated \u2014 the cost-location is a free design variable, not one forced coordinate."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "argued-past",
+          "attacker-implementation": "tradeoff",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "TRADEOFF",
+        "tradeoffs": [
+          "Soundness is bought with abort-on-mid-take-panic: a panic in f is not catch_unwind-recoverable, downgrading basic exception-safety to process abort for the gap window, invisible at the call site and hostile to catch_unwind fault-isolation users.",
+          "Abort is one discharge point of U2, not its forced price: replace_with-style placeholder-repair discharges U2 soundly and stays recoverable (paying on API-surface instead). Choice of discharge strategy is an open future decision; relabel the axis as exception-safety-guarantee-level, with abort as this seam's position.",
+          "Fallible-transform friction: the mandatory (T,R) return forbids ?-bailing, so fallible transforms must reconstruct-T-on-error or panic (which aborts).",
+          "'Zero-cost happy path' holds at runtime but the live bomb forces an unwind landing pad / optimization barrier, a codegen-level dent on the zero-cost ace.",
+          "Prior-art weight: RFC #1508 rejected this exact primitive from std on the very abort cost the proposal scores; the 'ace seven, pay one' framing was the historically losing argument."
+        ],
+        "headline": "Re-import is sound; unwind-safety is a real but pre-existing eighth axis (N>=8), abort is one discharge point not its forced price.",
+        "rationale": "All five agree the re-import reaches no UB; abort structurally precedes the caller's drop. No genuine-flaw, so not FAILED. But replace_with proves the abort is a chosen discharge, the axis is mislabeled, and the strategy choice is an open decision: admissible only with recorded tradeoffs."
+      },
+      "outcome": "TRADEOFF",
+      "cost_usd": 1.9996,
+      "timestamp": "2026-06-28T15:10:46+00:00"
     }
   ],
   "settled": [],
   "incompatibilities": [],
   "blind_spot_flags": [],
-  "total_cost_usd": 26.0512
+  "total_cost_usd": 28.0508
 }
