@@ -185,7 +185,7 @@ The adversarial process earned its keep six times:
 - Real Rust (rustc-checked, `#![no_std]`): `../seam/` — `src/lib.rs` (SPSC), `src/mmio.rs`,
   `src/intrusive.rs`, `src/slab.rs`, `src/branded.rs`, `src/refined.rs`, `src/shared.rs` (the lone
   `alloc` user); consumer code is `#![forbid(unsafe_code)]`; laundering paths are `compile_fail`
-  doctests (33 crate tests + 13 doctests total).
+  doctests (25 `tests/` integration tests + 13 `compile_fail` doctests = 38 total).
 - Seam-width instrument: `SEAM_WIDTH.md`; full face lattice: `REALIZABILITY.md`
 - Mechanization: `../proof/SeamGap.lean` — `seam_closes_iff_factors` + the
   `spsc`/`intrusive`/`slab`/`branded`/`refined`/`shared` instances (propext-only).
