@@ -62,6 +62,7 @@ Legend: ✓ holds / aced · ✗ paid or dropped · ◐ conditional · *(plain)* 
 | **Branded index** | ✓ | ✓ | ✓ O(1) | **✗** *(viral `'id`)* | ◐³ | **✗**⁴ | ✓ | **API-locality (#5)** + deferred zero-cost; brand is nominal |
 | **Refined index** | ✓ | ◐⁶ | ✓ O(1) | ✓ *(brand-free; `Refined` escapes)* | ◐⁷ | **✓**⁸ | ✓ | **horn-2 solver-freedom** (SMT in the TCB) + the R2 trade |
 | **Shared (Rc)** | ✓ | ✓ | ✓ O(1) | ✓ *(plain `Shared`)* | **✗** | ✓ | **✗**¹⁰ | **bare-metal (seed #5)** — needs a global-allocator refcount manager |
+| **Type-level index** | ✓ | ◐¹¹ | ✓ O(1) | ✓ *(plain turbofish)* | ✓ | ✓ | ✓ | **eighth-axis probe FAILED** — sound, but the "new axis" is confounded + encoding-relative (see below) |
 | **Intrusive list** (branded) | **✗**⁵ | ✓ | ✗ O(accesses) | ✗ | ◐ | ✗ | ✓ | a **horn genuinely drops** — no sound+usable+concentrated decision exists |
 
 ¹ with a foundation `Send` opt-in, else O(ISRs). ² **reclassified legible→illegible** (cold panel,
@@ -86,6 +87,13 @@ zero-cost (both pay a runtime cost, only `Shared` needs a manager). ¹⁰ **bare
 alloc` (compile-enforced: the other six are `core`-only). The axis is real and independent but *not
 novel* — it is Rust's `core`/`alloc` boundary (RFC 2480), precisely *unbounded-dynamic-allocation vs
 caller-provided-bounded-storage* (a `heapless`-pool `Rc` would be bare-metal but capacity-bounded).
+¹¹ **decidable ✓, but pays a recorded `recursion_limit` cost inside horn 2 — *not* a new axis.** The
+type-level index proves `I < Len` by trait resolution (`I: Lt<Len>`), which erases (zero-cost ✓),
+needs no solver (solver-free, unlike refined), and is sound (sealed `Nat` + the orphan rule block
+every forgery — conceded unanimously). Its cost: a deep-but-in-bounds index fails to *check* under the
+default `recursion_limit` (E0275 overflow). The eighth-axis claim built on this **FAILED the gauntlet**
+(see the dedicated section below): the cost is encoding-relative (binary numerals erase it) and
+confounded with a strict expressiveness loss (static-index-only), so it isolates no clean axis.
 
 ## What the table proves
 
@@ -111,6 +119,48 @@ escapes every witness vocabulary, so a horn drops). Every other primitive **clos
 horns and pays on a *recovered* axis instead. The trilemma never said otherwise — it is a true
 shadow; the table is the object casting it.
 
+## The eighth-axis probe — and why it FAILED (the method's STOP)
+
+The first three recovered axes (slab→zero-cost, branded→API-locality, refined→legibility) each came
+from a primitive that **cleanly dissociated** one coordinate. The eighth probe — the type-level index,
+pitched as recovering **checker-tractability** (does the native checker halt without an arbitrary fuel
+knob?) — **did not**, and the cold gauntlet rejected it. This is recorded as a first-class result, not
+hidden: it is where the method's own discipline drew a line.
+
+**The seam is sound** (unanimous): `I: Lt<Len>` proves `I::VALUE < Len::VALUE = len`; sealing `Nat`
+(`Nat: Sealed`, in-crate only) plus the orphan rule plus `new`'s conservative length check block every
+forgery. No UB path. That sub-result stands, and the primitive pays a real `recursion_limit` cost.
+
+**But the eighth *axis* claim failed three convergent ways** — three independent attackers, one judge:
+
+1. **The off-diagonal is confounded by expressiveness.** `get::<I>` takes a turbofish *type*, never a
+   runtime `usize`, so the type-level index can only address **compile-time-constant** positions — a
+   *strict expressive subset* of the branded and refined indices, whose whole reason for existing
+   (`get_unchecked` on ring/arena/slab) is **data-dependent** indexing the seam cannot express. So
+   "typed_nat vs refined flips *only* checker-tractability" is false: it silently *also* flips
+   expressiveness. You cannot read a one-coordinate independence off two primitives that do not accept
+   the same programs. This is the **OFF-DIAGONAL requirement** (the same gotcha Phase E had to honor to
+   close #5⟂#7) failing — here unfixably, because carrying a *runtime* index with a *compile-time*
+   proof is a contradiction in terms: the expressiveness loss is intrinsic to the witness kind.
+2. **The decisive cost is encoding-relative.** The ✗ checker cell is an artifact of **unary Peano**
+   (`S<S<…>>`, depth = the index value). **Binary** type-level naturals (typenum's `UInt<U,B>`) make
+   resolution **O(log N)** — never approaching `recursion_limit` for realistic indices. The cell
+   therefore measures *which numeral library you linked*, not a property of the primitive. A table
+   coordinate that flips with an implementation detail is not an axis.
+3. **It is mislabeled, and the real concern is pre-existing.** Even the friendly (prior-art) attacker
+   granted separability but corrected the name: `Lt` resolution is **linear** in the index — strictly
+   *cheaper* than refined's NP-hard QF-LIA — so the cost is **not** "tractability." What
+   `recursion_limit`/E0275 actually marks is the absence of a guaranteed **terminating-resolution
+   fragment**: exactly GHC's `UndecidableInstances` / the **Paterson conditions** / `-freduction-depth`,
+   and the Turing-completeness of trait resolution (Mairson 1990 for the DEXPTIME lineage). A real,
+   named, pre-existing PL boundary — but one this primitive cannot witness as a clean lattice axis.
+
+**The honest verdict: a sound seam that pays a recorded `recursion_limit` cost *inside* horn 2, but
+recovers no new axis. The lattice stays N ≥ 7.** The value of the probe is the **negative** result:
+the method is not a novelty-generating machine. Three primitives isolated axes because their witnesses
+dissociated cleanly; the fourth could not, and the off-diagonal discipline said so out loud. A method
+that only ever confirms is not measuring anything — this one has a STOP, and the eighth probe found it.
+
 ## The recursion: each primitive un-bundled one folded axis
 
 ```
@@ -127,8 +177,12 @@ Seam Trilemma               3 horns: {sound, #4 decidable, #2 concentration}
         │                              (solver-freedom = the `unified` "keep" horn, NOT a new axis)
   shared│  recovers seed #5 bare-metal ⇒ 3-of-≥7  (runtime-manager axis; ⟂ #6 via slab/heapless)
         │                              (= Rust's core/alloc boundary, RFC 2480 — real but pre-existing)
+typednat│  PROBES checker-tractability ⇒ FAILED   (off-diagonal confounded by expressiveness;
+        │                              cost encoding-relative unary/binary; mislabeled = terminating-
+        │                              resolution, Paterson/UndecidableInstances). N stays ≥ 7. METHOD STOP.
         ▼
 Realizability table         N ≥ 7 axes (sound, decidable, concentration, API-locality, #6, #7, bare-metal)
+                            — the 8th probe found the method's falsification mode, not an 8th axis
 ```
 
 Each constructive primitive is the **witness that two trilemma-identical configurations differ** —
@@ -145,9 +199,13 @@ the `core`/`alloc` bare-metal split (RFC 2480). The constructive phase did not d
 What it found is that the trilemma's three horns silently *bundle together a set of independently
 known PL design axes*, and that one rubric — **"what does the safe witness cost?"** — unifies them.
 The contribution is the unification and the method that recovers each axis (build the dissociating
-witness, let a cold panel adjudicate), not the novelty of any single axis. Twice now (solver-freedom,
-bare-metal) the panel has had to *deflate* a "new dimension" claim to "real, but pre-existing" — and
-that deflation is itself the result: the seam tension is where these known axes meet.
+witness, let a cold panel adjudicate), not the novelty of any single axis. The panel **deflated** a
+"new dimension" claim twice (solver-freedom, bare-metal → "real, but pre-existing"), and the third time
+(checker-tractability) it went further and **rejected the axis outright** — the witness's off-diagonal
+was confounded with expressiveness and its cost was encoding-relative. That escalation is the sharpest
+form of the result: the seam tension is where *known* axes meet, and the adjudicator that recovers them
+is also willing to throw a candidate out. A discovery procedure with no rejection mode discovers
+nothing; this one rejected its eighth candidate on the record.
 
 ## Structure among the axes (not just a count)
 
@@ -171,7 +229,11 @@ The axes are not independent toggles you can set freely — **two trades** show 
 - N ≥ 7 is a **lower bound**: seven gauntlet-confirmed live axes — sound, decidable, concentration,
   API-locality, zero-cost (#6), AI-legibility (#7), and bare-metal (#5, recovered by the shared
   phase). More may exist; the method (build a dissociating witness, let the cold panel adjudicate) is
-  open-ended, not exhausted.
+  open-ended, not exhausted. **But "open-ended" is not "everything is an axis":** the eighth probe
+  (type-level index → checker-tractability) was built, attacked, and **rejected** — its candidate axis
+  is confounded with expressiveness, encoding-relative, and a mislabeled re-name of a pre-existing
+  terminating-resolution concern (Paterson / `UndecidableInstances`). N stays **7**, not 8. The probe's
+  worth is the falsification: the off-diagonal discipline can and did refuse a witness.
 - The #5⟂#7 dissociation **is witnessed** (refined index = brand-free + legible; slab = brand-free +
   illegible). Bare-metal ⟂ #6 **is witnessed** (slab = bare-metal + runtime-cost; Shared = global-heap
   + runtime-cost). The refined phase surfaced that horn 2 un-bundles into decidability + solver-freedom
