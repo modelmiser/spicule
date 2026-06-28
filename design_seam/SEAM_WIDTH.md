@@ -40,7 +40,7 @@ A primitive whose precondition has a conjunct that *cannot* be internalized (one
 caller-owned state) would force the caller to carry it — pushing seam width from O(buffers)
 toward O(operations). That is the Phase-C contrast (MMIO; intrusive list).
 
-## All nine primitives — and why seam width misses *several* axes, not one
+## All ten primitives — and why seam width misses *several* axes, not one
 
 | Primitive | Consumer seam width | Runtime cost (zero-cost #6) | Type surface (API-locality) |
 |---|---|---|---|
@@ -52,6 +52,7 @@ toward O(operations). That is the Phase-C contrast (MMIO; intrusive list).
 | Shared (Rc) | **O(1)** — `new`/`clone`/deref/drop are safe calls | **non-zero** — a refcount inc/dec, never erased — *and* a **global allocator** (bare-metal #5) | plain `Shared` — non-viral |
 | Type-level index | **O(1)/buffer** (`Bound::new` once) | **erases fully** — the proof is a trait bound; cost moves to the **resolver's fuel** (`recursion_limit`, horn 2) — but that cost is encoding-relative + confounded, *not a clean axis* | plain turbofish `I` — non-viral; **but static-index-only** (a hidden *expressiveness* cost no width/cost/type column captures) |
 | Take-and-replace | **O(1)/call** (`take(slot,f)` once) | erases on the happy path (the abort-bomb is a ZST `mem::forget`-ten); mild codegen dent (an optimization barrier) | plain `take` — non-viral; **but a mid-take panic aborts the process** (the 8th axis, **unwind-safety** — a hidden cost no width/cost/type column captures) |
+| Drain-and-yield | **O(1)/drain** (`drain()` once) | erases — ordinary iteration, no proof residue | plain `Drain<'a>` — non-viral, **no closure**; **but a leaked guard silently loses the un-yielded tail** (the 9th axis, **leak-freedom** — a hidden cost no width/cost/type column captures) |
 | Intrusive list (branded) | **O(accesses)** — the token threads through every access | (design A erases; the cost is seam width / lost reclaim) | **viral `'brand`** |
 
 **Two instructive rows now show seam width is necessary but not sufficient.** The slab *aces* seam
@@ -65,20 +66,22 @@ horn 3) and a *type* face (API-locality) — that the branded index pulls apart,
 pulled zero-cost out of "concentrated & proof-free."
 
 That a primitive can be O(1) on this instrument and *still* impose a real consumer tax on two
-distinct hidden axes is precisely why the Seam Trilemma is a **3-of-N projection (N ≥ 8)**, not
+distinct hidden axes is precisely why the Seam Trilemma is a **3-of-N projection (N ≥ 9)**, not
 3-of-3. Seam-width measures one axis well and is blind to the rest.
 
-**Two more rows sharpen the same point from the opposite direction — and are a caution against both
+**Three more rows sharpen the same point from the opposite direction — and are a caution against both
 over- and under-counting.** The **type-level index** is O(1) on width, *fully erases*, and is non-viral
 — a near-perfect corner — yet its real tax, **static-index-only expressiveness** (it cannot index a
 runtime `usize`), is invisible to *all three* columns. That invisibility is what let the builder
 mistake it for a clean "checker-tractability" axis, and what the cold panel caught: an instrument blind
 to expressiveness reads a confounded off-diagonal as clean, so the eighth-axis claim there was
-**rejected**. The **take-and-replace** row is the mirror image: it *also* aces width, erases on the
-happy path, and is non-viral — and its real tax, **unwind-safety** (a mid-take panic aborts the
-process), is *also* invisible to all three columns. But this time the hidden cost was a **clean** axis:
-the panel **confirmed** it as the eighth (N ≥ 8). So the lesson cuts both ways — a primitive that aces
-every column the instrument can see may be paying on a hidden axis that is *real* (take) or *confounded*
-(type-level index), and only a richer adjudication (the cold panel) tells them apart. See
-`REALIZABILITY.md` for the full face lattice (the confirmed eighth axis and the rejected probe) and
-`SYNTHESIS.md` for the cross-primitive map.
+**rejected**. The **take-and-replace** and **drain-and-yield** rows are the mirror image: both ace
+width, erase on the happy path, and are non-viral — yet their real taxes, **unwind-safety** (a mid-take
+panic aborts) and **leak-freedom** (a leaked guard loses the tail), are *also* invisible to all three
+columns. But this time the hidden costs were **clean, and distinct, axes**: the panel **confirmed** them
+as the eighth and ninth (N ≥ 9), and ruled them dissociable (leak = `Drop` never runs; unwind = `Drop`
+runs at a bad time). So the lesson cuts every way — a primitive that aces every column the instrument
+can see may be paying on a hidden axis that is *real and novel-to-the-lattice* (take, drain) or
+*confounded* (type-level index), and only a richer adjudication (the cold panel) tells them apart. See
+`REALIZABILITY.md` for the full face lattice (the confirmed eighth and ninth axes and the rejected
+probe) and `SYNTHESIS.md` for the cross-primitive map.
