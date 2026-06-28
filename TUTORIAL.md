@@ -9,7 +9,7 @@ languages"; and (c) what newlang discovered and *why it matters*.
 **What newlang is.** Not a language. It is a research project that asked "what would the
 perfect systems language look like?", listed seven properties such a language should have,
 and then **proved — adversarially — that the seven cannot coexist**, mapped exactly where the
-wall is, and then **built six real things that live right up against the wall** to show what
+wall is, and then **built seven real things that live right up against the wall** to show what
 you *can* do. The deliverables are an impossibility result, a theorem (the *Seam Trilemma*),
 a Lean proof, and a small Rust crate of worked examples.
 
@@ -407,7 +407,7 @@ doesn't exist.
 
 ---
 
-# Part 9 — Build and break: six real seams (the heart of it)
+# Part 9 — Build and break: seven real seams (the heart of it)
 
 Theory in hand, the project stopped arguing and *built*. Crucial design of the experiment:
 **build and break are different machines.** Construction is continuity, so a *stateful builder*
@@ -415,8 +415,8 @@ Theory in hand, the project stopped arguing and *built*. Crucial design of the e
 Demolition is coldness, so the cold harness is the **red team**, aimed *only* at the re-import
 rule. Each seam ships as a **text spec** (what the cold attackers attack) *and* a real,
 `rustc`-checked crate (`seam/`) whose consumer code is `#![forbid(unsafe_code)]` and whose UB-
-laundering attempts are `compile_fail` tests. Six primitives: the first four chosen because their
-preconditions have four *different shapes*, the fifth and sixth because they reopened a deeper
+laundering attempts are `compile_fail` tests. Seven primitives: the first four chosen because their
+preconditions have four *different shapes*, the last three because they reopened a deeper
 question — *how many axes is the trilemma actually a projection of?* The headline finding:
 
 > **Whether a seam closes is a function of the precondition's shape** — specifically, *what the
@@ -471,15 +471,15 @@ decidable, concentrated — the whole interface is safe, seam width O(1)) — an
 axis the trilemma folded away: zero-cost erasure (property #6).** The generation word per slot
 and the compare-branch per access *do not erase*. Verdict: **SEAM-COSTS [zero-cost]**.
 
-This primitive forced the **first** of three un-bundlings:
+This primitive forced the **first** of four un-bundlings:
 
 > **The Seam Trilemma is a 3-of-4 projection.** "Concentrated & proof-free" had quietly bundled
 > away *zero runtime cost*. The slab prises them apart: a *concentrated* seam can still be
 > *non-erasable*. Seam width (horn 3) and zero-cost (#6) are independent axes — the slab aces the
 > first and spends the second. And #6 was one of the casualties back in Part 7's unified result;
-> the constructive phase puts it back on the map. *(The fifth and sixth primitives, below, force two
-> more un-bundlings — API-locality, then legibility and solver-freedom — turning "3-of-4" into
-> "3-of-N".)*
+> the constructive phase puts it back on the map. *(The fifth, sixth, and seventh primitives, below,
+> force three more un-bundlings — API-locality, then legibility/solver-freedom, then bare-metal —
+> turning "3-of-4" into "3-of-≥7".)*
 
 *(A teaching aside from the real run: the slab's **first** cold gauntlet FAILED on a genuine UB —
 but the bug was in the **spec** (a generation-only check authenticates a fresh pool's vacant
@@ -529,15 +529,15 @@ legible, so #5 and #7 dissociate.)
 
 This forced the **second** un-bundling, and the project's deepest structural result:
 
-> **The Seam Trilemma is a 3-of-N projection, N ≥ 6.** The slab un-bundled zero-cost from
+> **The Seam Trilemma is a 3-of-N projection, N ≥ 7.** The slab un-bundled zero-cost from
 > "concentrated & proof-free"; the branded index un-bundles **"concentration" itself** into a
 > *code* face (seam width) and a *type* face (API-locality). Beyond the three horns the constructive
-> primitives have now exposed three more independent axes — zero-cost (#6), API-locality (#5), and
-> AI-legibility (#7) — each proven real by a *witness that two trilemma-identical configurations
-> differ*. They even have structure: within the branded index, #5 and #6 **trade** (range-branding
-> buys erasure by deepening the brand tax). The full face lattice is `design_seam/REALIZABILITY.md`.
-> *(One claim was still only argued here — that #7 is independent of #5. The sixth primitive
-> witnesses it.)*
+> primitives expose more independent axes — zero-cost (#6), API-locality, AI-legibility (#7), and
+> bare-metal (#5) — each proven real by a *witness that two trilemma-identical configurations
+> differ*. They even have structure: within the branded index, API-locality and #6 **trade**
+> (range-branding buys erasure by deepening the brand tax). The full face lattice is
+> `design_seam/REALIZABILITY.md`. *(Two claims are still open here — that #7 is independent of
+> API-locality, and that bare-metal is a separate axis. The sixth and seventh primitives witness them.)*
 
 ### Primitive 6 — refinement-typed bounds → CLOSES the cell #5⟂#7 (`seam/src/refined.rs`)
 
@@ -572,22 +572,58 @@ brand-free *or* zero-cost, not both — the #5↔#6 exchange again, from the oth
 expressiveness bug (the model checked `bound == len` where safety needs only `bound ≤ len` — fixed).
 Verdict: **SEAM-COSTS [horn 2]**.
 
+### Primitive 7 — reference-counted shared ownership → recovers BARE-METAL (`seam/src/shared.rs`)
+
+The first six seams share a hidden uniformity: none needs a heap. They are `core`-only — fixed
+buffers, fixed pools, borrowed slices — so they run on bare metal (an OS kernel, a microcontroller
+with no allocator). The seventh breaks it, and recovers seed property **#5 (bare-metal)** as an axis.
+
+The new precondition shape is **dynamic shared ownership** (a minimal `Rc`): a value with multiple
+owners, where the live-owner set is decided *at run time* by `clone`/`drop`, and the value is freed
+exactly when the *last* owner leaves. That instant is not statically knowable — affinity gives you
+*one* owner, NLL gives you *static* lifetimes, and the slab's generation check still has a single
+owner (the pool). The only sound witness is a **runtime reference count**, and a refcount needs
+storage that outlives every owner and is reclaimed on the last drop — i.e. a **runtime manager**,
+here the global heap. The cost is made *compile-enforced*: the crate is `#![no_std]`, and `shared` is
+the sole reason it pulls in `extern crate alloc` — delete it and the other six still build. A no-heap
+kernel author simply cannot link this seam. That is the bare-metal axis.
+
+It is genuinely independent of zero-cost (#6) — the **off-diagonal vs the slab** proves it: the slab
+pays a runtime cost (#6 ✗) yet is bare-metal (a fixed pool, no heap); `Shared` *also* pays a runtime
+cost (the refcount) *and* needs the heap. They agree on #6 and differ on bare-metal — so a runtime
+*check* and a runtime *manager* are not the same thing. Verdict: **SEAM-COSTS [bare-metal]**.
+
+But here the cold panel did its most useful work yet — it **deflated the novelty**. Yes, bare-metal
+is a real, independent seventh axis. But it is not a *discovery*: it is precisely Rust's own
+`core`/`alloc`/`std` layering (RFC 2480), and `heapless::pool`'s core-only refcounted pointer already
+proves the trade (shared ownership doesn't *force* the heap — *unbounded dynamic count* does; a
+bounded pool stays bare-metal). The honest name is *unbounded-dynamic-allocation vs
+caller-provided-bounded-storage*. **Keep the axis; drop the "undiscovered dimension" framing.**
+
+That deflation — the second of two (solver-freedom was the first) — is the project's most honest
+result. *Every* axis the method recovers turns out to be an **already-named PL concern**: zero-cost
+abstraction, generativity, refinement-legibility, the `core`/`alloc` split. newlang did not discover
+new physics. It found that the trilemma's three horns silently *bundle a set of independently-known PL
+design axes*, and that one question — **"what does the safe witness cost?"** — unifies them. The
+contribution is the unification and the recovery method, not the dimensions.
+
 ### The taxonomy (the whole point, in one table)
 
 | Primitive | What the missing conjunct *is* | Fate | Pays with |
 |---|---|---|---|
 | SPSC queue | floor-expressible (affinity/NLL/`Send`) | **closes** | nothing — every axis ✓ |
 | Slab | runtime-checkable (generation) | **closes** | zero-cost (#6) |
-| Branded index | cross-object identity (generative brand) | **closes** | API-locality (#5); brand is illegible (#7); #6 deferred |
+| Branded index | cross-object identity (generative brand) | **closes** | API-locality; brand is illegible (#7); #6 deferred |
 | Refined index | in-bounds via a legible predicate (SMT) | **closes** | solver-freedom (horn 2); R2 trade — brand-free *xor* zero-cost |
+| Shared (Rc) | dynamic shared ownership (refcount) | **closes** | bare-metal (#5) — needs a heap; bare-metal↔capacity trade |
 | MMIO | external physical axiom | **sound modulo TCB** | a trusted `assume` |
 | Intrusive list | aliasing+liveness that escapes to the caller | **breaks** | a trilemma horn |
 
-The decontamination signal (Part 6) held across all six: the obstruction *vanished* (SPSC),
+The decontamination signal (Part 6) held across all seven: the obstruction *vanished* (SPSC),
 *moved and stayed decidable* (MMIO), *moved onto a runtime witness* (slab), *moved onto the type
-surface* (branded index), *moved into the trusted toolchain* (refined index — out of the program
-entirely, into the SMT solver), or *moved and broke soundness* (intrusive) — and **where it moves is
-the entire verdict.**
+surface* (branded index), *moved into the trusted toolchain* (refined index — into the SMT solver),
+*moved into a runtime subsystem* (shared — into the global allocator), or *moved and broke soundness*
+(intrusive) — and **where it moves is the entire verdict.**
 
 ---
 
@@ -603,9 +639,10 @@ Instantiated: `spsc_seam_closes` (precondition = witness → closes); `intrusive
 (precondition is the gap → no closing decision exists); the slab pairing
 `slab_runtime_closes_but_static_does_not` (the *same* precondition closes through a *runtime*
 witness but not a *static* one — the zero-cost axis, made formal at the model level); and
-and `branded_seam_closes`/`refined_seam_closes` (both close *indistinguishably from SPSC* in the
-kernel — which is the point: the branded index's viral type-parameter cost and the refined index's
-solver dependency are alike invisible to a kernel that sees only whether a Boolean witness suffices).
+`branded_seam_closes`/`refined_seam_closes`/`shared_seam_closes` (all close *indistinguishably from
+SPSC* in the kernel — which is the point: the branded index's viral type-parameter cost, the refined
+index's solver dependency, and the shared seam's heap requirement are alike invisible to a kernel that
+sees only whether a Boolean witness suffices).
 
 **The honest bound — and why it matters as a lesson.** A cold adversarial review of the proof
 returned the right verdict: the *checked* math is a real characterization, but the *faithfulness*
@@ -644,7 +681,7 @@ You can forget every primitive and keep these.
    the professional move is to (a) put it in one place (concentration), (b) make the obligation
    at it as visible as possible, and (c) choose *consciously* whether the boundary costs you
    soundness, decidability, concentration, runtime, API surface, or a solver in your toolchain. The
-   six-primitive taxonomy is a decision procedure for that choice.
+   seven-primitive taxonomy is a decision procedure for that choice.
 
 4. **Adversarial separation of build and break.** Construction wants continuity; demolition wants
    a cold, context-free skeptic. Keeping them as separate machines — and *calibrating* your
@@ -669,6 +706,15 @@ You can forget every primitive and keep these.
    would not have done it). Until you have that witness, a "new axis" is a hunch; with it, the
    dimension is real. Your tidy trilemma may be a shadow — look for the object casting it.
 
+7. **Deflate your own discoveries: "new to me" ≠ "new."** Twice the project's adversary confirmed an
+   axis was *real and independent* and in the same breath proved it was *not novel* — solver-freedom
+   is refinement-types' founding tradeoff (DML, 1998); bare-metal is Rust's `core`/`alloc` boundary
+   (RFC 2480). Both were genuine dimensions of *this* lattice and both already had names in the
+   literature. The discipline: before claiming a discovery, ask "what is this *already called*?" The
+   honest, larger result was not "seven new axes" but "seven *known* PL design axes are all faces of
+   one tension." A unification you can name is worth more than a dimension you can't — and a cold
+   reviewer who deflates your count is doing you the biggest favor in the room.
+
 ---
 
 # Part 12 — Do it yourself: exercises and a reading path
@@ -680,18 +726,19 @@ You can forget every primitive and keep these.
 - `lean proof/SeamGap.lean` — read the characterization; change a definition and watch it break.
 - Skim `design_seam/REPORT_SEAM_SPEC_*.md` — the cold attackers' actual verdicts, in their words.
 
-**Build a sixth primitive (a day).** Pick a primitive whose precondition has a *new* shape — a
+**Build an eighth primitive (a day).** Pick a primitive whose precondition has a *new* shape — a
 typed atomic cell, a bump allocator handing out overlapping views, a `Pin`-based self-referential
 struct — write the spec + a `rustc`-checked toy, predict which horn (or recovered axis) it hits,
 and run it through the harness (`python3 -m orchestrator.seam_phase --spec ... --gauntlets 1
---prior-art-web`). The trilemma is now a 3-of-N projection with **six** confirmed axes (the slab
-recovered zero-cost #6; the branded index recovered API-locality #5; the refined index confirmed
-AI-legibility #7 and un-bundled horn 2 into decidability vs solver-freedom). **The open frontier is
-to keep going:** is there a primitive that splits a *seventh* axis — e.g. one that dissociates
-*decidability* from *termination-of-the-checker*, or surfaces something the original seven properties
-never named at all (the API-locality axis was already outside the seed list)? The method is
-mechanical and the harness is reusable: build the smallest `rustc`-checked toy whose precondition has
-a genuinely new shape, predict the axis, and let the cold panel adjudicate. (See
+--prior-art-web`). The trilemma is now a 3-of-N projection with **seven** confirmed axes (slab →
+zero-cost #6; branded → API-locality; refined → AI-legibility #7, plus horn 2 = decidability vs
+solver-freedom; shared → bare-metal #5). **The open frontier is to keep going** — but with the
+honesty the project earned: a newly-split axis is almost always an *already-named* PL boundary, so the
+real prize is not the count but the unification. Is there a primitive that splits *decidability* from
+*termination-of-the-checker*, or one whose cost has genuinely no name yet (API-locality was the
+closest — outside the seed list, though the generativity literature had named it too)? Build the
+smallest `rustc`-checked toy with a genuinely new precondition shape, predict the axis, and — this is
+the discipline — let the cold panel both adjudicate *and* deflate it. (See
 `design_seam/REALIZABILITY.md` for the current face lattice and which cells are filled.)
 
 **Reading path, in dependency order:**
@@ -711,9 +758,13 @@ a genuinely new shape, predict the axis, and let the cold panel adjudicate. (See
    the brand-free predicate witness *on Rust's own floor*) and **Liquid Haskell** (Vazou et al., ICFP
    2014). This pair *is* the sixth primitive, and the source of its solver-in-the-TCB cost — the
    founding tradeoff named back in DML (Xi & Pfenning 1998).
-7. **Verus** and **Creusot** docs — what "Rust but `unsafe` is proof" actually looks like when
+7. **Reference counting and the `core`/`alloc` line** — Rust's **RFC 2480** (the `alloc` crate split,
+   stable 1.36) and the **`heapless`** crate (core-only, fixed-capacity containers incl. a pooled
+   `Rc`). This pair *is* the seventh primitive's axis: the bare-metal boundary, and the proof that
+   shared ownership trades *unbounded dynamic allocation* against *caller-provided bounded storage*.
+8. **Verus** and **Creusot** docs — what "Rust but `unsafe` is proof" actually looks like when
    someone ships it (the productive horn from Part 8).
-8. This repo's `WRITEUP.md` (the full result), `design_seam/SYNTHESIS.md` (the six-primitive map),
+9. This repo's `WRITEUP.md` (the full result), `design_seam/SYNTHESIS.md` (the seven-primitive map),
    `design_seam/REALIZABILITY.md` (the face lattice / 3-of-N proof), and `THE-SAME-WALL.md` (the
    cross-field boundary/veil discipline).
 

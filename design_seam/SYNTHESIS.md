@@ -6,9 +6,9 @@ distilled the **Seam Trilemma**: a seam cannot simultaneously have (1) sound re-
 phase asked the next question: *take the trilemma as a map and actually build a seam.* The
 stateful builder authored each seam spec + a real `rustc`-checked implementation; the cold
 adversarial harness (5 attackers + judge + an independent horn-classifier) red-teamed the
-**re-import rule only**, never the author. Six primitives, chosen so their preconditions have six
+**re-import rule only**, never the author. Seven primitives, chosen so their preconditions have seven
 different *shapes* — and so that each later one becomes the witness un-bundling an axis the trilemma
-had folded (zero-cost, API-locality, AI-legibility, solver-freedom).
+had folded (zero-cost, API-locality, AI-legibility, solver-freedom, bare-metal).
 
 ## The headline result
 
@@ -27,8 +27,9 @@ a runtime-checkable fact, or genuinely unrepairable?*
 | **Intrusive doubly-linked list** | SEAM-BREAKS [horn 1] | horn 1 drops (repair drops usability *or* decidability) | O(accesses) for the branded form; design A forbids early reclaim | *Whole-heap aliasing + liveness that escapes to the caller.* The `GhostCell` brand carries L1/L4 (aliasing) but **not L2** (membership-vs-storage lifetime). Token correctly presented, the rule type-accepts a use-after-free. |
 | **Branded index** (sound unchecked indexing) | SEAM-COSTS [other] (1 cold panel) | all 3 horns hold | O(1)/slice — yet a *viral* `'id` in every type | *Cross-object identity, carried by a generative brand.* Closes all three horns (RustBelt-verified lineage), but un-bundles **concentration** itself: pays on **API-locality (#5)** (the `'id` infects consumer types, traps indices in a `scope` closure) and *defers* zero-cost (#6) to range-branding. The brand is a nominal token (#7 illegible). |
 | **Refined index** (refinement-typed bounds) | SEAM-COSTS [horn2] (1 cold panel) | all 3 horns hold | O(1)/index — brand-free, the value *escapes* | *In-bounds, carried by a legible predicate (Flux/Liquid Haskell).* The **(brand-free, legible)** corner — it **closes the #5⟂#7 cell** (vs the slab's brand-free-but-illegible handle). Un-bundles **horn 2** into *decidability* ✓ vs *solver-freedom* ✗ (needs SMT in the TCB — the `unified` "keep" horn). The R2 trade: brand-free ⟹ a runtime check, zero-cost ⟹ a length-brand. |
+| **Shared (Rc)** (refcounted ownership) | SEAM-COSTS [bare-metal] (1 cold panel) | all 3 horns hold | O(1) — brand-free; needs a heap | *Dynamic shared ownership, carried by a runtime refcount manager.* Recovers seed property **#5 bare-metal**: the sole seam needing a global allocator (compile-enforced — the only `extern crate alloc`). Independent of #6 (slab/`heapless` off-diagonal: fixed pool vs global heap), but the judge deflated novelty — it **= Rust's `core`/`alloc` boundary (RFC 2480)**, real but pre-existing. |
 
-### The deeper result, forced three times: the Seam Trilemma is a 3-of-N projection (N ≥ 6)
+### The deeper result, forced four times: the Seam Trilemma is a 3-of-N projection (N ≥ 7)
 
 The slab forced the first un-bundling. It keeps *all three* trilemma horns yet still pays — on
 **zero-cost erasure (#6)**, a property the trilemma had abstracted into "concentrated & proof-free."
@@ -57,10 +58,18 @@ against the slab — reclassified **brand-free yet illegible** (two attackers en
 judge ruled **#5⟂#7 closes — yes**: AI-legibility is a confirmed independent axis. And horn 2 turns
 out to be a bundle of **decidability** (the refined fragment terminates) and **solver-freedom** (it
 needs an SMT solver in the trusted loop) — the latter being the `unified` "keep" horn, not a new
-axis, so the count holds at N ≥ 6 while the *map* gains resolution.
+axis, so the map gains resolution there rather than a dimension.
 
-So the trilemma is a low-dimensional shadow of an **≥6-axis** object — and `unified`'s original
-casualties (#6, #2's two faces, and #4's two faces) are recovered one primitive at a time. The
+The **shared-ownership seam** (a minimal `Rc`) then forced a fourth un-bundling that *does* add a
+dimension: it recovers seed property **#5 bare-metal**. Dynamic shared ownership — a live-owner set
+fixed at run time — is a precondition shape affinity, NLL, and the slab's single-owner pool all
+structurally cannot express; its only sound witness is a runtime refcount **manager**, which needs a
+global heap. The judge confirmed bare-metal is a genuine seventh axis (dissociates from zero-cost via
+the slab/`heapless` off-diagonal: a fixed pool is bare-metal, a global-heap `Rc` is not) **but
+deflated its novelty** — it is Rust's own `core`/`alloc` boundary (RFC 2480), not a discovery.
+
+So the trilemma is a low-dimensional shadow of an **≥7-axis** object — and `unified`'s original
+casualties (#6, #2's two faces, #4's two faces, and #5) are recovered one primitive at a time. The
 taxonomy is now a map of *what the missing conjunct is* **and which axis closing it spends**:
 - **Fully floor-expressible** → seam closes free, every axis ✓ (SPSC).
 - **Runtime-checkable** → closes by spending **zero-cost/#6** (slab; `RefCell`).
@@ -70,12 +79,19 @@ taxonomy is now a map of *what the missing conjunct is* **and which axis closing
 - **In-bounds via a legible predicate** → closes brand-free + legible, spending **solver-freedom**
   (SMT in the TCB) and hitting the R2 trade again (brand-free ⟹ runtime check; zero-cost ⟹
   length-brand) (refined index; Flux/Liquid Haskell).
+- **Dynamic shared ownership** → closes brand-free, spending **bare-metal** (a global-allocator
+  refcount manager), with a bare-metal↔capacity trade (a pool-backed `Rc` is bare-metal but bounded)
+  (shared; std `Rc` / `heapless`).
 - **An external physical axiom** → sound modulo a TCB `assume`, outside the axes (MMIO).
 - **Whole-heap aliasing+liveness that escapes to the caller** → no sound+usable+concentrated
   decision exists; a trilemma horn genuinely drops (intrusive list).
 
-The full face lattice (which property-subsets have a witness; the dissociation proofs; the one
-unwitnessed claim, #5⟂#7) is `REALIZABILITY.md`.
+**The honest meta-pattern.** Every recovered axis turns out to be an *already-named PL concern* —
+zero-cost abstraction, generativity, refinement-legibility, the `core`/`alloc` split. The phase did
+not find new physics; it found that the trilemma's three horns silently *bundle a set of
+independently-known PL design axes*, unified by one rubric: **what does the safe witness cost?**
+Twice the cold panel had to deflate a "new dimension" to "real but pre-existing" — and that deflation
+is the result. The full face lattice (axes, dissociation proofs, the meta-pattern) is `REALIZABILITY.md`.
 
 ## Decontamination (the prompt's C1): did the obstruction move or vanish?
 
@@ -105,19 +121,24 @@ to the re-import boundary rather than disappearing. Across the primitives:
   code, type, nor (in principle) runtime: it lands on the **SMT solver in the trusted loop** (horn
   2's solver-freedom face). The obstruction moved *out of the program entirely* and into the
   toolchain's TCB. This is what closed the #5⟂#7 cell and un-bundled horn 2.
+- **Shared (Rc) — it moved into a *runtime subsystem*, and stayed sound + brand-free.** The
+  obstruction (the data-dependent last-drop) factors through a runtime refcount **manager**, so the
+  seam closes (`shared_seam_closes`, like SPSC) — but the relocation lands neither in code, type, nor
+  the toolchain: it lands on the **global allocator in the deployed binary** (the bare-metal axis).
+  The obstruction moved into a runtime subsystem the no-heap target does not have.
 - **Intrusive — it moved, and broke soundness.** The obstruction relocated to the boundary
   and what sits there is genuinely unsound (L2 UAF): horn 1 drops. Any repair walks into
   another horn (collapse lifetimes → drop usability; full separation logic → drop
   decidability). (This is the `intrusive_seam_does_not_close` Lean instance.)
 
-"Moves, doesn't vanish" is confirmed for the five non-trivially-encapsulable primitives — and
+"Moves, doesn't vanish" is confirmed for the six non-trivially-encapsulable primitives — and
 *where* it moves (decidable boundary bound / runtime witness / type surface / trusted toolchain /
-genuinely unsound) is the whole verdict; "vanishes" is the signature of the fully-encapsulable one.
-The decontamination method generalized cleanly across all six.
+runtime subsystem / genuinely unsound) is the whole verdict; "vanishes" is the signature of the
+fully-encapsulable one. The decontamination method generalized cleanly across all seven.
 
 ## What the harness added that the builder missed
 
-The adversarial process earned its keep five times:
+The adversarial process earned its keep six times:
 
 1. **MMIO:** the builder framed M1/M4 as possibly "a different shape than the trilemma." The
    harness sharpened it to the exact right category — a TCB `assume` boundary, standard in
@@ -150,17 +171,24 @@ The adversarial process earned its keep five times:
    deflated the novelty of the horn-2 un-bundling (solver-in-TCB is DML/Liquid Types/Flux's founding
    tradeoff, the `unified` "keep" horn, not a new 7th axis). It nonetheless ruled the deliverable
    cleanly: **#5⟂#7 closes — yes**, the slab→illegible reclassification endorsed by two attackers.
+6. **Shared (Rc):** the builder pitched bare-metal as a possibly-new seventh dimension. The panel
+   confirmed it is a real, independent axis (the slab/`heapless` off-diagonal holds) **but deflated
+   the novelty**: it is precisely Rust's `core`/`alloc` boundary (RFC 2480, stable 1.36), and
+   `heapless::pool` already witnesses the bare-metal↔capacity trade — so "drop the undiscovered-
+   dimension framing." That deflation generalized the honest meta-pattern: every recovered axis is a
+   pre-existing named PL concern; the result is the unification, not the dimensions.
 
 ## Artifacts
 
-- Specs (attacked as text): `SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined}.md`
-- Cold verdicts: `REPORT_SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined}.md` (+ raw transcripts in `runs_seam/`)
-- Real Rust (rustc-checked): `../seam/` — `src/lib.rs` (SPSC), `src/mmio.rs`, `src/intrusive.rs`,
-  `src/slab.rs`, `src/branded.rs`, `src/refined.rs`; consumer code is `#![forbid(unsafe_code)]`;
-  laundering paths are `compile_fail` doctests (29 crate tests + 12 doctests total).
+- Specs (attacked as text): `SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared}.md`
+- Cold verdicts: `REPORT_SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared}.md` (+ raw transcripts in `runs_seam/`)
+- Real Rust (rustc-checked, `#![no_std]`): `../seam/` — `src/lib.rs` (SPSC), `src/mmio.rs`,
+  `src/intrusive.rs`, `src/slab.rs`, `src/branded.rs`, `src/refined.rs`, `src/shared.rs` (the lone
+  `alloc` user); consumer code is `#![forbid(unsafe_code)]`; laundering paths are `compile_fail`
+  doctests (33 crate tests + 13 doctests total).
 - Seam-width instrument: `SEAM_WIDTH.md`; full face lattice: `REALIZABILITY.md`
 - Mechanization: `../proof/SeamGap.lean` — `seam_closes_iff_factors` + the
-  `spsc`/`intrusive`/`slab`/`branded`/`refined` instances (propext-only).
+  `spsc`/`intrusive`/`slab`/`branded`/`refined`/`shared` instances (propext-only).
 
 ## The one-sentence upgrade to the trilemma
 
@@ -169,8 +197,10 @@ The Seam Trilemma says *a* seamless language is impossible; the constructive pha
 is fully encapsulable (SPSC-shaped) — while the rest force a predictable, measurable price set by
 *what the missing conjunct is*: a runtime witness that spends zero-cost (slab), a viral generative
 brand that spends API-locality (branded index), a legible predicate that spends solver-freedom
-(refined index), an external TCB axiom (MMIO), or a genuine horn drop (intrusive) — and the trilemma
-itself turns out to be a **3-of-N projection (N ≥ 6)**, its three horns a shadow of an object whose
-further axes — zero-cost (#6, slab), API-locality (#5, branded index), and AI-legibility (#7, refined
-index) — each surface only when a primitive becomes the witness
-that two previously-identical configurations differ.
+(refined index), a refcount manager that spends bare-metal (shared), an external TCB axiom (MMIO), or
+a genuine horn drop (intrusive) — and the trilemma itself turns out to be a **3-of-N projection
+(N ≥ 7)**, its three horns a shadow of an object whose further axes — zero-cost (#6, slab),
+API-locality (branded index), AI-legibility (#7, refined index), and bare-metal (#5, shared) — each
+surface only when a primitive becomes the witness that two previously-identical configurations
+differ. Honest coda: those axes are each a *pre-existing* named PL boundary; the result is their
+unification under one "what does the witness cost?" rubric, not their discovery.

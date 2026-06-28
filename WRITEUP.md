@@ -378,8 +378,8 @@ contaminated the result with almost-right rules). Construction is continuity, de
 coldness — so here a *stateful builder* writes the smallest thing that compiles, and the
 cold harness is the **red team**, pointed only at the re-import rule. Each seam ships as a
 text spec *and* a real `rustc`-checked crate (`seam/`) whose consumer code is
-`#![forbid(unsafe_code)]` and whose laundering paths are `compile_fail` tests. Six
-primitives were chosen because their preconditions have six different *shapes* — and the
+`#![forbid(unsafe_code)]` and whose laundering paths are `compile_fail` tests. Seven
+primitives were chosen because their preconditions have seven different *shapes* — and the
 later ones because each became the witness un-bundling an axis the trilemma had folded.
 
 The result is sharper than "seams are hard." **Whether a seam closes is a function of the
@@ -395,8 +395,9 @@ decidable trait bounds):
 | **Intrusive linked list** | SEAM-BREAKS [horn 1] | horn 1 drops | O(accesses); repair forbids early reclaim | *Aliasing + liveness escapes to the caller* — the `GhostCell` brand carries L1/L4 (aliasing) but **not L2** (membership-vs-storage lifetime), so the rule type-accepts a use-after-free. |
 | **Branded index** | SEAM-COSTS [other] | all 3 horns hold | **O(1)/slice** code crossings, yet a *viral `'id`* in every type | *Cross-object identity via a generative brand* — closes all three horns (RustBelt-verified `runST`/`indexing` lineage) but un-bundles **concentration** itself: pays on **API-locality (#5)** (the brand infects consumer types, traps indices in a `scope` closure) and *defers* zero-cost (#6) to the range-branding it scopes out. |
 | **Refined index** | SEAM-COSTS [horn 2] | all 3 horns hold | **O(1)/index**, brand-free (the value *escapes*) | *In-bounds via a legible predicate* (Flux/Liquid Haskell) — the **(brand-free, legible)** corner that **closes the #5⟂#7 cell** against the slab's brand-free-but-illegible handle. Un-bundles **horn 2** into *decidability* ✓ vs *solver-freedom* ✗ (SMT in the TCB — the `unified` "keep" horn, not a new axis). The R2 trade: brand-free ⟹ runtime check; zero-cost ⟹ length-brand. |
+| **Shared (Rc)** | SEAM-COSTS [bare-metal] | all 3 horns hold | **O(1)**, brand-free; needs a heap | *Dynamic shared ownership via a runtime refcount manager* — recovers seed **#5 bare-metal**: the sole seam needing `alloc` (compile-enforced; the crate is `#![no_std]`). A genuine seventh axis (⟂ zero-cost via the slab/`heapless` off-diagonal), but the judge deflated novelty — it *is* Rust's `core`/`alloc` boundary (RFC 2480). |
 
-**Three primitives forced a deeper finding: the Seam Trilemma is a 3-of-N projection (N ≥ 6).** The
+**Four primitives forced a deeper finding: the Seam Trilemma is a 3-of-N projection (N ≥ 7).** The
 **slab** keeps all three horns yet pays on *zero runtime cost* (#6), the property the trilemma had
 folded into "concentrated & proof-free." The **branded index** keeps all three horns *and* aces
 seam-width, yet the cold panel found a real cost "outside the three horns": its generative brand is a
@@ -408,16 +409,22 @@ face (API-locality), and it surfaced **#7 (AI-legibility)** — a brand is a nom
 legible) corner — a refined value escapes its constructor, unlike `Idx<'id>` — so paired against the
 slab (reclassified brand-free-but-illegible, two attackers concurring) it flips #7 at fixed #5, and
 the judge ruled **#5⟂#7 closes — yes**. It also un-bundled **horn 2** into *decidability* (✓) vs
-*solver-freedom* (✗ — an SMT solver in the TCB), the latter being the original `unified` "keep" horn,
-so N holds at ≥6 while the map gains resolution. The taxonomy of *what the missing conjunct is* and
-*which axis closing it spends*: floor-expressible → closes free (SPSC); runtime-checkable → spends #6
-(slab; `RefCell`); cross-object identity via a brand → spends #5/API-locality, #5↔#6 *trade* (branded
-index; `indexing`); in-bounds via a legible predicate → spends solver-freedom, R2 trade again (refined
-index; Flux); external physical axiom → sound modulo a TCB `assume`, outside the axes (MMIO);
-whole-heap aliasing+liveness escaping to the caller → a horn genuinely drops (intrusive). The
-recovered axes — #6, #5, #7 (and horn 2's solver-freedom face) — are exactly the casualties of the
-original `unified` result, put back on the map one witness at a time. Full face lattice:
-`design_seam/REALIZABILITY.md`.
+*solver-freedom* (✗ — an SMT solver in the TCB), the latter being the original `unified` "keep" horn.
+The **shared-ownership seam** (a minimal `Rc`) then recovered seed property **#5 bare-metal**: dynamic
+shared ownership needs a runtime refcount *manager* (a global heap), which a fixed-pool slab does not —
+so it adds a genuine seventh axis (the judge confirmed it ⟂ zero-cost via the slab/`heapless`
+off-diagonal). The taxonomy of *what the missing conjunct is* and *which axis closing it spends*:
+floor-expressible → closes free (SPSC); runtime-checkable → spends #6 (slab; `RefCell`); cross-object
+identity via a brand → spends API-locality, #5↔#6 *trade* (branded index; `indexing`); in-bounds via
+a legible predicate → spends solver-freedom, R2 trade again (refined index; Flux); dynamic shared
+ownership → spends bare-metal, bare-metal↔capacity trade (shared; `Rc`/`heapless`); external physical
+axiom → sound modulo a TCB `assume`, outside the axes (MMIO); whole-heap aliasing+liveness escaping to
+the caller → a horn genuinely drops (intrusive). The recovered axes are exactly the casualties of the
+original `unified` result, put back on the map one witness at a time — **and, the honest headline,
+each turns out to be an already-named PL boundary** (zero-cost abstraction, generativity, refinement-
+legibility, `core`/`alloc`). Twice the panel deflated a "new dimension" to "real but pre-existing." So
+the result is the *unification* of known PL axes under one "what does the witness cost?" rubric, not
+their discovery. Full face lattice: `design_seam/REALIZABILITY.md`.
 
 **Decontamination, across primitives.** The seamful2 theorem predicted that a failing seam's
 obstruction *relocates* to the re-import boundary rather than vanishing. SPSC: it **vanished**
@@ -430,10 +437,11 @@ the early reclaim that is the primitive's purpose); full separation logic → dr
 Branded index: it **moved onto the type surface** (a viral `'id`) and stayed sound — the
 obstruction went somewhere genuinely new, neither code-crossing nor runtime. Refined index: it
 **moved into the trusted toolchain** (an SMT solver) and stayed sound *and* brand-free — out of the
-program entirely. "Moves, doesn't vanish" held for all five non-trivially-encapsulable primitives,
-and *where* it moved was the whole verdict.
+program entirely. Shared (Rc): it **moved into a runtime subsystem** (the global allocator) and
+stayed sound + brand-free — into a heap the no-`std` target does not have. "Moves, doesn't vanish"
+held for all six non-trivially-encapsulable primitives, and *where* it moved was the whole verdict.
 
-**The adversary earned its keep — five times.** On MMIO it named the axiom's category correctly
+**The adversary earned its keep — six times.** On MMIO it named the axiom's category correctly
 (a TCB boundary, not a horn) and surfaced a horn-3 cost the builder had under-weighted. On the
 intrusive list it proved something *worse* than the builder predicted: branding does not restore
 soundness at all (a brand is an *access* capability, not a *storage* lifetime), correcting a real
@@ -446,27 +454,31 @@ then argued the sixth-axis probe. On the refined index it ruled the #5⟂#7 cell
 undisclosed expressiveness bug (R2 used `==` where safety needs `≤` — fixed), exposed the **R2 trade**
 (brand-free + zero-cost + sound is unachievable at once), and *deflated* an overclaim of novelty
 (solver-in-TCB is DML/Liquid Types/Flux's documented founding tradeoff — the `unified` "keep" horn,
-not a new axis). Spec↔impl divergences and overclaims sharpened both directions — exactly what
-build/break separation exists to surface.
+not a new axis). On the shared seam it confirmed bare-metal is a real seventh axis yet *deflated its
+novelty* — it is Rust's `core`/`alloc` boundary (RFC 2480), with `heapless` already witnessing the
+bare-metal↔capacity trade — forcing the honest "unification, not discovery" framing. Spec↔impl
+divergences, sharpened overclaims, and two novelty-deflations — exactly what build/break separation
+exists to surface.
 
 **Mechanization.** `proof/SeamGap.lean` was upgraded from the one-direction triviality its own
 cold review had flagged to a genuine characterization — `seam_closes_iff_factors`: a seam
 closes **iff** its precondition factors through the safe witness — with the regimes as
 machine-checked instances (`spsc_seam_closes`, `intrusive_seam_does_not_close`, the slab's
 `slab_runtime_closes_but_static_does_not`: the same precondition closes through a *runtime*
-witness but not the *static* one, and `branded_seam_closes`/`refined_seam_closes`: both close like
-SPSC, the recovered axes invisible to the kernel), `propext` only. Honest bound unchanged: the
+witness but not the *static* one, and `branded_seam_closes`/`refined_seam_closes`/`shared_seam_closes`:
+all close like SPSC, the recovered axes invisible to the kernel), `propext` only. Honest bound unchanged: the
 *math* is now a real characterization, but the faithfulness of "precondition" and "witness" to
 actual Rust primitives — and *which axis a closing seam spends* (zero-cost, API-locality,
-legibility, solver-freedom) — still lives in the prose modeling dictionary, not the kernel, which
-sees only whether a Boolean witness suffices.
+legibility, solver-freedom, bare-metal) — still lives in the prose modeling dictionary, not the
+kernel, which sees only whether a Boolean witness suffices.
 
 **The one-sentence upgrade.** The trilemma says a *seamless* language is impossible; the
 constructive phase says **which** seams you can build losslessly anyway — exactly the ones
 whose dangerous precondition is fully encapsulable — while the rest force you, predictably and
 measurably, to choose a horn *or pay one of the recovered axes* (zero-cost, API-locality,
-legibility), with the precondition's shape telling you in advance *which* horn or axis and *how
-wide* the seam will be. The three horns are one shadow of an ≥6-axis object; each constructive
-primitive lit up a folded dimension by being the witness that two trilemma-identical
-configurations differ. Full write-up: `design_seam/SYNTHESIS.md`; face lattice:
-`design_seam/REALIZABILITY.md`.
+legibility, bare-metal), with the precondition's shape telling you in advance *which* horn or axis
+and *how wide* the seam will be. The three horns are one shadow of an ≥7-axis object — each a
+*pre-existing* named PL boundary that the trilemma had bundled together — and each constructive
+primitive lit one up by being the witness that two trilemma-identical configurations differ; the
+result is the unification, not the dimensions. Full write-up: `design_seam/SYNTHESIS.md`; face
+lattice: `design_seam/REALIZABILITY.md`.

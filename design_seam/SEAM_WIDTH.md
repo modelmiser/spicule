@@ -40,15 +40,16 @@ A primitive whose precondition has a conjunct that *cannot* be internalized (one
 caller-owned state) would force the caller to carry it — pushing seam width from O(buffers)
 toward O(operations). That is the Phase-C contrast (MMIO; intrusive list).
 
-## All six primitives — and why seam width misses *several* axes, not one
+## All seven primitives — and why seam width misses *several* axes, not one
 
-| Primitive | Consumer seam width | Runtime cost (zero-cost #6) | Type surface (API-locality #5) |
+| Primitive | Consumer seam width | Runtime cost (zero-cost #6) | Type surface (API-locality) |
 |---|---|---|---|
 | SPSC ring buffer | **O(1)/buffer** (`split` once) | none — fully erased | plain `'a` — non-viral |
 | MMIO read-to-clear | **O(1)** with a foundation `Send` opt-in, else O(ISRs) | none — fully erased | plain — non-viral |
 | Generational slab | **O(1)** — `insert`/`get`/`remove` are all safe calls | **non-zero** — a generation word/slot + a compare branch/access, never erased | plain `Key` — non-viral |
 | Branded index | **O(1)/slice** (`scope` once) | erases, but **deferred** — single-index `try_index` re-checks per element; the elision win needs range-branding | **viral `'id`** — infects every index/signature, traps indices in a `scope` closure |
 | Refined index | **O(1)/index** (`refine` once) | erases on a real Flux floor; the cost moves to an **SMT solver in the TCB** (horn 2) | plain `Refined` — non-viral; the value *escapes* |
+| Shared (Rc) | **O(1)** — `new`/`clone`/deref/drop are safe calls | **non-zero** — a refcount inc/dec, never erased — *and* a **global allocator** (bare-metal #5) | plain `Shared` — non-viral |
 | Intrusive list (branded) | **O(accesses)** — the token threads through every access | (design A erases; the cost is seam width / lost reclaim) | **viral `'brand`** |
 
 **Two instructive rows now show seam width is necessary but not sufficient.** The slab *aces* seam
