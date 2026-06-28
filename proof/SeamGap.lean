@@ -269,4 +269,32 @@ theorem shared_seam_closes :
   rw [seam_closes_iff_factors]
   exact ⟨id, fun _ => rfl⟩
 
+/-- Type-level-proof shape (the index `I: Lt<Len>` discharged by the trait resolver — the typenum /
+    Peano-in-types lineage). The soundness fact (T1∧T2: `I::VALUE < Len::VALUE = len`) is carried by
+    the safe witness — a *compile-time trait proof* that erases entirely — so the seam CLOSES, once
+    more indistinguishably from SPSC in the kernel (`Ptypednat` is definitionally `V`). Soundness was
+    conceded unanimously by the cold panel (REPORT_SEAM_SPEC_typed_nat): sealing + the orphan rule +
+    `new`'s conservative length check block every forgery; no UB path.
+
+    This instance is the project's HONEST NEGATIVE RESULT, and it is recorded here precisely because the
+    kernel certifies only *closure*, never the axis interpretation the prose tried and FAILED to attach.
+    The eighth-axis probe ("checker-tractability" as a third face of horn 2) was REJECTED by the panel
+    on three convergent grounds: (1) the off-diagonal is *confounded* — `get::<I>` takes a type, not a
+    runtime index, so this seam is static-index-only, a strict expressive subset of branded/refined; the
+    claimed one-coordinate flip silently also flips expressiveness; (2) the decisive cost is
+    *encoding-relative* — unary Peano hits `recursion_limit` (E0275), but binary type-level naturals
+    (typenum `UInt`) are O(log N) and do not, so the cell measures the numeral library, not the
+    primitive; (3) it is *mislabeled* — `Lt` resolution is linear, strictly cheaper than refined's QF-LIA,
+    so the real concern is the absence of a *terminating-resolution* fragment (Paterson conditions / GHC
+    `UndecidableInstances` / `-freduction-depth` ≅ `recursion_limit`), a pre-existing named concern. So
+    the seam is sound and closes; it pays a real `recursion_limit` cost INSIDE horn 2; but that cost is
+    NOT a clean recovered axis. The lattice stays N ≥ 7. The method's off-diagonal discipline has a STOP,
+    and the eighth probe is where it fired. -/
+def Ptypednat (p : Prog) : Bool := V p
+
+theorem typed_nat_seam_closes :
+    ∃ d : Prog → Bool, SoundW Ptypednat d ∧ UsableW Ptypednat d ∧ ConcW V d := by
+  rw [seam_closes_iff_factors]
+  exact ⟨id, fun _ => rfl⟩
+
 end SeamGap
