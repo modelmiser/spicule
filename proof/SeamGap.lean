@@ -383,17 +383,18 @@ theorem selfref_seam_closes :
     (`Pvalidity` is definitionally `V`). Soundness adjudicated by the cold panel (REPORT_SEAM_SPEC_validity):
     the keystone is that no byte `> 2` ever becomes a `Tag`.
 
-    This primitive was built to test a *meta*-question — is the cost-basis **closed**? The cold panel
-    ruled **(2): validity projects onto zero-cost (#6)** — its safe witness is a per-read runtime validity
-    check, the same *kind* of cost as the slab's generation tag (different predicate, identical cmp+branch
-    lowering). A genuinely new danger class (bit-level validity) added **no tenth coordinate** — the
-    *dual* of the `get_unchecked` family (one danger / many witnesses ↔ many dangers / one axis). Evidence
-    **consistent with the cost-basis being closed**. (Two recorded notes: the first gauntlet FAILED the
-    earlier *range*-check rule — a range is unsound for non-contiguous discriminants — fixed to
-    set-membership; and prior-art's `FromBytes`-vs-`TryFromBytes` non-uniformity bid for option (3) was
-    rejected — an all-patterns-valid type is danger-absent, a sealed witness only amortizes the same #6.)
-    Like every column past "concentration", which answer holds is modeling-dictionary; the kernel sees
-    only that V suffices. -/
+    This primitive was built to test a *meta*-question — is the cost-basis **closed**? The cold panel's
+    verdict (after fixing two spec bugs — a *range* check unsound for non-contiguous discriminants, then a
+    residual stale `b<=2`): the closed-basis meta-claim is **unanimously upheld** — a genuinely new danger
+    class (bit-level validity) added **no tenth coordinate**; every witness spends a pre-existing axis;
+    *"what does the safe witness cost?" has finitely many answers.* On the *classification* of validity's
+    own cost the panels split, and the more careful reading is **(3) INSEPARABLE**, a *second* inseparable
+    danger beside move-stability: the zero-copy `&[u8]→&[Tag]` view (the real systems use) admits two sound
+    witnesses — eager runtime validation (spends #6) or a sealed constructor (spends API-locality) — same
+    danger, two axes, the move-stability signature. Caveats: sound only in the *fieldless single-byte
+    corner* (data-carrying/`repr(C)` enums need a recursive `is_bit_valid` witness), and wholly non-novel
+    (`num_enum`/`bytemuck`/`zerocopy` + refinement types). Like every column past "concentration", which
+    answer holds is modeling-dictionary; the kernel sees only that V suffices. -/
 def Pvalidity (p : Prog) : Bool := V p
 
 theorem validity_seam_closes :

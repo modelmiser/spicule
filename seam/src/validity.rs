@@ -23,19 +23,26 @@
 //! **exhaustive discriminant-set membership** (a `match` pinned to the actual variants). For a
 //! *contiguous-from-zero* enum a range coincides with the set, but the set form is the general one.
 //!
-//! ## The closed-basis ruling (the §6 deliverable the panel confirmed)
+//! ## The closed-basis ruling (the §6 deliverable)
 //!
 //! This primitive was built not to hunt a tenth axis but to **test whether the cost-basis is closed**.
-//! The cold judge ruled **(2): validity *projects onto* zero-cost (#6)** — its safe witness is a
-//! per-read runtime validity check, the *same kind* of cost as the slab's generation tag (different
-//! predicate, identical `cmp+branch` lowering). A genuinely new danger class (bit-level validity) added
-//! **no new coordinate**. This is the **dual** of the `get_unchecked` family: there one danger had many
-//! witnesses spending different axes; here many dangers converge on one axis. Evidence is **consistent
-//! with the cost-basis being closed**. (Recorded caveat the panel insisted on: prior-art argued the
-//! `FromBytes`-vs-`TryFromBytes` split makes the cost *non-uniform across types* → option (3)
-//! inseparable; the judge rejected it — an all-bit-patterns-valid type is *danger-absent*, not a cheap
-//! witness, and a sealed/branded constructor only *amortizes* the same #6 cost, it does not replace it
-//! with a compile-time API-locality proof. So validity lacks move-stability's dual-witness structure.)
+//! The **meta-claim is unanimously upheld**: a genuinely new danger class (bit-level validity) added
+//! **no tenth coordinate** — every witness spends a pre-existing axis, and *"what does the safe witness
+//! cost?" has finitely many answers*. The cost-basis is **closed**.
+//!
+//! On the *classification of validity's own cost* the two cold panels split, and the more careful
+//! reading is **(3) INSEPARABLE** — validity is a **second** inseparable danger beside move-stability.
+//! The first panel ruled (2) projects-onto-zero-cost (a per-read runtime check = the slab's #6, via a
+//! different predicate). But the second panel showed the cost is **witness-non-uniform**: the zero-copy
+//! `&[u8] → &[Tag]` view (the real reason systems code transmutes byte buffers) admits *two* sound
+//! witnesses — eager runtime validation (spends **#6**, but O(n), destroys mmap laziness) or a **sealed
+//! constructor** (spends **API-locality**). Same danger, two axes depending on witness — the
+//! move-stability signature. So "inseparable" is a *recurring category*, not a one-off. Two recorded
+//! caveats: soundness holds only in the **fieldless single-byte corner** (a data-carrying / multi-byte /
+//! `repr(C)` enum needs a *recursive* `is_bit_valid` witness — `zerocopy`'s real shape — so this is a
+//! "toy" like the self-ref cell's non-composable single frame); and the whole construction is
+//! **non-novel** — it is the shipped design of `num_enum` (`TryFromPrimitive`/`UnsafeFromPrimitive`),
+//! `bytemuck::CheckedBitPattern`, `zerocopy::TryFromBytes`, plus the refinement-type literature.
 //!
 //! ### CF1 — safe code cannot mint an invalid `Tag` (the transmute is unsafe; only the seam may do it):
 //! ```compile_fail

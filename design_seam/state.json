@@ -952,10 +952,199 @@
       "outcome": "TRADEOFF",
       "cost_usd": 1.7928,
       "timestamp": "2026-06-28T16:07:59+00:00"
+    },
+    {
+      "round": 16,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_validity.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 a checked bit-pattern (re-import rule under attack)\n\nThis is a **design proposal** for a twelfth *seam* in the same hypothetical systems language (same\nfloor, same rules) as the SPSC, MMIO, intrusive-list, slab, branded-index, refined-index,\nshared-ownership, type-level-index, take-and-replace, drain-and-yield, and self-ref-cell seams. A seam\nre-exports a dangerous primitive as a checked safe interface ordinary code uses with no `unsafe` and no\nproofs. Attack the re-export: can ordinary safe code reach undefined behavior (UB)? **And** adjudicate\nthe \u00a76 question \u2014 which, this time, is explicitly a **meta-question about the lattice itself**.\n\nYou are attacking a **text specification** backed by real `rustc`-checked code (`seam/src/validity.rs`).\n\n> **Context, and why this primitive is different.** The lattice has **nine** confirmed clean axes plus\n> one *real-but-structurally-inseparable* danger (move-stability). The builder's growing suspicion is\n> that the **cost-basis is closed** \u2014 that new dangers no longer add coordinates but *project onto the\n> existing nine* (or land in the inseparable category). This primitive is built to **test that\n> hypothesis**, not to hunt ",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Ergonomically free \u2014 it's idiomatic TryFrom; only wart is range-check rule and manual MAX_TAG drift, both consumer-safe.",
+          "strongest_point": "The rule's `b <= MAX_TAG` witness is a range test, not discriminant-set membership, so it silently breaks for non-contiguous enums and reintroduces a manual sync obligation that real Rust's derived TryFrom eliminates."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Contiguous discriminants make the b<=2 guard a complete, exact complement of the invalid range; no invalid Tag is constructible by safe code.",
+          "strongest_point": "valid(b) \u27fa b\u22642 is an equivalence (not just implication) over a value-typed local copy, so there is no gap between passing the check and being a valid discriminant, and no TOCTOU."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Runtime-witness design implies no compile-time proof obligation; the lowering pass is constant-cost per call, nothing blows up.",
+          "strongest_point": "Because the b<=2 witness is discharged at runtime, rustc proves nothing statically, so no implied pass exists to become undecidable or super-polynomial \u2014 the only decidability hazard lives in the compile-time refinement alternative the proposal floats but never adopts."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Re-import sound for the artifact; validity projects cleanly onto zero-cost #6, basis closed; range-check generality is the only hazard.",
+          "strongest_point": "The rule justifies safety via a range check that only witnesses validity for contiguous-from-zero enums; copied to Tag{A=0,B=5,C=200} with `b<=MAX_TAG` it admits bytes 3..199 as invalid enums \u2014 UB in safe code."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Sound but is zerocopy::TryFromBytes; prior art refutes the zero-cost projection \u2014 witness cost is non-uniform, so inseparable.",
+          "strongest_point": "zerocopy's FromBytes-vs-TryFromBytes split proves validity's witness cost varies by type, refuting the builder's 'projects onto zero-cost #6' prediction in favor of inseparable (option 3)."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "genuine-flaw",
+          "attacker-soundness": "argued-past",
+          "attacker-implementation": "argued-past",
+          "attacker-expressiveness": "genuine-flaw",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Seam costs zero-cost #6: the safe witness is a per-read runtime validity check (same kind, near-zero magnitude).",
+          "\u00a76 closed-basis ruling = (2) projects onto #6 / basis closed, BUT carries prior-art's recorded caveat: the FromBytes-vs-TryFromBytes non-uniformity argues option-3 (inseparable); option-2 holds only if all-bit-patterns-valid types count as danger-absence and branded/sealed witnesses merely amortize (not replace) the runtime check."
+        ],
+        "headline": "Re-import rule must restate its witness as discriminant-set membership, not a range check.",
+        "rationale": "Artifact is sound (no consumer UB), but \u00a74's rule asserts a range test is 'exhaustive over the invalid range' while marketing a reusable recipe over explicit-discriminant enums \u00a75(d) invites \u2014 false for non-contiguous discriminants. Mandatory fix \u2192 FAILED; \u00a76 option-2/closed-basis survives with caveat."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 1.8861,
+      "timestamp": "2026-06-28T16:37:59+00:00"
+    },
+    {
+      "round": 17,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_validity.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 a checked bit-pattern (re-import rule under attack)\n\nThis is a **design proposal** for a twelfth *seam* in the same hypothetical systems language (same\nfloor, same rules) as the SPSC, MMIO, intrusive-list, slab, branded-index, refined-index,\nshared-ownership, type-level-index, take-and-replace, drain-and-yield, and self-ref-cell seams. A seam\nre-exports a dangerous primitive as a checked safe interface ordinary code uses with no `unsafe` and no\nproofs. Attack the re-export: can ordinary safe code reach undefined behavior (UB)? **And** adjudicate\nthe \u00a76 question \u2014 which, this time, is explicitly a **meta-question about the lattice itself**.\n\nYou are attacking a **text specification** backed by real `rustc`-checked code (`seam/src/validity.rs`).\n\n> **Context, and why this primitive is different.** The lattice has **nine** confirmed clean axes plus\n> one *real-but-structurally-inseparable* danger (move-stability). The builder's growing suspicion is\n> that the **cost-basis is closed** \u2014 that new dangers no longer add coordinates but *project onto the\n> existing nine* (or land in the inseparable category). This primitive is built to **test that\n> hypothesis**, not to hunt ",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Idiomatic try_from; zero ergonomic burden, sound. Projects onto zero-cost #6, closed-basis consistent. Pinning of the discriminant-set constant is manual, not structural.",
+          "strongest_point": "\u00a74 advertises the membership check as 'pinned to the actual variant set,' but the spec provides no mechanism pinning the hand-written VALID_DISCRIMINANTS constant to the enum \u2014 a typo adding a non-discriminant yields validity UB, so the claimed structural stopper is really a manual synchronization discipline."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Spec's stated precondition `b<=2` readmits the range-vs-set bug; bytes 1,2 transmute to invalid Tag (discriminants {0,5,200}) \u2192 validity UB.",
+          "strongest_point": "Under the \u00a72/\u00a76 `b<=2` witness the rubric credits with soundness, safe `tag_at` on a buffer byte of 1 transmutes to a Tag with no discriminant 1 \u2014 instant validity UB \u2014 so Horn 1 is not foreclosed and the \u00a76 closed-basis adjudication reasons from an unsound witness."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Runtime set-membership witness compiles to a table lookup plus gated transmute; no hard pass, no undecidability.",
+          "strongest_point": "The witness is a value-level runtime check, not a type-level proof obligation, so no compiler pass exists to blow up \u2014 and the compile-time refinement alternative is unexpressible in the Rust floor, not undecidable."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Re-import is sound; no UB. But \u00a76 ruling 'projects onto #6' is too strong \u2014 cost is witness-dependent.",
+          "strongest_point": "Validity has two expressible witnesses with different costs (runtime check\u2192zero-cost #6, compile-time refinement\u2192API-locality), so it shows the inseparable signature, not the clean projection onto #6 the builder predicts."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Hand-rolled bytemuck CheckedBitPattern / zerocopy TryFromBytes; both DERIVE the check so it can't desync \u2014 proposal hand-maintains VALID_DISCRIMINANTS, which can drift to a UB superset.",
+          "strongest_point": "The spec asserts the membership set is 'pinned to the actual variant set' but supplies a hand-edited constant; prior art (bytemuck/zerocopy) built proc-macro derives precisely because that allowlist drifts from the enum and a leftover discriminant transmutes a passing byte into validity UB."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "argued-past",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "The valid-discriminant set must be derived from the enum (per bytemuck::CheckedBitPattern / zerocopy::TryFromBytes); hand-maintaining VALID_DISCRIMINANTS makes the \u00a74 'pinned' stopper a manual sync discipline that can drift to a UB-producing superset.",
+          "The \u00a76 ruling 'projects cleanly onto zero-cost #6' is contestable: validity's cost is witness-dependent (runtime check -> #6; compile-time sealed/refined constructor -> API-locality), the move-stability signature \u2014 though for externally-provenanced bytes only the runtime witness applies, so the closed-basis claim still holds.",
+          "Primitive is not novel; bytemuck/zerocopy/num_enum are uncited exact precedents."
+        ],
+        "headline": "Set-membership rule is sound, but spec's stated `b<=2` precondition is unsound \u2014 revise.",
+        "rationale": "\u00a74's set-membership rule forecloses safe-code UB, but \u00a72's 'true precondition' and \u00a76's deliverable both state `b<=2`, which transmutes bytes 1\u20132 into an invalid Tag {0,5,200} \u2014 instant validity UB and a deliverable reasoning from a false witness. Pinning, witness-dependent cost, and missing prior art are recordable tradeoffs."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 1.9496,
+      "timestamp": "2026-06-28T16:48:40+00:00"
+    },
+    {
+      "round": 18,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_validity.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 a checked bit-pattern (re-import rule under attack)\n\nThis is a **design proposal** for a twelfth *seam* in the same hypothetical systems language (same\nfloor, same rules) as the SPSC, MMIO, intrusive-list, slab, branded-index, refined-index,\nshared-ownership, type-level-index, take-and-replace, drain-and-yield, and self-ref-cell seams. A seam\nre-exports a dangerous primitive as a checked safe interface ordinary code uses with no `unsafe` and no\nproofs. Attack the re-export: can ordinary safe code reach undefined behavior (UB)? **And** adjudicate\nthe \u00a76 question \u2014 which, this time, is explicitly a **meta-question about the lattice itself**.\n\nYou are attacking a **text specification** backed by real `rustc`-checked code (`seam/src/validity.rs`).\n\n> **Context, and why this primitive is different.** The lattice has **nine** confirmed clean axes plus\n> one *real-but-structurally-inseparable* danger (move-stability). The builder's growing suspicion is\n> that the **cost-basis is closed** \u2014 that new dangers no longer add coordinates but *project onto the\n> existing nine* (or land in the inseparable category). This primitive is built to **test that\n> hypothesis**, not to hunt ",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Featherweight one-call Option API, zero ceremony; only friction is no zero-cost validated tier and manual set vs derive.",
+          "strongest_point": "The seam's entire safe surface is a single Option-returning accessor identical to idiomatic TryFrom/num_enum \u2014 there is no proof, lifetime, or type ceremony to reject, so the ATS2 unusability charge cannot land."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Set-membership over a once-copied byte equals the exact validity predicate; no safe path yields an invalid Tag.",
+          "strongest_point": "VALID_DISCRIMINANTS is hand-asserted with no type-level link to Tag's discriminants, so a variant removal/renumber would silently reintroduce UB \u2014 but that violates the rule's own stipulation, so it is fragility, not an accepted counterexample."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Runtime set-membership witness compiles O(1); even compile-time refinement stays in a decidable finite-interval fragment \u2014 no pass blows up.",
+          "strongest_point": "Every Rust validity invariant is a finite union of intervals, so the validity witness never demands a decision procedure beyond trivially-decidable finite-set/interval membership, whether checked at runtime or compile time."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Re-import is sound; but \u00a76's clean #6 projection is wrong \u2014 validity is witness-non-uniform (inseparable), not zero-cost.",
+          "strongest_point": "The zero-copy &[u8]\u2192&[Tag] view's only sound witness is a sealed constructor spending API-locality, so validity's cost is witness-dependent (inseparable), refuting the builder's prediction that it projects uniformly onto zero-cost #6."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Sound, but it is bytemuck CheckedBitPattern / zerocopy TryFromBytes / num_enum TryFromPrimitive verbatim, including the cost duality.",
+          "strongest_point": "The entire seam \u2014 runtime discriminant set-membership before transmute, plus the runtime-vs-compile-time cost trade \u00a76 'discovers' \u2014 is the documented, shipped design of num_enum/bytemuck/zerocopy, and set-membership is a complete witness only in the fieldless single-byte corner the proposal silently restricts to."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "argued-past",
+          "attacker-implementation": "argued-past",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "TRADEOFF",
+        "tradeoffs": [
+          "\u00a76 ruling: validity is (3) INSEPARABLE/witness-non-uniform (runtime witness spends zero-cost #6; lazy zero-copy/compile-time witness spends API-locality), NOT the builder's predicted uniform projection onto #6; the closed-basis meta-claim (no tenth axis) is upheld.",
+          "Soundness holds only in the fieldless single-byte corner: \u00a75(d)'s 'witness stays exhaustive set-membership over the actual variants' is false for data-carrying / multi-byte / repr(C) enums (witness becomes recursive per-field, per zerocopy is_bit_valid) \u2014 generalization needs a future seam.",
+          "Non-novelty: the seam and its runtime-vs-compile-time cost duality are the shipped designs of num_enum/bytemuck/zerocopy plus refinement-type literature; the proposal confirms the closed basis but does not originate the evidence.",
+          "No zero-cost validated (trusted) tier for hot dispatch loops; hand-maintained VALID_DISCRIMINANTS should be derive-mandated because the extra-non-variant-byte direction is UB while the missing-variant direction is merely safe-conservative."
+        ],
+        "headline": "Validity re-import is sound, but cost is inseparable (not uniform-#6); basis stays closed.",
+        "rationale": "No attacker derived UB from the rules; re-import holds and is confirmed by audited prior art. But the builder's \u00a76 prediction (uniform #6) is refuted as (3) inseparable, soundness is scoped to the fieldless single-byte corner, and the result is non-novel \u2014 admissible only with these recorded."
+      },
+      "outcome": "TRADEOFF",
+      "cost_usd": 1.6869,
+      "timestamp": "2026-06-28T16:55:07+00:00"
     }
   ],
   "settled": [],
   "incompatibilities": [],
   "blind_spot_flags": [],
-  "total_cost_usd": 31.6064
+  "total_cost_usd": 37.129
 }
