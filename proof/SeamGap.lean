@@ -377,4 +377,28 @@ theorem selfref_seam_closes :
   rw [seam_closes_iff_factors]
   exact ⟨id, fun _ => rfl⟩
 
+/-- Validity-invariant shape (a `transmute`-after-check of a `#[repr(u8)]` enum byte). The soundness
+    fact (the byte is a valid discriminant) is carried by the safe witness — a runtime range check before
+    the unsafe reinterpretation — so the seam CLOSES, once more indistinguishably from SPSC in the kernel
+    (`Pvalidity` is definitionally `V`). Soundness adjudicated by the cold panel (REPORT_SEAM_SPEC_validity):
+    the keystone is that no byte `> 2` ever becomes a `Tag`.
+
+    This primitive was built to test a *meta*-question — is the cost-basis **closed**? The cold panel
+    ruled **(2): validity projects onto zero-cost (#6)** — its safe witness is a per-read runtime validity
+    check, the same *kind* of cost as the slab's generation tag (different predicate, identical cmp+branch
+    lowering). A genuinely new danger class (bit-level validity) added **no tenth coordinate** — the
+    *dual* of the `get_unchecked` family (one danger / many witnesses ↔ many dangers / one axis). Evidence
+    **consistent with the cost-basis being closed**. (Two recorded notes: the first gauntlet FAILED the
+    earlier *range*-check rule — a range is unsound for non-contiguous discriminants — fixed to
+    set-membership; and prior-art's `FromBytes`-vs-`TryFromBytes` non-uniformity bid for option (3) was
+    rejected — an all-patterns-valid type is danger-absent, a sealed witness only amortizes the same #6.)
+    Like every column past "concentration", which answer holds is modeling-dictionary; the kernel sees
+    only that V suffices. -/
+def Pvalidity (p : Prog) : Bool := V p
+
+theorem validity_seam_closes :
+    ∃ d : Prog → Bool, SoundW Pvalidity d ∧ UsableW Pvalidity d ∧ ConcW V d := by
+  rw [seam_closes_iff_factors]
+  exact ⟨id, fun _ => rfl⟩
+
 end SeamGap
