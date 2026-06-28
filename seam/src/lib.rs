@@ -128,6 +128,15 @@ pub mod shared;
 /// product of *three* faces. See `typed_nat`.
 pub mod typed_nat;
 
+/// Ninth seam (Phase H — the unwind-safety probe): take-and-replace across a possible unwind. A
+/// different danger — *time*, not aliasing or bounds: moving a value out of a `&mut T` and back leaves
+/// the slot holding a duplicate during the gap, and an unwinding panic drags the caller through that
+/// gap into a double-drop. The sound witness is an **abort-bomb** (`take_mut`'s pattern): a mid-take
+/// panic aborts before the broken slot is observed. The seam aces all seven prior axes and pays only on
+/// **unwind-safety** (exception safety — Abrahams; Rust's `UnwindSafe`), the clean off-diagonal the
+/// `typed_nat` probe could not produce. See `take`.
+pub mod take;
+
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 use core::sync::atomic::{AtomicUsize, Ordering};
