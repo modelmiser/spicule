@@ -155,6 +155,14 @@ pub mod drain;
 /// verdict. See `selfref`.
 pub mod selfref;
 
+/// Twelfth seam (Phase K — the closed-basis test): a checked bit-pattern. A new danger class — a
+/// **validity invariant** (a `#[repr(u8)]` enum byte that must be a valid discriminant, UB even without
+/// a deref) — re-exported as a `transmute`-after-check. Built not to hunt a fresh axis but to test
+/// whether the cost-basis is *closed*: does a new danger add a coordinate, or project onto an existing
+/// one? The prediction (and the spec's §6 question): it deflates to **zero-cost** (a runtime tag check),
+/// the dual of the `get_unchecked` family. See `validity`.
+pub mod validity;
+
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 use core::sync::atomic::{AtomicUsize, Ordering};
