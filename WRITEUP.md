@@ -396,6 +396,7 @@ decidable trait bounds):
 | **Branded index** | SEAM-COSTS [other] | all 3 horns hold | **O(1)/slice** code crossings, yet a *viral `'id`* in every type | *Cross-object identity via a generative brand* — closes all three horns (RustBelt-verified `runST`/`indexing` lineage) but un-bundles **concentration** itself: pays on **API-locality (#5)** (the brand infects consumer types, traps indices in a `scope` closure) and *defers* zero-cost (#6) to the range-branding it scopes out. |
 | **Refined index** | SEAM-COSTS [horn 2] | all 3 horns hold | **O(1)/index**, brand-free (the value *escapes*) | *In-bounds via a legible predicate* (Flux/Liquid Haskell) — the **(brand-free, legible)** corner that **closes the #5⟂#7 cell** against the slab's brand-free-but-illegible handle. Un-bundles **horn 2** into *decidability* ✓ vs *solver-freedom* ✗ (SMT in the TCB — the `unified` "keep" horn, not a new axis). The R2 trade: brand-free ⟹ runtime check; zero-cost ⟹ length-brand. |
 | **Shared (Rc)** | SEAM-COSTS [bare-metal] | all 3 horns hold | **O(1)**, brand-free; needs a heap | *Dynamic shared ownership via a runtime refcount manager* — recovers seed **#5 bare-metal**: the sole seam needing `alloc` (compile-enforced; the crate is `#![no_std]`). A genuine seventh axis (⟂ zero-cost via the slab/`heapless` off-diagonal), but the judge deflated novelty — it *is* Rust's `core`/`alloc` boundary (RFC 2480). |
+| **Type-level index** | **FAILED** [axis deliverable]; sound | all 3 horns hold; pays a recorded horn-2 cost | **O(1)**, brand-free, erases | *In-bounds via a compile-time trait proof `I: Lt<Len>`.* Sound (sealed `Nat` + orphan rule, unanimous), zero-cost, solver-free. Pitched as recovering an eighth **checker-tractability** axis — **rejected**: the off-diagonal is confounded with a strict expressiveness loss (static-index-only), the `recursion_limit` cost is encoding-relative (binary numerals erase it), and the axis is mislabeled (`Lt` is *linear* — the real concern is **terminating-resolution**, Paterson / `UndecidableInstances`). No new axis; **N stays 7**. |
 
 **Four primitives forced a deeper finding: the Seam Trilemma is a 3-of-N projection (N ≥ 7).** The
 **slab** keeps all three horns yet pays on *zero runtime cost* (#6), the property the trilemma had
@@ -422,9 +423,15 @@ axiom → sound modulo a TCB `assume`, outside the axes (MMIO); whole-heap alias
 the caller → a horn genuinely drops (intrusive). The recovered axes are exactly the casualties of the
 original `unified` result, put back on the map one witness at a time — **and, the honest headline,
 each turns out to be an already-named PL boundary** (zero-cost abstraction, generativity, refinement-
-legibility, `core`/`alloc`). Twice the panel deflated a "new dimension" to "real but pre-existing." So
-the result is the *unification* of known PL axes under one "what does the witness cost?" rubric, not
-their discovery. Full face lattice: `design_seam/REALIZABILITY.md`.
+legibility, `core`/`alloc`). Twice the panel deflated a "new dimension" to "real but pre-existing" —
+and a third time, on an **eighth probe** (a type-level-proof index pitched as recovering
+*checker-tractability*), it went further and **rejected the axis outright**: the candidate's
+off-diagonal was confounded with a strict expressiveness loss (the seam is static-index-only), its
+cost was encoding-relative (binary type-level naturals erase it), and it was mislabeled
+(terminating-resolution — Paterson / `UndecidableInstances` — `Lt` resolution being *linear*, cheaper
+than refined's QF-LIA). So **N stays 7**, and the result is the *unification* of known PL axes under
+one "what does the witness cost?" rubric, not their discovery — by a method that also *refuses*
+candidates that do not dissociate cleanly. Full face lattice: `design_seam/REALIZABILITY.md`.
 
 **Decontamination, across primitives.** The seamful2 theorem predicted that a failing seam's
 obstruction *relocates* to the re-import boundary rather than vanishing. SPSC: it **vanished**
@@ -438,10 +445,14 @@ Branded index: it **moved onto the type surface** (a viral `'id`) and stayed sou
 obstruction went somewhere genuinely new, neither code-crossing nor runtime. Refined index: it
 **moved into the trusted toolchain** (an SMT solver) and stayed sound *and* brand-free — out of the
 program entirely. Shared (Rc): it **moved into a runtime subsystem** (the global allocator) and
-stayed sound + brand-free — into a heap the no-`std` target does not have. "Moves, doesn't vanish"
-held for all six non-trivially-encapsulable primitives, and *where* it moved was the whole verdict.
+stayed sound + brand-free — into a heap the no-`std` target does not have. Type-level index: it
+**moved onto the trait resolver's fuel budget** (`recursion_limit`) and stayed sound — but *that*
+landing site, unlike the previous six, turned out **not to be a clean axis** (it confounds with
+expressiveness and is encoding-relative). "Moves, doesn't vanish" held for all seven
+non-trivially-encapsulable primitives, and *where* it moved was the whole verdict — including the one
+case where the destination was a mirage.
 
-**The adversary earned its keep — six times.** On MMIO it named the axiom's category correctly
+**The adversary earned its keep — seven times.** On MMIO it named the axiom's category correctly
 (a TCB boundary, not a horn) and surfaced a horn-3 cost the builder had under-weighted. On the
 intrusive list it proved something *worse* than the builder predicted: branding does not restore
 soundness at all (a brand is an *access* capability, not a *storage* lifetime), correcting a real
@@ -456,9 +467,14 @@ undisclosed expressiveness bug (R2 used `==` where safety needs `≤` — fixed)
 (solver-in-TCB is DML/Liquid Types/Flux's documented founding tradeoff — the `unified` "keep" horn,
 not a new axis). On the shared seam it confirmed bare-metal is a real seventh axis yet *deflated its
 novelty* — it is Rust's `core`/`alloc` boundary (RFC 2480), with `heapless` already witnessing the
-bare-metal↔capacity trade — forcing the honest "unification, not discovery" framing. Spec↔impl
-divergences, sharpened overclaims, and two novelty-deflations — exactly what build/break separation
-exists to surface.
+bare-metal↔capacity trade — forcing the honest "unification, not discovery" framing. And on the
+**eighth probe** it did the hardest thing of all: conceded soundness but **rejected the axis** — three
+independent attackers converged that the type-level index's "checker-tractability" off-diagonal is
+confounded with expressiveness (static-index-only, intrinsically), encoding-relative (binary numerals
+erase the cost), and mislabeled (terminating-resolution, not tractability; `Lt` is linear). The
+builder took it on the chin — **N stays 7**. Spec↔impl divergences, sharpened overclaims, two
+novelty-deflations, and one outright axis-rejection — exactly what build/break separation exists to
+surface. A discovery procedure that cannot say "no" is not measuring anything; this one said it.
 
 **Mechanization.** `proof/SeamGap.lean` was upgraded from the one-direction triviality its own
 cold review had flagged to a genuine characterization — `seam_closes_iff_factors`: a seam

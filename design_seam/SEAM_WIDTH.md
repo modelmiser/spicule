@@ -40,7 +40,7 @@ A primitive whose precondition has a conjunct that *cannot* be internalized (one
 caller-owned state) would force the caller to carry it — pushing seam width from O(buffers)
 toward O(operations). That is the Phase-C contrast (MMIO; intrusive list).
 
-## All seven primitives — and why seam width misses *several* axes, not one
+## All eight primitives — and why seam width misses *several* axes, not one
 
 | Primitive | Consumer seam width | Runtime cost (zero-cost #6) | Type surface (API-locality) |
 |---|---|---|---|
@@ -50,6 +50,7 @@ toward O(operations). That is the Phase-C contrast (MMIO; intrusive list).
 | Branded index | **O(1)/slice** (`scope` once) | erases, but **deferred** — single-index `try_index` re-checks per element; the elision win needs range-branding | **viral `'id`** — infects every index/signature, traps indices in a `scope` closure |
 | Refined index | **O(1)/index** (`refine` once) | erases on a real Flux floor; the cost moves to an **SMT solver in the TCB** (horn 2) | plain `Refined` — non-viral; the value *escapes* |
 | Shared (Rc) | **O(1)** — `new`/`clone`/deref/drop are safe calls | **non-zero** — a refcount inc/dec, never erased — *and* a **global allocator** (bare-metal #5) | plain `Shared` — non-viral |
+| Type-level index | **O(1)/buffer** (`Bound::new` once) | **erases fully** — the proof is a trait bound; cost moves to the **resolver's fuel** (`recursion_limit`, horn 2) — but that cost is encoding-relative + confounded, *not a clean axis* | plain turbofish `I` — non-viral; **but static-index-only** (a hidden *expressiveness* cost no width/cost/type column captures) |
 | Intrusive list (branded) | **O(accesses)** — the token threads through every access | (design A erases; the cost is seam width / lost reclaim) | **viral `'brand`** |
 
 **Two instructive rows now show seam width is necessary but not sufficient.** The slab *aces* seam
@@ -63,6 +64,17 @@ horn 3) and a *type* face (API-locality) — that the branded index pulls apart,
 pulled zero-cost out of "concentrated & proof-free."
 
 That a primitive can be O(1) on this instrument and *still* impose a real consumer tax on two
-distinct hidden axes is precisely why the Seam Trilemma is a **3-of-N projection (N ≥ 6)**, not
-3-of-3. Seam-width measures one axis well and is blind to the rest. See `REALIZABILITY.md` for the
-full face lattice and `SYNTHESIS.md` for the cross-primitive map.
+distinct hidden axes is precisely why the Seam Trilemma is a **3-of-N projection (N ≥ 7)**, not
+3-of-3. Seam-width measures one axis well and is blind to the rest.
+
+The **type-level index** row sharpens the same point from the opposite direction — and is a caution
+against *over*-counting. It is O(1) on width, *fully erases* (the one row besides SPSC/MMIO to do so),
+and is non-viral in the type surface — it looks like a near-perfect corner. Yet its real consumer tax,
+**static-index-only expressiveness** (it cannot index a runtime `usize` at all), is invisible to *all
+three* of this instrument's columns. That invisibility is exactly what let the builder mistake it for a
+clean "checker-tractability" axis — and exactly what the cold panel caught: an instrument blind to
+expressiveness will read a confounded off-diagonal as a clean one. The eighth-axis claim was
+**rejected** (the cost is also encoding-relative; `recursion_limit` is a unary-Peano artifact). So
+N stays 7: seam-width is blind to several real axes, *and* a primitive that aces every column it can
+see may still be paying on one it cannot. See `REALIZABILITY.md` for the full face lattice (including
+the eighth probe's recorded failure) and `SYNTHESIS.md` for the cross-primitive map.

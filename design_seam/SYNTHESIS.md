@@ -8,7 +8,10 @@ stateful builder authored each seam spec + a real `rustc`-checked implementation
 adversarial harness (5 attackers + judge + an independent horn-classifier) red-teamed the
 **re-import rule only**, never the author. Seven primitives, chosen so their preconditions have seven
 different *shapes* — and so that each later one becomes the witness un-bundling an axis the trilemma
-had folded (zero-cost, API-locality, AI-legibility, solver-freedom, bare-metal).
+had folded (zero-cost, API-locality, AI-legibility, solver-freedom, bare-metal) — plus an **eighth,
+deliberate falsification**: a type-level-proof index pitched as recovering a *checker-tractability*
+axis, which the gauntlet **rejected** (sound, but the off-diagonal is confounded). That rejection is
+the strongest evidence the method measures something — it has a STOP, and the eighth probe found it.
 
 ## The headline result
 
@@ -28,6 +31,7 @@ a runtime-checkable fact, or genuinely unrepairable?*
 | **Branded index** (sound unchecked indexing) | SEAM-COSTS [other] (1 cold panel) | all 3 horns hold | O(1)/slice — yet a *viral* `'id` in every type | *Cross-object identity, carried by a generative brand.* Closes all three horns (RustBelt-verified lineage), but un-bundles **concentration** itself: pays on **API-locality (#5)** (the `'id` infects consumer types, traps indices in a `scope` closure) and *defers* zero-cost (#6) to range-branding. The brand is a nominal token (#7 illegible). |
 | **Refined index** (refinement-typed bounds) | SEAM-COSTS [horn2] (1 cold panel) | all 3 horns hold | O(1)/index — brand-free, the value *escapes* | *In-bounds, carried by a legible predicate (Flux/Liquid Haskell).* The **(brand-free, legible)** corner — it **closes the #5⟂#7 cell** (vs the slab's brand-free-but-illegible handle). Un-bundles **horn 2** into *decidability* ✓ vs *solver-freedom* ✗ (needs SMT in the TCB — the `unified` "keep" horn). The R2 trade: brand-free ⟹ a runtime check, zero-cost ⟹ a length-brand. |
 | **Shared (Rc)** (refcounted ownership) | SEAM-COSTS [bare-metal] (1 cold panel) | all 3 horns hold | O(1) — brand-free; needs a heap | *Dynamic shared ownership, carried by a runtime refcount manager.* Recovers seed property **#5 bare-metal**: the sole seam needing a global allocator (compile-enforced — the only `extern crate alloc`). Independent of #6 (slab/`heapless` off-diagonal: fixed pool vs global heap), but the judge deflated novelty — it **= Rust's `core`/`alloc` boundary (RFC 2480)**, real but pre-existing. |
+| **Type-level index** (proof by trait resolution) | **FAILED** [axis deliverable] — sound (1 cold panel) | sound; all 3 horns hold; pays a recorded horn-2 cost | O(1) — brand-free, erases | *Compile-time proof `I: Lt<Len>`, carried by the trait resolver.* Sound (sealed `Nat` + orphan rule block forgery, unanimous), zero-cost, solver-free. **But the eighth-axis claim was rejected:** the off-diagonal is confounded with a strict expressiveness loss (static-index-only), the `recursion_limit` cost is encoding-relative (binary numerals erase it), and the axis is mislabeled — `Lt` is *linear*, the real concern is **terminating-resolution** (Paterson / `UndecidableInstances`), pre-existing. No new axis; N stays 7. |
 
 ### The deeper result, forced four times: the Seam Trilemma is a 3-of-N projection (N ≥ 7)
 
@@ -67,6 +71,19 @@ structurally cannot express; its only sound witness is a runtime refcount **mana
 global heap. The judge confirmed bare-metal is a genuine seventh axis (dissociates from zero-cost via
 the slab/`heapless` off-diagonal: a fixed pool is bare-metal, a global-heap `Rc` is not) **but
 deflated its novelty** — it is Rust's own `core`/`alloc` boundary (RFC 2480), not a discovery.
+
+The **type-level-proof index** then probed for an *eighth* axis — and **failed**, which is recorded
+as a result rather than buried. Pitched as recovering **checker-tractability** (does the native
+checker halt without an arbitrary `recursion_limit` knob?), it is sound (unanimous — sealing plus the
+orphan rule block every forgery) but recovers no clean axis, on three convergent grounds the cold
+panel converged on: (1) the off-diagonal is **confounded** — `get::<I>` takes a turbofish *type*, so
+the seam is static-index-only, a strict expressive subset of the branded/refined indices; the claimed
+one-coordinate flip silently also flips expressiveness, and that confound is *intrinsic* (a runtime
+index cannot be carried by a compile-time proof); (2) the cost is **encoding-relative** — unary Peano
+hits the limit (E0275), binary type-level naturals (typenum) are O(log N) and do not; (3) it is
+**mislabeled** — `Lt` resolution is *linear*, cheaper than refined's QF-LIA, so the real concern is a
+**terminating-resolution** fragment (Paterson conditions / GHC `UndecidableInstances`), pre-existing.
+The lattice stays **N ≥ 7**; the probe's worth is the falsification — the discipline can refuse.
 
 So the trilemma is a low-dimensional shadow of an **≥7-axis** object — and `unified`'s original
 casualties (#6, #2's two faces, #4's two faces, and #5) are recovered one primitive at a time. The
@@ -131,14 +148,16 @@ to the re-import boundary rather than disappearing. Across the primitives:
   another horn (collapse lifetimes → drop usability; full separation logic → drop
   decidability). (This is the `intrusive_seam_does_not_close` Lean instance.)
 
-"Moves, doesn't vanish" is confirmed for the six non-trivially-encapsulable primitives — and
+"Moves, doesn't vanish" is confirmed for the seven non-trivially-encapsulable primitives — and
 *where* it moves (decidable boundary bound / runtime witness / type surface / trusted toolchain /
-runtime subsystem / genuinely unsound) is the whole verdict; "vanishes" is the signature of the
-fully-encapsulable one. The decontamination method generalized cleanly across all seven.
+runtime subsystem / `recursion_limit` fuel knob / genuinely unsound) is the whole verdict; "vanishes"
+is the signature of the fully-encapsulable one. The decontamination method generalized cleanly across
+all eight — including the eighth, where the cost moved to a place (the fuel knob) that turned out
+*not* to be a clean axis at all.
 
 ## What the harness added that the builder missed
 
-The adversarial process earned its keep six times:
+The adversarial process earned its keep seven times:
 
 1. **MMIO:** the builder framed M1/M4 as possibly "a different shape than the trilemma." The
    harness sharpened it to the exact right category — a TCB `assume` boundary, standard in
@@ -177,18 +196,29 @@ The adversarial process earned its keep six times:
    `heapless::pool` already witnesses the bare-metal↔capacity trade — so "drop the undiscovered-
    dimension framing." That deflation generalized the honest meta-pattern: every recovered axis is a
    pre-existing named PL concern; the result is the unification, not the dimensions.
+7. **Type-level index (the eighth probe):** the builder pitched **checker-tractability** as a possible
+   eighth axis and built the off-diagonal to isolate it. The panel conceded soundness unanimously but
+   **rejected the axis** — the sharpest intervention of the project. Three independent attackers
+   converged: the off-diagonal silently flips **expressiveness** (the seam is static-index-only, a
+   strict subset of its siblings — and the confound is intrinsic to a compile-time proof); the
+   `recursion_limit` cost is an **encoding artifact** (binary type-level naturals are O(log N) and
+   never hit it); and the axis is **mislabeled** (`Lt` is linear, *cheaper* than refined's QF-LIA — the
+   real, pre-existing concern is terminating-resolution, Paterson / `UndecidableInstances`). The
+   builder took it on the chin: N stays 7. This is the keep that proves the rest — a discovery
+   procedure with no rejection mode discovers nothing.
 
 ## Artifacts
 
-- Specs (attacked as text): `SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared}.md`
-- Cold verdicts: `REPORT_SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared}.md` (+ raw transcripts in `runs_seam/`)
+- Specs (attacked as text): `SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat}.md`
+- Cold verdicts: `REPORT_SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat}.md` (+ raw transcripts in `runs_seam/`)
 - Real Rust (rustc-checked, `#![no_std]`): `../seam/` — `src/lib.rs` (SPSC), `src/mmio.rs`,
   `src/intrusive.rs`, `src/slab.rs`, `src/branded.rs`, `src/refined.rs`, `src/shared.rs` (the lone
-  `alloc` user); consumer code is `#![forbid(unsafe_code)]`; laundering paths are `compile_fail`
-  doctests (25 `tests/` integration tests + 13 `compile_fail` doctests = 38 total).
+  `alloc` user), `src/typed_nat.rs` (the eighth probe — sound, no new axis); consumer code is
+  `#![forbid(unsafe_code)]`; laundering paths are `compile_fail` doctests (29 `tests/` integration
+  tests + 16 `compile_fail` doctests = 45 total).
 - Seam-width instrument: `SEAM_WIDTH.md`; full face lattice: `REALIZABILITY.md`
 - Mechanization: `../proof/SeamGap.lean` — `seam_closes_iff_factors` + the
-  `spsc`/`intrusive`/`slab`/`branded`/`refined`/`shared` instances (propext-only).
+  `spsc`/`intrusive`/`slab`/`branded`/`refined`/`shared`/`typed_nat` instances (propext-only).
 
 ## The one-sentence upgrade to the trilemma
 

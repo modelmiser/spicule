@@ -9,7 +9,7 @@ languages"; and (c) what newlang discovered and *why it matters*.
 **What newlang is.** Not a language. It is a research project that asked "what would the
 perfect systems language look like?", listed seven properties such a language should have,
 and then **proved — adversarially — that the seven cannot coexist**, mapped exactly where the
-wall is, and then **built seven real things that live right up against the wall** to show what
+wall is, and then **built eight real things that live right up against the wall (seven that close, plus one whose new-axis claim the gauntlet rejected)** to show what
 you *can* do. The deliverables are an impossibility result, a theorem (the *Seam Trilemma*),
 a Lean proof, and a small Rust crate of worked examples.
 
@@ -407,7 +407,7 @@ doesn't exist.
 
 ---
 
-# Part 9 — Build and break: seven real seams (the heart of it)
+# Part 9 — Build and break: eight real seams (the heart of it)
 
 Theory in hand, the project stopped arguing and *built*. Crucial design of the experiment:
 **build and break are different machines.** Construction is continuity, so a *stateful builder*
@@ -415,7 +415,7 @@ Theory in hand, the project stopped arguing and *built*. Crucial design of the e
 Demolition is coldness, so the cold harness is the **red team**, aimed *only* at the re-import
 rule. Each seam ships as a **text spec** (what the cold attackers attack) *and* a real,
 `rustc`-checked crate (`seam/`) whose consumer code is `#![forbid(unsafe_code)]` and whose UB-
-laundering attempts are `compile_fail` tests. Seven primitives: the first four chosen because their
+laundering attempts are `compile_fail` tests. Eight primitives: the first four chosen because their
 preconditions have four *different shapes*, the last three because they reopened a deeper
 question — *how many axes is the trilemma actually a projection of?* The headline finding:
 
@@ -607,6 +607,46 @@ new physics. It found that the trilemma's three horns silently *bundle a set of 
 design axes*, and that one question — **"what does the safe witness cost?"** — unifies them. The
 contribution is the unification and the recovery method, not the dimensions.
 
+### Primitive 8 — type-level-proof index → the eighth probe FAILS (`seam/src/typed_nat.rs`)
+
+The first seven primitives each recovered (or, for MMIO/intrusive, located) something. The eighth was
+built to *push the count to eight* — and the gauntlet **rejected it**. That rejection is the most
+instructive moment in the project, so it gets a worked example of its own.
+
+The idea: prove an index in bounds *entirely at compile time*, with no runtime check and no external
+solver. Encode index and length as type-level naturals (`Z`, `S<Z>`, …); the in-bounds fact `I < Len`
+is the trait bound `I: Lt<Len>`, discharged by two recursive `impl`s the trait resolver chases. The
+proof carries no data, needs no Z3, and erases to a bare `get_unchecked`. It is **sound** — and the
+panel conceded that unanimously: `Nat` is a *sealed* trait, so a consumer can impl the public `Lt` for
+their own local type (orphan rule) but that type can never be `Nat`, and `get`'s `I: Nat + Lt<Len>`
+bound rejects every forgery. No UB path exists.
+
+The builder pitched an eighth axis — **checker-tractability**: the refined index needs a solver but
+that solver halts *cheaply*; this one needs no solver but its checker halts only under an arbitrary
+`#![recursion_limit]` (resolving `I: Lt<Len>` costs `I::VALUE` steps, so a deep-but-in-bounds index
+fails with E0275 "overflow" until you raise the knob — out of fuel, not out of bounds). Held against
+SPSC, the claim was: flips *only* checker-tractability.
+
+Three independent attackers killed the axis (the seam stays sound; only the *deliverable* failed):
+- **The off-diagonal is confounded.** `get::<I>` takes a *type*, never a runtime `usize` — so this
+  seam can only index compile-time *constant* positions. It is a strict expressive subset of the
+  branded/refined indices, whose entire reason to exist (`get_unchecked` on ring/arena/slab) is
+  *data-dependent* indexing this seam **cannot express**. The "one-coordinate flip" silently also
+  flips expressiveness — and you cannot read an independence off two primitives that don't accept the
+  same programs. The confound is *intrinsic*: a runtime index carried by a compile-time proof is a
+  contradiction.
+- **The cost is encoding-relative.** The E0275 wall is an artifact of *unary* Peano. *Binary*
+  type-level naturals (typenum's `UInt<U,B>`) make resolution O(log N) — they never hit the limit for
+  realistic indices. The "intractable" cell measures *which numeral library you linked*, not the
+  primitive.
+- **It is mislabeled.** `Lt` resolution is *linear* — strictly *cheaper* than the refined index's
+  NP-hard QF-LIA. So the cost was never "tractability." What `recursion_limit` marks is the absence of
+  a guaranteed *terminating-resolution* fragment — exactly GHC's `UndecidableInstances` / the Paterson
+  conditions / `-freduction-depth`. A real, **pre-existing** concern, not a new lattice axis.
+
+Verdict: **FAILED [the axis deliverable]; the seam is sound.** The count stays **N ≥ 7**. The lesson
+is in Part 11 (#8): a discovery procedure that cannot reject a bad candidate is not measuring anything.
+
 ### The taxonomy (the whole point, in one table)
 
 | Primitive | What the missing conjunct *is* | Fate | Pays with |
@@ -616,14 +656,16 @@ contribution is the unification and the recovery method, not the dimensions.
 | Branded index | cross-object identity (generative brand) | **closes** | API-locality; brand is illegible (#7); #6 deferred |
 | Refined index | in-bounds via a legible predicate (SMT) | **closes** | solver-freedom (horn 2); R2 trade — brand-free *xor* zero-cost |
 | Shared (Rc) | dynamic shared ownership (refcount) | **closes** | bare-metal (#5) — needs a heap; bare-metal↔capacity trade |
+| Type-level index | in-bounds via a compile-time trait proof | **closes (sound)** | a `recursion_limit` cost inside horn 2 — but **no clean axis** (confounded + encoding-relative) |
 | MMIO | external physical axiom | **sound modulo TCB** | a trusted `assume` |
 | Intrusive list | aliasing+liveness that escapes to the caller | **breaks** | a trilemma horn |
 
-The decontamination signal (Part 6) held across all seven: the obstruction *vanished* (SPSC),
+The decontamination signal (Part 6) held across all eight: the obstruction *vanished* (SPSC),
 *moved and stayed decidable* (MMIO), *moved onto a runtime witness* (slab), *moved onto the type
 surface* (branded index), *moved into the trusted toolchain* (refined index — into the SMT solver),
-*moved into a runtime subsystem* (shared — into the global allocator), or *moved and broke soundness*
-(intrusive) — and **where it moves is the entire verdict.**
+*moved into a runtime subsystem* (shared — into the global allocator), *moved onto the resolver's fuel
+budget* (type-level index — but that site proved *not* to be a clean axis), or *moved and broke
+soundness* (intrusive) — and **where it moves is the entire verdict.**
 
 ---
 
@@ -639,10 +681,13 @@ Instantiated: `spsc_seam_closes` (precondition = witness → closes); `intrusive
 (precondition is the gap → no closing decision exists); the slab pairing
 `slab_runtime_closes_but_static_does_not` (the *same* precondition closes through a *runtime*
 witness but not a *static* one — the zero-cost axis, made formal at the model level); and
-`branded_seam_closes`/`refined_seam_closes`/`shared_seam_closes` (all close *indistinguishably from
-SPSC* in the kernel — which is the point: the branded index's viral type-parameter cost, the refined
-index's solver dependency, and the shared seam's heap requirement are alike invisible to a kernel that
-sees only whether a Boolean witness suffices).
+`branded_seam_closes`/`refined_seam_closes`/`shared_seam_closes`/`typed_nat_seam_closes` (all close
+*indistinguishably from SPSC* in the kernel — which is the point: the branded index's viral
+type-parameter cost, the refined index's solver dependency, the shared seam's heap requirement, and
+the type-level index's `recursion_limit` cost are alike invisible to a kernel that sees only whether a
+Boolean witness suffices — which is *exactly* why the eighth-axis claim had to be adjudicated by the
+cold panel in prose, not the kernel, and why the kernel certifying "closes" says nothing about whether
+that closure spends a *clean* axis).
 
 **The honest bound — and why it matters as a lesson.** A cold adversarial review of the proof
 returned the right verdict: the *checked* math is a real characterization, but the *faithfulness*
@@ -681,7 +726,7 @@ You can forget every primitive and keep these.
    the professional move is to (a) put it in one place (concentration), (b) make the obligation
    at it as visible as possible, and (c) choose *consciously* whether the boundary costs you
    soundness, decidability, concentration, runtime, API surface, or a solver in your toolchain. The
-   seven-primitive taxonomy is a decision procedure for that choice.
+   eight-primitive taxonomy is a decision procedure for that choice.
 
 4. **Adversarial separation of build and break.** Construction wants continuity; demolition wants
    a cold, context-free skeptic. Keeping them as separate machines — and *calibrating* your
@@ -704,7 +749,13 @@ You can forget every primitive and keep these.
    **off-diagonal** — two artifacts that agree on one axis and flip the *other* (the refined index
    and the slab are both brand-free but differ on legibility; a single brand-free-and-legible point
    would not have done it). Until you have that witness, a "new axis" is a hunch; with it, the
-   dimension is real. Your tidy trilemma may be a shadow — look for the object casting it.
+   dimension is real. Your tidy trilemma may be a shadow — look for the object casting it. **But the
+off-diagonal must be *clean*:** the eighth probe (the type-level index) *looked* like it flipped only
+checker-tractability against SPSC — and was rejected because it silently *also* flipped expressiveness
+(it indexes only compile-time constants). An off-diagonal that moves two coordinates at once proves
+nothing. Check that everything *except* the candidate is genuinely held fixed; if it can't be (here,
+intrinsically — a runtime index cannot ride a compile-time proof), the axis is not isolable by that
+witness, and the honest move is to drop the claim.
 
 7. **Deflate your own discoveries: "new to me" ≠ "new."** Twice the project's adversary confirmed an
    axis was *real and independent* and in the same breath proved it was *not novel* — solver-freedom
@@ -714,6 +765,17 @@ You can forget every primitive and keep these.
    honest, larger result was not "seven new axes" but "seven *known* PL design axes are all faces of
    one tension." A unification you can name is worth more than a dimension you can't — and a cold
    reviewer who deflates your count is doing you the biggest favor in the room.
+
+8. **A method that cannot say "no" is measuring nothing.** Deflation (#7) was the soft form; the hard
+   form is *rejection*. When the project pushed for an eighth axis, the adversary did not deflate its
+   novelty — it threw the axis out entirely: the off-diagonal was confounded (#6), the cost was an
+   artifact of the unary encoding, and the name was wrong (terminating-resolution, not tractability).
+   The builder kept the count at seven and recorded the failure as a result. This is the single most
+   important calibration check on any discovery procedure, your own reasoning included: if every probe
+   "succeeds," you are running a confirmation machine, not a measurement. Seek the input that makes
+   your method return *false* — and when it does, publish that, because the rejections are what make
+   the confirmations trustworthy. The eighth seam is sound, useful as an illustration, and recovers no
+   axis — and saying so plainly is the project's final lesson.
 
 ---
 
@@ -726,20 +788,24 @@ You can forget every primitive and keep these.
 - `lean proof/SeamGap.lean` — read the characterization; change a definition and watch it break.
 - Skim `design_seam/REPORT_SEAM_SPEC_*.md` — the cold attackers' actual verdicts, in their words.
 
-**Build an eighth primitive (a day).** Pick a primitive whose precondition has a *new* shape — a
+**Build a ninth primitive (a day).** Pick a primitive whose precondition has a *new* shape — a
 typed atomic cell, a bump allocator handing out overlapping views, a `Pin`-based self-referential
 struct — write the spec + a `rustc`-checked toy, predict which horn (or recovered axis) it hits,
 and run it through the harness (`python3 -m orchestrator.seam_phase --spec ... --gauntlets 1
---prior-art-web`). The trilemma is now a 3-of-N projection with **seven** confirmed axes (slab →
+--prior-art-web`). The trilemma is a 3-of-N projection with **seven** confirmed axes (slab →
 zero-cost #6; branded → API-locality; refined → AI-legibility #7, plus horn 2 = decidability vs
-solver-freedom; shared → bare-metal #5). **The open frontier is to keep going** — but with the
-honesty the project earned: a newly-split axis is almost always an *already-named* PL boundary, so the
-real prize is not the count but the unification. Is there a primitive that splits *decidability* from
-*termination-of-the-checker*, or one whose cost has genuinely no name yet (API-locality was the
-closest — outside the seed list, though the generativity literature had named it too)? Build the
-smallest `rustc`-checked toy with a genuinely new precondition shape, predict the axis, and — this is
-the discipline — let the cold panel both adjudicate *and* deflate it. (See
-`design_seam/REALIZABILITY.md` for the current face lattice and which cells are filled.)
+solver-freedom; shared → bare-metal #5). The obvious eighth candidate — *split decidability from
+termination-of-the-checker* — was **already built and rejected**: the type-level-proof index
+(`seam/src/typed_nat.rs`, Primitive 8) is sound but its "checker-tractability" axis is confounded with
+expressiveness (it indexes only compile-time constants) and encoding-relative (binary numerals erase
+the cost), and the real concern is the pre-existing *terminating-resolution* boundary (Paterson /
+`UndecidableInstances`). So **N stays 7**, and the standing lesson is sharper than "keep going": a
+newly-split axis is almost always an *already-named* PL boundary, and *some candidates are not axes at
+all*. The real prize is the unification, and the discipline is to let the cold panel both adjudicate
+*and reject* — as it did on the eighth. If you try a ninth, find a precondition shape whose cost you
+can isolate with a **clean** off-diagonal (everything but the candidate held fixed); if you can't hold
+the rest fixed, you have a confound, not a dimension. (See `design_seam/REALIZABILITY.md` for the
+current face lattice, the filled cells, and the eighth probe's recorded failure.)
 
 **Reading path, in dependency order:**
 1. *The Rust Book*, ownership/borrowing chapters — the affine system in practice.
@@ -764,7 +830,7 @@ the discipline — let the cold panel both adjudicate *and* deflate it. (See
    shared ownership trades *unbounded dynamic allocation* against *caller-provided bounded storage*.
 8. **Verus** and **Creusot** docs — what "Rust but `unsafe` is proof" actually looks like when
    someone ships it (the productive horn from Part 8).
-9. This repo's `WRITEUP.md` (the full result), `design_seam/SYNTHESIS.md` (the seven-primitive map),
+9. This repo's `WRITEUP.md` (the full result), `design_seam/SYNTHESIS.md` (the eight-primitive map),
    `design_seam/REALIZABILITY.md` (the face lattice / 3-of-N proof), and `THE-SAME-WALL.md` (the
    cross-field boundary/veil discipline).
 
