@@ -6,12 +6,14 @@ distilled the **Seam Trilemma**: a seam cannot simultaneously have (1) sound re-
 phase asked the next question: *take the trilemma as a map and actually build a seam.* The
 stateful builder authored each seam spec + a real `rustc`-checked implementation; the cold
 adversarial harness (5 attackers + judge + an independent horn-classifier) red-teamed the
-**re-import rule only**, never the author. Seven primitives, chosen so their preconditions have seven
+**re-import rule only**, never the author. Nine primitives, chosen so their preconditions have nine
 different *shapes* — and so that each later one becomes the witness un-bundling an axis the trilemma
-had folded (zero-cost, API-locality, AI-legibility, solver-freedom, bare-metal) — plus an **eighth,
-deliberate falsification**: a type-level-proof index pitched as recovering a *checker-tractability*
-axis, which the gauntlet **rejected** (sound, but the off-diagonal is confounded). That rejection is
-the strongest evidence the method measures something — it has a STOP, and the eighth probe found it.
+had folded (zero-cost, API-locality, AI-legibility, solver-freedom, bare-metal, unwind-safety). Two of
+the nine are *eighth-axis probes*, and the contrast between them is the strongest evidence the method
+measures something: a type-level-proof index pitched as *checker-tractability* was **rejected** (sound,
+but the off-diagonal is confounded with expressiveness); the take-and-replace seam pitched as
+*unwind-safety* was **confirmed** (N ≥ 8, a clean off-diagonal). The method both **rejects** the
+confounded candidate and **confirms** the clean one — it has a STOP *and* a discovery mode.
 
 ## The headline result
 
@@ -32,8 +34,9 @@ a runtime-checkable fact, or genuinely unrepairable?*
 | **Refined index** (refinement-typed bounds) | SEAM-COSTS [horn2] (1 cold panel) | all 3 horns hold | O(1)/index — brand-free, the value *escapes* | *In-bounds, carried by a legible predicate (Flux/Liquid Haskell).* The **(brand-free, legible)** corner — it **closes the #5⟂#7 cell** (vs the slab's brand-free-but-illegible handle). Un-bundles **horn 2** into *decidability* ✓ vs *solver-freedom* ✗ (needs SMT in the TCB — the `unified` "keep" horn). The R2 trade: brand-free ⟹ a runtime check, zero-cost ⟹ a length-brand. |
 | **Shared (Rc)** (refcounted ownership) | SEAM-COSTS [bare-metal] (1 cold panel) | all 3 horns hold | O(1) — brand-free; needs a heap | *Dynamic shared ownership, carried by a runtime refcount manager.* Recovers seed property **#5 bare-metal**: the sole seam needing a global allocator (compile-enforced — the only `extern crate alloc`). Independent of #6 (slab/`heapless` off-diagonal: fixed pool vs global heap), but the judge deflated novelty — it **= Rust's `core`/`alloc` boundary (RFC 2480)**, real but pre-existing. |
 | **Type-level index** (proof by trait resolution) | **FAILED** [axis deliverable] — sound (1 cold panel) | sound; all 3 horns hold; pays a recorded horn-2 cost | O(1) — brand-free, erases | *Compile-time proof `I: Lt<Len>`, carried by the trait resolver.* Sound (sealed `Nat` + orphan rule block forgery, unanimous), zero-cost, solver-free. **But the eighth-axis claim was rejected:** the off-diagonal is confounded with a strict expressiveness loss (static-index-only), the `recursion_limit` cost is encoding-relative (binary numerals erase it), and the axis is mislabeled — `Lt` is *linear*, the real concern is **terminating-resolution** (Paterson / `UndecidableInstances`), pre-existing. No new axis; N stays 7. |
+| **Take-and-replace** (move out and back) | SEAM-COSTS [none] — TRADEOFF (1 cold panel) | sound; all 3 horns hold; pays the 8th axis | O(1) — brand-free, zero-cost on the happy path | *Transient-invariant-breaking across an unwind, carried by an abort-bomb (`take_mut`'s pattern).* Moving a value out of a `&mut T` leaves a duplicate in the gap; an unwinding panic drags the caller into a double-drop. Aces all seven prior axes and pays on **unwind-safety (the 8th axis)** alone — the *clean* off-diagonal the type-level index lacked. Confirmed N ≥ 8, deflated to pre-existing (Abrahams; `noexcept`; `UnwindSafe`; RFC #1508). The axis = *exception-safety-guarantee-level*; abort is one **discharge** (vs `replace_with` paying API-surface). |
 
-### The deeper result, forced four times: the Seam Trilemma is a 3-of-N projection (N ≥ 7)
+### The deeper result: the Seam Trilemma is a 3-of-N projection (N ≥ 8)
 
 The slab forced the first un-bundling. It keeps *all three* trilemma horns yet still pays — on
 **zero-cost erasure (#6)**, a property the trilemma had abstracted into "concentrated & proof-free."
@@ -83,10 +86,23 @@ index cannot be carried by a compile-time proof); (2) the cost is **encoding-rel
 hits the limit (E0275), binary type-level naturals (typenum) are O(log N) and do not; (3) it is
 **mislabeled** — `Lt` resolution is *linear*, cheaper than refined's QF-LIA, so the real concern is a
 **terminating-resolution** fragment (Paterson conditions / GHC `UndecidableInstances`), pre-existing.
-The lattice stays **N ≥ 7**; the probe's worth is the falsification — the discipline can refuse.
+That probe's worth is the falsification — the discipline can refuse.
 
-So the trilemma is a low-dimensional shadow of an **≥7-axis** object — and `unified`'s original
-casualties (#6, #2's two faces, #4's two faces, and #5) are recovered one primitive at a time. The
+The **take-and-replace seam** then supplied the *clean* off-diagonal the type-level index lacked, and
+**confirmed an eighth axis (N ≥ 8): unwind-safety.** Its danger is *time*, not bounds — moving a value
+out of a `&mut T` and back leaves a duplicate in the gap, and an unwinding panic drags the caller into
+a double-drop; the sound witness is an **abort-bomb** (`take_mut`'s pattern). It **aces all seven prior
+axes and pays on unwind-safety alone** — the panel explicitly contrasted this clean isolation with the
+type-level index's confound. Deflated to pre-existing (Abrahams basic/strong/nothrow; C++ `noexcept`;
+Rust `UnwindSafe`; RFC #1508 rejected this exact `take_mut` from std on this very cost). The panel's
+mandatory relabel: the axis is the **exception-safety-guarantee-level**, and the abort is *this seam's*
+discharge of it — a `replace_with` sentinel discharges the same obligation soundly-and-recoverably by
+paying **API-surface** instead. So the axis carries a **discharge menu** (abort / repair / poisoning),
+a third kind of inter-axis structure beyond the two exchange-trades.
+
+So the trilemma is a low-dimensional shadow of an **≥8-axis** object — and `unified`'s original
+casualties (#6, #2's two faces, #4's two faces, #5, and now exception-safety) are recovered one
+primitive at a time, with one candidate (checker-tractability) rejected as confounded. The
 taxonomy is now a map of *what the missing conjunct is* **and which axis closing it spends**:
 - **Fully floor-expressible** → seam closes free, every axis ✓ (SPSC).
 - **Runtime-checkable** → closes by spending **zero-cost/#6** (slab; `RefCell`).
@@ -99,16 +115,22 @@ taxonomy is now a map of *what the missing conjunct is* **and which axis closing
 - **Dynamic shared ownership** → closes brand-free, spending **bare-metal** (a global-allocator
   refcount manager), with a bare-metal↔capacity trade (a pool-backed `Rc` is bare-metal but bounded)
   (shared; std `Rc` / `heapless`).
+- **A transient broken invariant across a possible unwind** → closes by spending **unwind-safety** (the
+  8th axis), with a *discharge menu*: abort (lose recoverability), placeholder-repair (pay API-surface),
+  or poisoning (take-and-replace; `take_mut`↔`replace_with`).
 - **An external physical axiom** → sound modulo a TCB `assume`, outside the axes (MMIO).
 - **Whole-heap aliasing+liveness that escapes to the caller** → no sound+usable+concentrated
   decision exists; a trilemma horn genuinely drops (intrusive list).
 
 **The honest meta-pattern.** Every recovered axis turns out to be an *already-named PL concern* —
-zero-cost abstraction, generativity, refinement-legibility, the `core`/`alloc` split. The phase did
-not find new physics; it found that the trilemma's three horns silently *bundle a set of
-independently-known PL design axes*, unified by one rubric: **what does the safe witness cost?**
-Twice the cold panel had to deflate a "new dimension" to "real but pre-existing" — and that deflation
-is the result. The full face lattice (axes, dissociation proofs, the meta-pattern) is `REALIZABILITY.md`.
+zero-cost abstraction, generativity, refinement-legibility, the `core`/`alloc` split, exception-safety.
+The phase did not find new physics; it found that the trilemma's three horns silently *bundle a set of
+independently-known PL design axes*, unified by one rubric: **what does the safe witness cost?** The
+cold panel showed all three adjudication modes — it **confirmed-but-deflated** two new dimensions to
+"real but pre-existing" (bare-metal, unwind-safety), **sharpened without extending** once
+(solver-freedom = horn 2's "keep" face), and **rejected outright** once (checker-tractability,
+confounded) — which is exactly what makes it an instrument and not a rubber stamp. The full face
+lattice (axes, dissociation proofs, the meta-pattern) is `REALIZABILITY.md`.
 
 ## Decontamination (the prompt's C1): did the obstruction move or vanish?
 
@@ -147,17 +169,22 @@ to the re-import boundary rather than disappearing. Across the primitives:
   and what sits there is genuinely unsound (L2 UAF): horn 1 drops. Any repair walks into
   another horn (collapse lifetimes → drop usability; full separation logic → drop
   decidability). (This is the `intrusive_seam_does_not_close` Lean instance.)
+- **Take-and-replace — it moved onto the *control-flow / unwind path*, and stayed sound.** The
+  obstruction (the transient broken invariant) factors through an *abort-bomb* witness, so the seam
+  closes (`take_seam_closes`, like SPSC) — but the relocation lands neither in code, type, runtime
+  (happy path), toolchain, nor heap: it lands on the **unwinding behavior** — a mid-take panic becomes
+  a process abort. The obstruction moved onto the exception-safety guarantee level (the 8th axis).
 
-"Moves, doesn't vanish" is confirmed for the seven non-trivially-encapsulable primitives — and
+"Moves, doesn't vanish" is confirmed for the eight non-trivially-encapsulable primitives — and
 *where* it moves (decidable boundary bound / runtime witness / type surface / trusted toolchain /
-runtime subsystem / `recursion_limit` fuel knob / genuinely unsound) is the whole verdict; "vanishes"
-is the signature of the fully-encapsulable one. The decontamination method generalized cleanly across
-all eight — including the eighth, where the cost moved to a place (the fuel knob) that turned out
-*not* to be a clean axis at all.
+runtime subsystem / `recursion_limit` fuel knob / unwind path / genuinely unsound) is the whole
+verdict; "vanishes" is the signature of the fully-encapsulable one. The decontamination method
+generalized cleanly across all nine — including the two eighth-axis probes: one moved to a place (the
+fuel knob) that turned out *not* to be a clean axis, the other (the unwind path) that **was**.
 
 ## What the harness added that the builder missed
 
-The adversarial process earned its keep seven times:
+The adversarial process earned its keep eight times:
 
 1. **MMIO:** the builder framed M1/M4 as possibly "a different shape than the trilemma." The
    harness sharpened it to the exact right category — a TCB `assume` boundary, standard in
@@ -206,19 +233,30 @@ The adversarial process earned its keep seven times:
    real, pre-existing concern is terminating-resolution, Paterson / `UndecidableInstances`). The
    builder took it on the chin: N stays 7. This is the keep that proves the rest — a discovery
    procedure with no rejection mode discovers nothing.
+8. **Take-and-replace (the second eighth-axis probe):** the builder pitched **unwind-safety** as the
+   eighth axis, having designed the seam to avoid the type-level index's confound (it aces all seven
+   prior axes, pays only U2). The panel **confirmed it (N ≥ 8)** and explicitly ruled the off-diagonal
+   *clean* (contrasting it with the rejected typed_nat). Two sharp corrections, both recorded: (a) the
+   builder **mislabeled the axis as "the abort cost"** — it is the *exception-safety-guarantee-level*,
+   and abort is one **discharge** of it (`replace_with` repairs the gap recoverably, paying API-surface;
+   the axis carries a discharge menu); (b) prior-art surfaced that **RFC #1508 rejected this exact
+   `take_mut` from std** on the very abort cost scored — the "ace seven, pay one" framing was the
+   *historically losing* argument. Net: a clean eighth axis, deflated to pre-existing — the discovery
+   half of the instrument, complementing the rejection half from probe 7.
 
 ## Artifacts
 
-- Specs (attacked as text): `SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat}.md`
-- Cold verdicts: `REPORT_SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat}.md` (+ raw transcripts in `runs_seam/`)
+- Specs (attacked as text): `SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat,take}.md`
+- Cold verdicts: `REPORT_SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat,take}.md` (+ raw transcripts in `runs_seam/`)
 - Real Rust (rustc-checked, `#![no_std]`): `../seam/` — `src/lib.rs` (SPSC), `src/mmio.rs`,
   `src/intrusive.rs`, `src/slab.rs`, `src/branded.rs`, `src/refined.rs`, `src/shared.rs` (the lone
-  `alloc` user), `src/typed_nat.rs` (the eighth probe — sound, no new axis); consumer code is
-  `#![forbid(unsafe_code)]`; laundering paths are `compile_fail` doctests (29 `tests/` integration
-  tests + 16 `compile_fail` doctests = 45 total).
+  `alloc` user), `src/typed_nat.rs` (eighth-axis probe 1 — sound, no new axis), `src/take.rs`
+  (eighth-axis probe 2 — the confirmed unwind-safety axis); consumer code is `#![forbid(unsafe_code)]`;
+  laundering paths are `compile_fail` doctests (33 `tests/` integration tests + 17 `compile_fail`
+  doctests = 50 total).
 - Seam-width instrument: `SEAM_WIDTH.md`; full face lattice: `REALIZABILITY.md`
 - Mechanization: `../proof/SeamGap.lean` — `seam_closes_iff_factors` + the
-  `spsc`/`intrusive`/`slab`/`branded`/`refined`/`shared`/`typed_nat` instances (propext-only).
+  `spsc`/`intrusive`/`slab`/`branded`/`refined`/`shared`/`typed_nat`/`take` instances (propext-only).
 
 ## The one-sentence upgrade to the trilemma
 
@@ -229,8 +267,10 @@ is fully encapsulable (SPSC-shaped) — while the rest force a predictable, meas
 brand that spends API-locality (branded index), a legible predicate that spends solver-freedom
 (refined index), a refcount manager that spends bare-metal (shared), an external TCB axiom (MMIO), or
 a genuine horn drop (intrusive) — and the trilemma itself turns out to be a **3-of-N projection
-(N ≥ 7)**, its three horns a shadow of an object whose further axes — zero-cost (#6, slab),
-API-locality (branded index), AI-legibility (#7, refined index), and bare-metal (#5, shared) — each
-surface only when a primitive becomes the witness that two previously-identical configurations
-differ. Honest coda: those axes are each a *pre-existing* named PL boundary; the result is their
-unification under one "what does the witness cost?" rubric, not their discovery.
+(N ≥ 8)**, its three horns a shadow of an object whose further axes — zero-cost (#6, slab),
+API-locality (branded index), AI-legibility (#7, refined index), bare-metal (#5, shared), and
+unwind-safety (take-and-replace) — each surface only when a primitive becomes the witness that two
+previously-identical configurations differ (and one candidate, checker-tractability, was rejected as
+confounded — the method discriminates). Honest coda: those axes are each a *pre-existing* named PL
+boundary; the result is their unification under one "what does the witness cost?" rubric, not their
+discovery.
