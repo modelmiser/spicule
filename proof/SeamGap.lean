@@ -323,4 +323,32 @@ theorem take_seam_closes :
   rw [seam_closes_iff_factors]
   exact ⟨id, fun _ => rfl⟩
 
+/-- Drain-and-yield shape (`Vec::drain`'s sound pre-pessimization pattern). The soundness fact (D1∧D2:
+    no aliasing the half-moved buffer ∧ every slot dropped at most once *regardless of whether the
+    guard's `Drop` runs*) is carried — D1 by the `&mut` borrow, D2 by emptying the buffer up front so a
+    leaked guard leaves a valid empty buffer — so the seam CLOSES, once more indistinguishably from SPSC
+    in the kernel (`Pdrain` is definitionally `V`). Soundness is the load-bearing claim, adjudicated by
+    the cold panel (REPORT_SEAM_SPEC_drain): the keystone is that `mem::forget`-ing the guard (a *safe*
+    operation) double-frees nothing.
+
+    The axis this primitive probes — **leak-freedom** (Rust's leakpocalypse / `mem::forget`-is-safe; the
+    `Vec::drain` leak-amplification lineage; linear-vs-affine types) — is, like every column past
+    "concentration", invisible to the kernel: the Lean sees only that a Boolean witness suffices, never
+    that the witness leaks the un-yielded tail when forgotten. The cold panel (REPORT_SEAM_SPEC_drain)
+    ruled it a **real, independent ninth axis (N ≥ 9)**, **distinct from the eighth (unwind-safety)** —
+    the off-diagonal is populated both ways: take-and-replace is unwind-sensitive / leak-safe, this drain
+    is leak-sensitive / unwind-safe ("`Drop` never runs" vs "`Drop` runs at a bad time", codified
+    separately in Rust as *Leaking* vs *Exception Safety*). Deflated to pre-existing (leakpocalypse / PPYP
+    / leak amplification / RFC 1066 / `thread::scoped` removal), and noted the *thinnest, most-deflatable*
+    axis in the lattice (its cost is invisible in all non-leak code) — but a genuinely populated
+    off-diagonal, not a confound: it aces API-locality precisely *because* the guard owns its data (a
+    free-standing `Drain<'a>`, no closure), so it need not pay the scoped-thread closure cost. All
+    modeling dictionary; the kernel sees only that V suffices. -/
+def Pdrain (p : Prog) : Bool := V p
+
+theorem drain_seam_closes :
+    ∃ d : Prog → Bool, SoundW Pdrain d ∧ UsableW Pdrain d ∧ ConcW V d := by
+  rw [seam_closes_iff_factors]
+  exact ⟨id, fun _ => rfl⟩
+
 end SeamGap
