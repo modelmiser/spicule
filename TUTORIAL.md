@@ -9,7 +9,7 @@ languages"; and (c) what newlang discovered and *why it matters*.
 **What newlang is.** Not a language. It is a research project that asked "what would the
 perfect systems language look like?", listed seven properties such a language should have,
 and then **proved — adversarially — that the seven cannot coexist**, mapped exactly where the
-wall is, and then **built four real things that live right up against the wall** to show what
+wall is, and then **built six real things that live right up against the wall** to show what
 you *can* do. The deliverables are an impossibility result, a theorem (the *Seam Trilemma*),
 a Lean proof, and a small Rust crate of worked examples.
 
@@ -407,7 +407,7 @@ doesn't exist.
 
 ---
 
-# Part 9 — Build and break: five real seams (the heart of it)
+# Part 9 — Build and break: six real seams (the heart of it)
 
 Theory in hand, the project stopped arguing and *built*. Crucial design of the experiment:
 **build and break are different machines.** Construction is continuity, so a *stateful builder*
@@ -415,9 +415,9 @@ Theory in hand, the project stopped arguing and *built*. Crucial design of the e
 Demolition is coldness, so the cold harness is the **red team**, aimed *only* at the re-import
 rule. Each seam ships as a **text spec** (what the cold attackers attack) *and* a real,
 `rustc`-checked crate (`seam/`) whose consumer code is `#![forbid(unsafe_code)]` and whose UB-
-laundering attempts are `compile_fail` tests. Five primitives: the first four chosen because their
-preconditions have four *different shapes*, the fifth because it reopened a deeper question — *how
-many axes is the trilemma actually a projection of?* The headline finding:
+laundering attempts are `compile_fail` tests. Six primitives: the first four chosen because their
+preconditions have four *different shapes*, the fifth and sixth because they reopened a deeper
+question — *how many axes is the trilemma actually a projection of?* The headline finding:
 
 > **Whether a seam closes is a function of the precondition's shape** — specifically, *what the
 > dangerous conjunct is*: can the cheap checker carry it, can a runtime check carry it, is it an
@@ -471,14 +471,15 @@ decidable, concentrated — the whole interface is safe, seam width O(1)) — an
 axis the trilemma folded away: zero-cost erasure (property #6).** The generation word per slot
 and the compare-branch per access *do not erase*. Verdict: **SEAM-COSTS [zero-cost]**.
 
-This primitive forced the **first** of two un-bundlings:
+This primitive forced the **first** of three un-bundlings:
 
 > **The Seam Trilemma is a 3-of-4 projection.** "Concentrated & proof-free" had quietly bundled
 > away *zero runtime cost*. The slab prises them apart: a *concentrated* seam can still be
 > *non-erasable*. Seam width (horn 3) and zero-cost (#6) are independent axes — the slab aces the
 > first and spends the second. And #6 was one of the casualties back in Part 7's unified result;
-> the constructive phase puts it back on the map. *(The fifth primitive, below, forces the second
-> un-bundling — and turns "3-of-4" into "3-of-N".)*
+> the constructive phase puts it back on the map. *(The fifth and sixth primitives, below, force two
+> more un-bundlings — API-locality, then legibility and solver-freedom — turning "3-of-4" into
+> "3-of-N".)*
 
 *(A teaching aside from the real run: the slab's **first** cold gauntlet FAILED on a genuine UB —
 but the bug was in the **spec** (a generation-only check authenticates a fresh pool's vacant
@@ -534,8 +535,42 @@ This forced the **second** un-bundling, and the project's deepest structural res
 > primitives have now exposed three more independent axes — zero-cost (#6), API-locality (#5), and
 > AI-legibility (#7) — each proven real by a *witness that two trilemma-identical configurations
 > differ*. They even have structure: within the branded index, #5 and #6 **trade** (range-branding
-> buys erasure by deepening the brand tax). The full face lattice — which property-subsets have a
-> witness, and the one still-unwitnessed claim (#5 ⟂ #7) — is `design_seam/REALIZABILITY.md`.
+> buys erasure by deepening the brand tax). The full face lattice is `design_seam/REALIZABILITY.md`.
+> *(One claim was still only argued here — that #7 is independent of #5. The sixth primitive
+> witnesses it.)*
+
+### Primitive 6 — refinement-typed bounds → CLOSES the cell #5⟂#7 (`seam/src/refined.rs`)
+
+The branded index left a gap: it pays #5 *and* #7 together (a brand is viral *and* a nominal token),
+so it cannot prove they are *separate* axes — for that you need an **off-diagonal**, a primitive that
+agrees with another on #5 but differs on #7. That is what a **refinement type** gives. Instead of a
+brand, the witness is a **legible predicate**: `i: usize{i < len}` is "a `usize` the checker has
+*proven* less than `len`," discharged by an SMT solver over a decidable arithmetic fragment (this is
+**Flux** for Rust, Lehmann et al. 2023, and **Liquid Haskell**, Vazou et al. 2014). It is the exact
+opposite corner from the brand:
+
+- **brand-free** (#5 aced): a `Refined` is a plain value — you can store it, return it from a
+  function, collect it into a `Vec`. The keystone test does exactly that, and it is a *compile error*
+  for the branded `Idx<'id>` (whose `'id` cannot escape its scope). No brand, no closure.
+- **legible** (#7 the opposite of the brand): the predicate `value < bound` *is* the type's contract;
+  an outside reasoner reconstructs the safety invariant from the signature alone.
+
+So pair it against the **slab**, reclassified **(brand-free, *illegible*)** — a `Copy` `Key`'s
+live-slot validity is *not* reconstructible from its type (the earlier table's "legible" was too
+generous, and two cold attackers independently endorsed the correction). Refined-vs-slab now holds
+#5 fixed (both brand-free) and **flips #7**; branded-vs-slab holds #7 fixed and flips #5. The cold
+judge ruled it outright: **"#5⟂#7 close? — YES."** AI-legibility is a *confirmed* independent axis.
+
+And the refined index forced a **third** un-bundling — of **horn 2** itself. A refinement type is
+*decidable* (the fragment terminates) but not *solver-free*: it needs an SMT solver in the trusted
+toolchain. So "decidable & proof-free" was a bundle of **decidability** and **solver-freedom**, and
+the refined index pays the second. (Honest guard: that solver-in-the-TCB cost is *not* a new seventh
+axis — it is the original `unified` result's "keep the invariant faithfully → external prover" horn,
+the documented founding tradeoff of refinement types since DML in 1998. The map gains *resolution*,
+not a dimension.) Two more cold findings sharpened the artifact: the **R2 trade** (you can have
+brand-free *or* zero-cost, not both — the #5↔#6 exchange again, from the other side), and a real
+expressiveness bug (the model checked `bound == len` where safety needs only `bound ≤ len` — fixed).
+Verdict: **SEAM-COSTS [horn 2]**.
 
 ### The taxonomy (the whole point, in one table)
 
@@ -544,13 +579,15 @@ This forced the **second** un-bundling, and the project's deepest structural res
 | SPSC queue | floor-expressible (affinity/NLL/`Send`) | **closes** | nothing — every axis ✓ |
 | Slab | runtime-checkable (generation) | **closes** | zero-cost (#6) |
 | Branded index | cross-object identity (generative brand) | **closes** | API-locality (#5); brand is illegible (#7); #6 deferred |
+| Refined index | in-bounds via a legible predicate (SMT) | **closes** | solver-freedom (horn 2); R2 trade — brand-free *xor* zero-cost |
 | MMIO | external physical axiom | **sound modulo TCB** | a trusted `assume` |
 | Intrusive list | aliasing+liveness that escapes to the caller | **breaks** | a trilemma horn |
 
-The decontamination signal (Part 6) held across all five: the obstruction *vanished* (SPSC),
+The decontamination signal (Part 6) held across all six: the obstruction *vanished* (SPSC),
 *moved and stayed decidable* (MMIO), *moved onto a runtime witness* (slab), *moved onto the type
-surface* (branded index), or *moved and broke soundness* (intrusive) — and **where it moves is the
-entire verdict.**
+surface* (branded index), *moved into the trusted toolchain* (refined index — out of the program
+entirely, into the SMT solver), or *moved and broke soundness* (intrusive) — and **where it moves is
+the entire verdict.**
 
 ---
 
@@ -566,9 +603,9 @@ Instantiated: `spsc_seam_closes` (precondition = witness → closes); `intrusive
 (precondition is the gap → no closing decision exists); the slab pairing
 `slab_runtime_closes_but_static_does_not` (the *same* precondition closes through a *runtime*
 witness but not a *static* one — the zero-cost axis, made formal at the model level); and
-`branded_seam_closes` (closes *indistinguishably from SPSC* in the kernel — which is the point: the
-branded index's whole difference, the viral type-parameter cost, is invisible to a kernel that sees
-only whether a Boolean witness suffices).
+and `branded_seam_closes`/`refined_seam_closes` (both close *indistinguishably from SPSC* in the
+kernel — which is the point: the branded index's viral type-parameter cost and the refined index's
+solver dependency are alike invisible to a kernel that sees only whether a Boolean witness suffices).
 
 **The honest bound — and why it matters as a lesson.** A cold adversarial review of the proof
 returned the right verdict: the *checked* math is a real characterization, but the *faithfulness*
@@ -606,8 +643,8 @@ You can forget every primitive and keep these.
    a cheap/checked world and a trusted/proven one. The amateur move is to pretend it isn't there;
    the professional move is to (a) put it in one place (concentration), (b) make the obligation
    at it as visible as possible, and (c) choose *consciously* whether the boundary costs you
-   soundness, decidability, concentration, runtime, or API surface. The five-primitive taxonomy is a
-   decision procedure for that choice.
+   soundness, decidability, concentration, runtime, API surface, or a solver in your toolchain. The
+   six-primitive taxonomy is a decision procedure for that choice.
 
 4. **Adversarial separation of build and break.** Construction wants continuity; demolition wants
    a cold, context-free skeptic. Keeping them as separate machines — and *calibrating* your
@@ -622,10 +659,14 @@ You can forget every primitive and keep these.
 
 6. **A bundled property hides axes; the witness that splits them proves they were there.** "Pick 2
    of 3" framings are clean, but a horn is often a *bundle* — "concentrated & proof-free" hid zero
-   runtime cost; "concentration" hid the difference between code crossings and type infection. You
+   runtime cost; "concentration" hid the difference between code crossings and type infection; even
+   "decidable" hid the difference between a terminating checker and a solver in your TCB. You
    discover a folded axis exactly one way: exhibit two artifacts the framing calls identical that
    *measurably differ* on the candidate (the slab vs. SPSC on runtime; the branded index vs. the
-   slab on the type surface). Until you have that witness, a "new axis" is a hunch; with it, the
+   slab on the type surface). And mind the geometry: to prove two axes *independent* you need an
+   **off-diagonal** — two artifacts that agree on one axis and flip the *other* (the refined index
+   and the slab are both brand-free but differ on legibility; a single brand-free-and-legible point
+   would not have done it). Until you have that witness, a "new axis" is a hunch; with it, the
    dimension is real. Your tidy trilemma may be a shadow — look for the object casting it.
 
 ---
@@ -643,14 +684,15 @@ You can forget every primitive and keep these.
 typed atomic cell, a bump allocator handing out overlapping views, a `Pin`-based self-referential
 struct — write the spec + a `rustc`-checked toy, predict which horn (or recovered axis) it hits,
 and run it through the harness (`python3 -m orchestrator.seam_phase --spec ... --gauntlets 1
---prior-art-web`). **The sharpest open target is the one claim the project argued but never
-witnessed:** the trilemma is now a 3-of-N projection (the slab recovered zero-cost #6; the branded
-index recovered API-locality #5 and surfaced AI-legibility #7). But in the five-primitive corpus #5
-and #7 still *co-vary* — the brand is both viral and illegible. A **refinement-typed seam** (a
-Flux-style `i: usize{i < len}` bounds proof) should sit at *brand-free yet legible* — the
-off-diagonal that would separate #7 from #5 for real. Build it; if the cold panel agrees it pays
-neither #5 nor #7, you have promoted a sixth axis from "argued" to "confirmed." (See
-`design_seam/REALIZABILITY.md` for exactly which cell is empty.)
+--prior-art-web`). The trilemma is now a 3-of-N projection with **six** confirmed axes (the slab
+recovered zero-cost #6; the branded index recovered API-locality #5; the refined index confirmed
+AI-legibility #7 and un-bundled horn 2 into decidability vs solver-freedom). **The open frontier is
+to keep going:** is there a primitive that splits a *seventh* axis — e.g. one that dissociates
+*decidability* from *termination-of-the-checker*, or surfaces something the original seven properties
+never named at all (the API-locality axis was already outside the seed list)? The method is
+mechanical and the harness is reusable: build the smallest `rustc`-checked toy whose precondition has
+a genuinely new shape, predict the axis, and let the cold panel adjudicate. (See
+`design_seam/REALIZABILITY.md` for the current face lattice and which cells are filled.)
 
 **Reading path, in dependency order:**
 1. *The Rust Book*, ownership/borrowing chapters — the affine system in practice.
@@ -665,9 +707,13 @@ neither #5 nor #7, you have promoted a sixth axis from "argued" to "confirmed." 
    branded indices for bounds-check elision, two decades early); Beingessner ("Gankra"), *You Can't
    Spell Trust Without Rust* (MSc thesis, Ch. 6.3); bluss's `indexing` crate. This lineage *is* the
    fifth primitive, and the source of its API-locality cost.
-6. **Verus** and **Creusot** docs — what "Rust but `unsafe` is proof" actually looks like when
+6. **Refinement types** — **Flux: Liquid Types for Rust** (Lehmann, Geller, Vazou, Jhala, PLDI 2023,
+   the brand-free predicate witness *on Rust's own floor*) and **Liquid Haskell** (Vazou et al., ICFP
+   2014). This pair *is* the sixth primitive, and the source of its solver-in-the-TCB cost — the
+   founding tradeoff named back in DML (Xi & Pfenning 1998).
+7. **Verus** and **Creusot** docs — what "Rust but `unsafe` is proof" actually looks like when
    someone ships it (the productive horn from Part 8).
-7. This repo's `WRITEUP.md` (the full result), `design_seam/SYNTHESIS.md` (the five-primitive map),
+8. This repo's `WRITEUP.md` (the full result), `design_seam/SYNTHESIS.md` (the six-primitive map),
    `design_seam/REALIZABILITY.md` (the face lattice / 3-of-N proof), and `THE-SAME-WALL.md` (the
    cross-field boundary/veil discipline).
 
