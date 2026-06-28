@@ -698,10 +698,73 @@
       "outcome": "TRADEOFF",
       "cost_usd": 2.4326,
       "timestamp": "2026-06-28T11:41:30+00:00"
+    },
+    {
+      "round": 12,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_typed_nat.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 a type-level proof of in-bounds indexing (re-import rule under attack)\n\nThis is a **design proposal** for an eighth *seam* in the same hypothetical systems language (same\nfloor, same rules) as the SPSC, MMIO, intrusive-list, slab, branded-index, refined-index, and\nshared-ownership seams. A seam re-exports a dangerous primitive as a checked safe interface ordinary\ncode uses with no `unsafe` and no proofs. Attack the re-export: can ordinary safe code, using only\nthis interface, reach undefined behavior (UB)? **And** adjudicate the axis question this primitive was\nbuilt to settle (\u00a76).\n\nYou are attacking a **text specification** backed by real `rustc`-checked code (`seam/src/typed_nat.rs`).\n\n---\n\n## 0. The floor (stipulated, not under attack)\n\nRust's borrow checker exactly as shipped (NLL: moves, `&T`/`&mut T`, lifetimes, affinity, `Drop`,\n`Send`/`Sync`, **trait resolution**, `#![recursion_limit]`). The floor has trait resolution but **no\nSMT solver, no refinement types, and no dependent const-generic naturals**. This proposal uses the\n*trait resolver itself* as the proof engine \u2014 which is exactly why it pays where it pays. Do not\nattack the borrow checker; attack the re",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Sound, but index must be a compile-time type; cannot express runtime indexing (ring buffer/arena/slab); axis is encoding artifact + prior art.",
+          "strongest_point": "get::<I> takes a type, not a usize, so it cannot index by any runtime value \u2014 i.e. it cannot express the ring buffer, arena, or slab it benchmarks against, unlike its own runtime-carrying branded/refined siblings."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Lt encodes < exactly; sealed Nat + orphan rule block forgery; new binds Len soundly; no OOB reachable",
+          "strongest_point": "The access chain depth(I)<depth(Len)=Len::VALUE=data.len() is airtight, and every forgery route (lying Nat, false Lt, slice swap, over-large Len) is blocked by sealing, the orphan rule, or new's conservative equality check."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Sound, but checker-tractability \u2717 is a unary-encoding artifact; binary typenum flips the cell, so no eighth axis.",
+          "strongest_point": "The off-diagonal cell measures the numeral encoding (unary vs binary), not the primitive \u2014 typenum's binary naturals give O(log N) resolution and flip typed_nat back to checker-tractable, collapsing the claimed third independent face into ordinary type-checking complexity."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Index is compile-time-only; dynamic/loop indexing \u2014 the whole point of unchecked access \u2014 is inexpressible without escaping the seam.",
+          "strongest_point": "The index I is a turbofish type, never a runtime value, so no hot-loop/search/gather indexing can use this seam, and that same static-only restriction confounds the \u00a76 off-diagonal by silently flipping expressiveness alongside checker-tractability."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Sound re-import; the eighth axis is real but pre-existing (GHC UndecidableInstances/Paterson + recursion_limit), and mislabeled.",
+          "strongest_point": "The \u2717 column is not about tractability \u2014 Lt resolution is linear, cheaper than refined's QF-LIA \u2014 it is the classic terminating-resolution/UndecidableInstances concern, a named pre-existing property, not novel."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "genuine-flaw",
+          "attacker-soundness": "argued-past",
+          "attacker-implementation": "genuine-flaw",
+          "attacker-expressiveness": "genuine-flaw",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Re-import is sound but indexes only compile-time-constant positions; runtime/dynamic indexing \u2014 the actual payoff of get_unchecked (ring/arena/slab) \u2014 is inexpressible, making typed_nat a strict expressive subset of its branded/refined siblings; the 'equal terms' comparison must be retracted.",
+          "The recursion_limit / E0275 horn-2 cost is a unary-Peano encoding artifact; binary type-level naturals (typenum UInt) give O(log N) depth and avoid the knob for realistic indices \u2014 the table cell must be restated as 'unary type-level naturals', not 'typed_nat'.",
+          "If retained, the axis must be renamed from 'checker-tractability' to terminating/total resolution (Lt is linear, cheaper than refined's QF-LIA), and recorded as real-but-pre-existing: GHC UndecidableInstances/Paterson + -freduction-depth \u2245 recursion_limit, Mairson 1990, typenum."
+        ],
+        "headline": "Re-import sound, but the eighth-axis off-diagonal is confounded by expressiveness and encoding-dependent.",
+        "rationale": "No UB path exists \u2014 soundness holds unanimously. But the proposal's foregrounded deliverable fails: the independence off-diagonal silently flips expressiveness (static-only indexing) alongside checker-tractability, and the decisive \u2717 cell is a unary-encoding artifact (binary flips it). Even the friendly attacker shows the axis is mislabeled. Revise."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.783,
+      "timestamp": "2026-06-28T14:39:09+00:00"
     }
   ],
   "settled": [],
   "incompatibilities": [],
   "blind_spot_flags": [],
-  "total_cost_usd": 23.2682
+  "total_cost_usd": 26.0512
 }
