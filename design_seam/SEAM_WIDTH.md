@@ -40,7 +40,7 @@ A primitive whose precondition has a conjunct that *cannot* be internalized (one
 caller-owned state) would force the caller to carry it — pushing seam width from O(buffers)
 toward O(operations). That is the Phase-C contrast (MMIO; intrusive list).
 
-## All eight primitives — and why seam width misses *several* axes, not one
+## All nine primitives — and why seam width misses *several* axes, not one
 
 | Primitive | Consumer seam width | Runtime cost (zero-cost #6) | Type surface (API-locality) |
 |---|---|---|---|
@@ -51,6 +51,7 @@ toward O(operations). That is the Phase-C contrast (MMIO; intrusive list).
 | Refined index | **O(1)/index** (`refine` once) | erases on a real Flux floor; the cost moves to an **SMT solver in the TCB** (horn 2) | plain `Refined` — non-viral; the value *escapes* |
 | Shared (Rc) | **O(1)** — `new`/`clone`/deref/drop are safe calls | **non-zero** — a refcount inc/dec, never erased — *and* a **global allocator** (bare-metal #5) | plain `Shared` — non-viral |
 | Type-level index | **O(1)/buffer** (`Bound::new` once) | **erases fully** — the proof is a trait bound; cost moves to the **resolver's fuel** (`recursion_limit`, horn 2) — but that cost is encoding-relative + confounded, *not a clean axis* | plain turbofish `I` — non-viral; **but static-index-only** (a hidden *expressiveness* cost no width/cost/type column captures) |
+| Take-and-replace | **O(1)/call** (`take(slot,f)` once) | erases on the happy path (the abort-bomb is a ZST `mem::forget`-ten); mild codegen dent (an optimization barrier) | plain `take` — non-viral; **but a mid-take panic aborts the process** (the 8th axis, **unwind-safety** — a hidden cost no width/cost/type column captures) |
 | Intrusive list (branded) | **O(accesses)** — the token threads through every access | (design A erases; the cost is seam width / lost reclaim) | **viral `'brand`** |
 
 **Two instructive rows now show seam width is necessary but not sufficient.** The slab *aces* seam
@@ -64,17 +65,20 @@ horn 3) and a *type* face (API-locality) — that the branded index pulls apart,
 pulled zero-cost out of "concentrated & proof-free."
 
 That a primitive can be O(1) on this instrument and *still* impose a real consumer tax on two
-distinct hidden axes is precisely why the Seam Trilemma is a **3-of-N projection (N ≥ 7)**, not
+distinct hidden axes is precisely why the Seam Trilemma is a **3-of-N projection (N ≥ 8)**, not
 3-of-3. Seam-width measures one axis well and is blind to the rest.
 
-The **type-level index** row sharpens the same point from the opposite direction — and is a caution
-against *over*-counting. It is O(1) on width, *fully erases* (the one row besides SPSC/MMIO to do so),
-and is non-viral in the type surface — it looks like a near-perfect corner. Yet its real consumer tax,
-**static-index-only expressiveness** (it cannot index a runtime `usize` at all), is invisible to *all
-three* of this instrument's columns. That invisibility is exactly what let the builder mistake it for a
-clean "checker-tractability" axis — and exactly what the cold panel caught: an instrument blind to
-expressiveness will read a confounded off-diagonal as a clean one. The eighth-axis claim was
-**rejected** (the cost is also encoding-relative; `recursion_limit` is a unary-Peano artifact). So
-N stays 7: seam-width is blind to several real axes, *and* a primitive that aces every column it can
-see may still be paying on one it cannot. See `REALIZABILITY.md` for the full face lattice (including
-the eighth probe's recorded failure) and `SYNTHESIS.md` for the cross-primitive map.
+**Two more rows sharpen the same point from the opposite direction — and are a caution against both
+over- and under-counting.** The **type-level index** is O(1) on width, *fully erases*, and is non-viral
+— a near-perfect corner — yet its real tax, **static-index-only expressiveness** (it cannot index a
+runtime `usize`), is invisible to *all three* columns. That invisibility is what let the builder
+mistake it for a clean "checker-tractability" axis, and what the cold panel caught: an instrument blind
+to expressiveness reads a confounded off-diagonal as clean, so the eighth-axis claim there was
+**rejected**. The **take-and-replace** row is the mirror image: it *also* aces width, erases on the
+happy path, and is non-viral — and its real tax, **unwind-safety** (a mid-take panic aborts the
+process), is *also* invisible to all three columns. But this time the hidden cost was a **clean** axis:
+the panel **confirmed** it as the eighth (N ≥ 8). So the lesson cuts both ways — a primitive that aces
+every column the instrument can see may be paying on a hidden axis that is *real* (take) or *confounded*
+(type-level index), and only a richer adjudication (the cold panel) tells them apart. See
+`REALIZABILITY.md` for the full face lattice (the confirmed eighth axis and the rejected probe) and
+`SYNTHESIS.md` for the cross-primitive map.
