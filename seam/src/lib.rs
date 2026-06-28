@@ -118,6 +118,16 @@ pub mod refined;
 /// the slab (both runtime-costly; only `shared` needs a manager). See `shared`.
 pub mod shared;
 
+/// Eighth seam (Phase G — the checker-tractability axis): a type-level *proof* of in-bounds
+/// indexing. Same danger as the branded/refined seams (`get_unchecked`), a third witness: the
+/// in-bounds fact is the trait bound `I: Lt<Len>`, discharged by the compiler's resolver and fully
+/// erased — no brand, no value, *and no external solver*. It is the off-diagonal that un-bundles horn
+/// 2 a second time: where the refined index is decidable-but-solver-bound, this is solver-free but its
+/// checker halts only under `#![recursion_limit]` (resolution depth = the index value). That isolates
+/// **checker-tractability** — distinct from both decidability and solver-freedom — making horn 2 a
+/// product of *three* faces. See `typed_nat`.
+pub mod typed_nat;
+
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 use core::sync::atomic::{AtomicUsize, Ordering};
