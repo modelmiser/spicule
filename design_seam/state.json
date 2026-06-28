@@ -888,10 +888,74 @@
       "outcome": "SURVIVED",
       "cost_usd": 1.7628,
       "timestamp": "2026-06-28T15:41:00+00:00"
+    },
+    {
+      "round": 15,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_selfref.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 a self-referential cell (re-import rule under attack)\n\nThis is a **design proposal** for an eleventh *seam* in the same hypothetical systems language (same\nfloor, same rules) as the SPSC, MMIO, intrusive-list, slab, branded-index, refined-index,\nshared-ownership, type-level-index, take-and-replace, and drain-and-yield seams. A seam re-exports a\ndangerous primitive as a checked safe interface ordinary code uses with no `unsafe` and no proofs.\nAttack the re-export: can ordinary safe code, using only this interface, reach undefined behavior (UB)?\n**And** adjudicate the axis question this primitive was built to settle (\u00a76).\n\nYou are attacking a **text specification** backed by real `rustc`-checked code (`seam/src/selfref.rs`).\n\n> **Context the builder is being honest about.** The lattice has **nine** confirmed axes. The probes\n> past seven have gone: checker-tractability **rejected** (confounded with expressiveness), unwind-safety\n> **confirmed** (clean), leak-freedom **confirmed** (clean, distinct from unwind-safety). This primitive\n> probes a tenth \u2014 **move-stability** \u2014 and the builder's honest expectation is that it may *not* be\n> cleanly isolable: every Rust witness ",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Sound but ATS2-unusable: core-only safe fragment only covers single-frame cells that can never enter a list, future, or slab.",
+          "strongest_point": "The 'crisp' stack-pin witness isolates move-stability only by confining the cell to one stack frame where it does nothing real; any usable composition forces unsafe pin-projection or bare-metal, so the \u00a76 'isolation' measures the cost of a toy."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Canonical Pin + !Unpin self-ref pattern; pin-then-init closes the only gap, all move paths need Unpin.",
+          "strongest_point": "Every safe move path (swap/replace/take/get_mut, even via Option projection) routes through a capability that requires Unpin, which SelfRef lacks, so no post-init move is expressible."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Re-import implies no new compiler pass; all checks (Unpin auto-trait, move, region) are shipped and polynomial. No safe UB path.",
+          "strongest_point": "The invariant is encoded in the receiver type (Pin<&Self>), so M2 needs only O(1) local trait/move checks \u2014 not the interprocedural move/escape analysis a na\u00efve 'no-move-since-init' checker would require \u2014 and that same viral-typing mechanism is precisely why move-stability reduces to (inseparable from) API-locality rather than forming a clean tenth axis."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Sound; no expressiveness escape forced. Axis ruling is (3) inseparable, but \u00a76's 'API-locality alone' framing is wrong.",
+          "strongest_point": "Pin is strictly heavier than a viral type (it strips the move capability), so move-stability's cost isn't borrowed API-locality but immovability paying for itself \u2014 confirming inseparability while refuting the proposal's stated confound."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Canonical RFC 2349; axis-ruling (3) is right but omits the decisive rejected `?Move` immovable-types precedent.",
+          "strongest_point": "The 'no free-standing witness can exist on this floor' claim is contingent, not necessary: RFC 2349 explicitly designed and rejected immovable `?Move` types precisely because their cost was pervasive API-infection \u2014 confirming inseparability while showing the floor *chose* to deny address-stability a free-standing form."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "argued-past",
+          "attacker-implementation": "argued-past",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "TRADEOFF",
+        "tradeoffs": [
+          "Move-stability is a distinct danger (a value's address; orthogonal to all nine axes) but has NO free-standing core-only witness isolating its cost: stack-pin spends API-locality, Box::pin spends bare-metal, scope spends API-locality. Ruling: outcome (3), real but structurally inseparable; N stays 9 with a new 'inseparable' category.",
+          "Correction: \u00a73's 'isolated to API-locality alone' is inaccurate. The cost paid is immovability (revocation of move/return/store) \u2014 move-stability funding itself \u2014 distinct from and heavier than API-locality. Record corrected framing.",
+          "Correction: 'no free-standing witness CAN exist on this floor' is contingent, not necessary. RFC 2349's rejected ?Move/Move immovable types were a designed free-standing witness, rejected for pervasive API-infection; the floor's denial is a recorded design choice. Add citation.",
+          "Disclosed-but-sharpened cost: the core-only, unsafe-free safe fragment covers only single-frame cells; any real composition (intrusive node, future, slab entry) forces unsafe pin-projection or bare-metal Box::pin \u2014 so \u00a76's 'crisp isolation' is the isolation of a non-composable value."
+        ],
+        "headline": "Self-ref cell re-import is sound; move-stability real but structurally inseparable (outcome 3)",
+        "rationale": "All five concede no safe UB (Pin+!Unpin forecloses every post-init move); soundness SURVIVES. But the \u00a76 deliverable lands on (3): a distinct address-stability danger with non-uniform, inseparable cost, plus three recordable framing corrections. Admissible only with those tradeoffs and a new meta-category."
+      },
+      "outcome": "TRADEOFF",
+      "cost_usd": 1.7928,
+      "timestamp": "2026-06-28T16:07:59+00:00"
     }
   ],
   "settled": [],
   "incompatibilities": [],
   "blind_spot_flags": [],
-  "total_cost_usd": 29.8136
+  "total_cost_usd": 31.6064
 }
