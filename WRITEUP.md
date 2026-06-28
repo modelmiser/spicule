@@ -397,8 +397,9 @@ decidable trait bounds):
 | **Refined index** | SEAM-COSTS [horn 2] | all 3 horns hold | **O(1)/index**, brand-free (the value *escapes*) | *In-bounds via a legible predicate* (Flux/Liquid Haskell) — the **(brand-free, legible)** corner that **closes the #5⟂#7 cell** against the slab's brand-free-but-illegible handle. Un-bundles **horn 2** into *decidability* ✓ vs *solver-freedom* ✗ (SMT in the TCB — the `unified` "keep" horn, not a new axis). The R2 trade: brand-free ⟹ runtime check; zero-cost ⟹ length-brand. |
 | **Shared (Rc)** | SEAM-COSTS [bare-metal] | all 3 horns hold | **O(1)**, brand-free; needs a heap | *Dynamic shared ownership via a runtime refcount manager* — recovers seed **#5 bare-metal**: the sole seam needing `alloc` (compile-enforced; the crate is `#![no_std]`). A genuine seventh axis (⟂ zero-cost via the slab/`heapless` off-diagonal), but the judge deflated novelty — it *is* Rust's `core`/`alloc` boundary (RFC 2480). |
 | **Type-level index** | **FAILED** [axis deliverable]; sound | all 3 horns hold; pays a recorded horn-2 cost | **O(1)**, brand-free, erases | *In-bounds via a compile-time trait proof `I: Lt<Len>`.* Sound (sealed `Nat` + orphan rule, unanimous), zero-cost, solver-free. Pitched as recovering an eighth **checker-tractability** axis — **rejected**: the off-diagonal is confounded with a strict expressiveness loss (static-index-only), the `recursion_limit` cost is encoding-relative (binary numerals erase it), and the axis is mislabeled (`Lt` is *linear* — the real concern is **terminating-resolution**, Paterson / `UndecidableInstances`). No new axis; **N stays 7**. |
+| **Take-and-replace** | SEAM-COSTS [none] (TRADEOFF) | all 3 horns hold; pays the 8th axis | **O(1)**, brand-free, zero-cost happy path | *Transient broken invariant across an unwind, via an abort-bomb (`take_mut`).* Moving a value out of a `&mut T` and back leaves a duplicate in the gap; an unwinding panic drags the caller into a double-drop. Aces all seven prior axes, pays on **unwind-safety (8th axis)** alone — the *clean* off-diagonal the type-level index lacked. Confirmed **N ≥ 8**, deflated to pre-existing (Abrahams; `noexcept`; `UnwindSafe`; RFC #1508 rejected this exact `take_mut` from std on this cost). The axis = *exception-safety-guarantee-level*; abort is one **discharge** (vs `replace_with` paying API-surface) — a discharge menu. |
 
-**Four primitives forced a deeper finding: the Seam Trilemma is a 3-of-N projection (N ≥ 7).** The
+**Five primitives forced a deeper finding: the Seam Trilemma is a 3-of-N projection (N ≥ 8).** The
 **slab** keeps all three horns yet pays on *zero runtime cost* (#6), the property the trilemma had
 folded into "concentrated & proof-free." The **branded index** keeps all three horns *and* aces
 seam-width, yet the cold panel found a real cost "outside the three horns": its generative brand is a
@@ -414,24 +415,32 @@ the judge ruled **#5⟂#7 closes — yes**. It also un-bundled **horn 2** into *
 The **shared-ownership seam** (a minimal `Rc`) then recovered seed property **#5 bare-metal**: dynamic
 shared ownership needs a runtime refcount *manager* (a global heap), which a fixed-pool slab does not —
 so it adds a genuine seventh axis (the judge confirmed it ⟂ zero-cost via the slab/`heapless`
-off-diagonal). The taxonomy of *what the missing conjunct is* and *which axis closing it spends*:
-floor-expressible → closes free (SPSC); runtime-checkable → spends #6 (slab; `RefCell`); cross-object
-identity via a brand → spends API-locality, #5↔#6 *trade* (branded index; `indexing`); in-bounds via
-a legible predicate → spends solver-freedom, R2 trade again (refined index; Flux); dynamic shared
-ownership → spends bare-metal, bare-metal↔capacity trade (shared; `Rc`/`heapless`); external physical
-axiom → sound modulo a TCB `assume`, outside the axes (MMIO); whole-heap aliasing+liveness escaping to
-the caller → a horn genuinely drops (intrusive). The recovered axes are exactly the casualties of the
+off-diagonal). The **take-and-replace seam** then recovered an eighth: moving a value out of a `&mut T`
+and back is sound across an unwind only via an abort-bomb, which pays **unwind-safety** — a clean
+off-diagonal (it aces all seven prior axes, splitting from SPSC on the guarantee-level alone), confirmed
+N ≥ 8 and deflated to pre-existing (Abrahams' exception-safety). The taxonomy of *what the missing
+conjunct is* and *which axis closing it spends*: floor-expressible → closes free (SPSC);
+runtime-checkable → spends #6 (slab; `RefCell`); cross-object identity via a brand → spends
+API-locality, #5↔#6 *trade* (branded index; `indexing`); in-bounds via a legible predicate → spends
+solver-freedom, R2 trade again (refined index; Flux); dynamic shared ownership → spends bare-metal,
+bare-metal↔capacity trade (shared; `Rc`/`heapless`); transient broken invariant across an unwind →
+spends unwind-safety via a *discharge menu* (abort / repair / poisoning) (take; `take_mut`↔`replace_with`);
+external physical axiom → sound modulo a TCB `assume`, outside the axes (MMIO); whole-heap
+aliasing+liveness escaping to the caller → a horn genuinely drops (intrusive). The recovered axes are exactly the casualties of the
 original `unified` result, put back on the map one witness at a time — **and, the honest headline,
 each turns out to be an already-named PL boundary** (zero-cost abstraction, generativity, refinement-
-legibility, `core`/`alloc`). Twice the panel deflated a "new dimension" to "real but pre-existing" —
-and a third time, on an **eighth probe** (a type-level-proof index pitched as recovering
-*checker-tractability*), it went further and **rejected the axis outright**: the candidate's
-off-diagonal was confounded with a strict expressiveness loss (the seam is static-index-only), its
-cost was encoding-relative (binary type-level naturals erase it), and it was mislabeled
-(terminating-resolution — Paterson / `UndecidableInstances` — `Lt` resolution being *linear*, cheaper
-than refined's QF-LIA). So **N stays 7**, and the result is the *unification* of known PL axes under
-one "what does the witness cost?" rubric, not their discovery — by a method that also *refuses*
-candidates that do not dissociate cleanly. Full face lattice: `design_seam/REALIZABILITY.md`.
+legibility, `core`/`alloc`, exception-safety). The panel showed all three adjudication modes. It
+**confirmed-but-deflated** two new dimensions to "real but pre-existing" (bare-metal; and unwind-safety,
+on the take-and-replace seam). It **sharpened without extending** once (solver-freedom = horn 2's "keep"
+face). And on the *first* eighth-axis probe — a type-level-proof index pitched as *checker-tractability*
+— it **rejected the axis outright**: that candidate's off-diagonal was confounded with a strict
+expressiveness loss (the seam is static-index-only), its cost was encoding-relative (binary type-level
+naturals erase it), and it was mislabeled (terminating-resolution — Paterson / `UndecidableInstances` —
+`Lt` resolution being *linear*, cheaper than refined's QF-LIA). It was the *second* eighth-axis probe
+(take-and-replace) that supplied the clean off-diagonal and carried the count to **N ≥ 8**. So the
+result is the *unification* of known PL axes under one "what does the witness cost?" rubric, not their
+discovery — by a method that both *confirms* a clean witness and *refuses* a confounded one. Full face
+lattice: `design_seam/REALIZABILITY.md`.
 
 **Decontamination, across primitives.** The seamful2 theorem predicted that a failing seam's
 obstruction *relocates* to the re-import boundary rather than vanishing. SPSC: it **vanished**
@@ -447,12 +456,14 @@ obstruction went somewhere genuinely new, neither code-crossing nor runtime. Ref
 program entirely. Shared (Rc): it **moved into a runtime subsystem** (the global allocator) and
 stayed sound + brand-free — into a heap the no-`std` target does not have. Type-level index: it
 **moved onto the trait resolver's fuel budget** (`recursion_limit`) and stayed sound — but *that*
-landing site, unlike the previous six, turned out **not to be a clean axis** (it confounds with
-expressiveness and is encoding-relative). "Moves, doesn't vanish" held for all seven
-non-trivially-encapsulable primitives, and *where* it moved was the whole verdict — including the one
-case where the destination was a mirage.
+landing site turned out **not to be a clean axis** (it confounds with expressiveness and is
+encoding-relative). Take-and-replace: it **moved onto the unwind path** (a mid-take panic becomes a
+process abort) and stayed sound — and *that* site **was** a clean axis (unwind-safety). "Moves, doesn't
+vanish" held for all eight non-trivially-encapsulable primitives, and *where* it moved was the whole
+verdict — including the one case where the destination was a mirage and the one where it was the eighth
+axis.
 
-**The adversary earned its keep — seven times.** On MMIO it named the axiom's category correctly
+**The adversary earned its keep — eight times.** On MMIO it named the axiom's category correctly
 (a TCB boundary, not a horn) and surfaced a horn-3 cost the builder had under-weighted. On the
 intrusive list it proved something *worse* than the builder predicted: branding does not restore
 soundness at all (a brand is an *access* capability, not a *storage* lifetime), correcting a real
@@ -472,9 +483,16 @@ bare-metal↔capacity trade — forcing the honest "unification, not discovery" 
 independent attackers converged that the type-level index's "checker-tractability" off-diagonal is
 confounded with expressiveness (static-index-only, intrinsically), encoding-relative (binary numerals
 erase the cost), and mislabeled (terminating-resolution, not tractability; `Lt` is linear). The
-builder took it on the chin — **N stays 7**. Spec↔impl divergences, sharpened overclaims, two
-novelty-deflations, and one outright axis-rejection — exactly what build/break separation exists to
-surface. A discovery procedure that cannot say "no" is not measuring anything; this one said it.
+builder took it on the chin — N stayed 7 on that probe. And on the **second eighth-axis probe**
+(take-and-replace) it did the complementary thing: confirmed unwind-safety as a real axis (**N ≥ 8**)
+on a clean off-diagonal, but corrected two builder framings — the axis is the
+*exception-safety-guarantee-level* (abort is merely this seam's discharge of it; `replace_with` pays
+API-surface instead, a discharge menu), and prior-art surfaced that **RFC #1508 rejected this exact
+`take_mut` from std** on the very abort cost scored, so "ace seven, pay one" was the historically losing
+argument. Spec↔impl divergences, sharpened overclaims, two novelty-deflations, one outright
+axis-rejection, and one clean axis-confirmation-with-relabel — exactly what build/break separation
+exists to surface. A discovery procedure that can neither say "no" nor "yes, but here's the right name"
+is not measuring anything; this one did both.
 
 **Mechanization.** `proof/SeamGap.lean` was upgraded from the one-direction triviality its own
 cold review had flagged to a genuine characterization — `seam_closes_iff_factors`: a seam
