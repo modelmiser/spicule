@@ -65,6 +65,14 @@
 //! And the sound use *does* type-check — see `tests/sound_use.rs`.
 
 #![forbid(unsafe_op_in_unsafe_fn)]
+// The crate is `#![no_std]` — and that is load-bearing for the seventh seam's axis. Seams 1–6
+// (SPSC, MMIO, slab, intrusive, branded, refined) are `core`-only: they need no heap, no
+// allocator, no runtime. The `extern crate alloc` below exists **solely** for `shared` (seam 7),
+// the one primitive whose sound re-import requires a runtime memory manager (a global allocator +
+// refcount lifecycle). Delete `pub mod shared` and you can delete `extern crate alloc`; the other
+// six still compile. That compile-enforced fact *is* the seventh axis: bare-metal / runtime-freedom.
+#![no_std]
+extern crate alloc;
 
 /// Second seam (Phase C contrast): an MMIO read-to-clear register. Memory-safe seam
 /// closes to O(1) width like SPSC — but its soundness rests on an external physical-world
@@ -99,6 +107,16 @@ pub mod branded;
 /// external-solver / one-toolchain cost — a refinement floor needs an SMT solver in the trusted
 /// loop — which un-bundles horn 2 the way the branded index un-bundled horn 3. See `refined`.
 pub mod refined;
+
+/// Seventh seam (Phase F — the bare-metal axis): reference-counted shared ownership (a minimal
+/// `Rc`). A genuinely new precondition shape — *dynamic shared ownership*, where the set of live
+/// owners is data-dependent — that affinity (one owner), NLL (static lifetimes), and the slab's
+/// generation check (single-owner pool) all structurally cannot express. Sound and brand-free and
+/// concentrated, but its witness is a **runtime memory manager** (global heap + refcount lifecycle):
+/// it is the one seam that needs `alloc`. That isolates the seventh axis — **bare-metal /
+/// runtime-freedom (seed #5)** — confirmed independent of zero-cost (#6) by the off-diagonal against
+/// the slab (both runtime-costly; only `shared` needs a manager). See `shared`.
+pub mod shared;
 
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
