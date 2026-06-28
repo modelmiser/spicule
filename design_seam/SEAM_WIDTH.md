@@ -40,7 +40,7 @@ A primitive whose precondition has a conjunct that *cannot* be internalized (one
 caller-owned state) would force the caller to carry it — pushing seam width from O(buffers)
 toward O(operations). That is the Phase-C contrast (MMIO; intrusive list).
 
-## All ten primitives — and why seam width misses *several* axes, not one
+## All eleven primitives — and why seam width misses *several* axes, not one
 
 | Primitive | Consumer seam width | Runtime cost (zero-cost #6) | Type surface (API-locality) |
 |---|---|---|---|
@@ -53,6 +53,7 @@ toward O(operations). That is the Phase-C contrast (MMIO; intrusive list).
 | Type-level index | **O(1)/buffer** (`Bound::new` once) | **erases fully** — the proof is a trait bound; cost moves to the **resolver's fuel** (`recursion_limit`, horn 2) — but that cost is encoding-relative + confounded, *not a clean axis* | plain turbofish `I` — non-viral; **but static-index-only** (a hidden *expressiveness* cost no width/cost/type column captures) |
 | Take-and-replace | **O(1)/call** (`take(slot,f)` once) | erases on the happy path (the abort-bomb is a ZST `mem::forget`-ten); mild codegen dent (an optimization barrier) | plain `take` — non-viral; **but a mid-take panic aborts the process** (the 8th axis, **unwind-safety** — a hidden cost no width/cost/type column captures) |
 | Drain-and-yield | **O(1)/drain** (`drain()` once) | erases — ordinary iteration, no proof residue | plain `Drain<'a>` — non-viral, **no closure**; **but a leaked guard silently loses the un-yielded tail** (the 9th axis, **leak-freedom** — a hidden cost no width/cost/type column captures) |
+| Self-ref cell | **O(1)/cell** (`init` once) | erases — `Pin` is a marker, no runtime residue | **viral, `&mut`-revoking `Pin`** — flips API-locality; *and* the deeper cost is **immovability** (move-stability), which is **inseparable** — *not* a clean column at all (N stays 9) |
 | Intrusive list (branded) | **O(accesses)** — the token threads through every access | (design A erases; the cost is seam width / lost reclaim) | **viral `'brand`** |
 
 **Two instructive rows now show seam width is necessary but not sufficient.** The slab *aces* seam
@@ -69,7 +70,7 @@ That a primitive can be O(1) on this instrument and *still* impose a real consum
 distinct hidden axes is precisely why the Seam Trilemma is a **3-of-N projection (N ≥ 9)**, not
 3-of-3. Seam-width measures one axis well and is blind to the rest.
 
-**Three more rows sharpen the same point from the opposite direction — and are a caution against both
+**Three more rows (plus a fourth) sharpen the same point from the opposite direction — and are a caution against both
 over- and under-counting.** The **type-level index** is O(1) on width, *fully erases*, and is non-viral
 — a near-perfect corner — yet its real tax, **static-index-only expressiveness** (it cannot index a
 runtime `usize`), is invisible to *all three* columns. That invisibility is what let the builder
@@ -80,8 +81,13 @@ width, erase on the happy path, and are non-viral — yet their real taxes, **un
 panic aborts) and **leak-freedom** (a leaked guard loses the tail), are *also* invisible to all three
 columns. But this time the hidden costs were **clean, and distinct, axes**: the panel **confirmed** them
 as the eighth and ninth (N ≥ 9), and ruled them dissociable (leak = `Drop` never runs; unwind = `Drop`
-runs at a bad time). So the lesson cuts every way — a primitive that aces every column the instrument
-can see may be paying on a hidden axis that is *real and novel-to-the-lattice* (take, drain) or
-*confounded* (type-level index), and only a richer adjudication (the cold panel) tells them apart. See
-`REALIZABILITY.md` for the full face lattice (the confirmed eighth and ninth axes and the rejected
-probe) and `SYNTHESIS.md` for the cross-primitive map.
+runs at a bad time). The **self-ref cell** completes the lesson with a *third* outcome: its real tax —
+**move-stability / immovability** — is *also* a danger no width/cost column captures, but it is *neither*
+a clean axis *nor* a confounded non-axis. The panel ruled it **real but structurally inseparable**: a
+distinct danger with no isolable cost (immovability is non-uniform — stack-pin spends API-locality,
+`Box::pin` spends bare-metal). So a primitive that aces every column the instrument can see may be paying
+on a hidden cost that is *a real clean axis* (take, drain), a *confounded non-axis* (type-level index), or
+*a real danger with no clean coordinate at all* (self-ref cell) — and only a richer adjudication (the
+cold panel) tells the three apart. See `REALIZABILITY.md` for the full face lattice (the confirmed
+eighth and ninth axes, the rejected probe, and the inseparable category) and `SYNTHESIS.md` for the
+cross-primitive map.
