@@ -634,10 +634,74 @@
       "outcome": "TRADEOFF",
       "cost_usd": 2.8732,
       "timestamp": "2026-06-28T10:32:29+00:00"
+    },
+    {
+      "round": 11,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_shared.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 reference-counted shared ownership (re-import rule under attack)\n\nThis is a **design proposal** for a seventh *seam* in the same hypothetical systems language (same\nfloor, same rules) as the SPSC, MMIO, intrusive-list, slab, branded-index, and refined-index seams.\nA seam re-exports a dangerous primitive as a checked safe interface ordinary code uses with no\n`unsafe` and no proofs. Attack the re-export: can ordinary safe code, using only this interface,\nreach undefined behavior (UB)? **And** adjudicate the axis question this primitive was built to settle\n(\u00a76).\n\nYou are attacking a **text specification**, not source code.\n\n---\n\n## 0. The floor (stipulated, not under attack)\n\nRust's borrow checker exactly as shipped (NLL: moves, `&T`/`&mut T`, lifetimes, affinity, `Drop`,\n`Send`/`Sync`, trait resolution). The floor is **`#![no_std]`-capable**: it targets bare metal with\nno runtime, no garbage collector, and **no global allocator unless one is explicitly added**. Do not\nattack the borrow checker; attack the re-import rule and the axis claims.\n\n## 1. The primitive\n\n**Manual reference counting** \u2014 a heap allocation holding a value plus a `usize` strong count, with\n`clone` i",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Interface is literally Rc \u2014 zero ceremony; only cost is conceded bare-metal/no-heap exclusion, a real seventh axis.",
+          "strongest_point": "There is no annotation or proof burden to attack because the consumer surface is identical to Rust's Rc; the sole genuine consumer-visible cost is that no-heap kernel/embedded authors cannot link the seam at all, which confirms bare-metal as a real independent axis rather than breaking usability."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Minimal Rc minus Weak and interior mutability; C1\u2013C4 enforced, re-entrant-drop trap closed by decrement-before-free.",
+          "strongest_point": "The only constructible re-entrancy hits different allocations (benign) or requires count\u22652 so C2 never frees; same-allocation self-free needs out-of-scope interior mutability."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "No compile-time obligation blows up; the undecidable last-drop lifetime is deliberately deferred to a runtime counter.",
+          "strongest_point": "The only undecidable obligation (statically locating the last drop) is explicitly delegated to a runtime Cell<usize>, leaving the compiler only decidable, polynomial passes that stock Rust's Rc already discharges."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Sound (std Rc minus RefCell/Weak); expressiveness costs are recoverable or conceded; bare-metal is a real seventh axis.",
+          "strongest_point": "The only irrecoverable expressiveness cost \u2014 no-heap targets are locked out with no in-seam escape \u2014 is exactly the bare-metal axis the proposal names, and the slab dissociation confirms it is a genuine seventh axis, not a re-slice of zero-cost."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Sound re-export is literally Rc; the 'seventh axis' is Rust's core/alloc boundary (RFC 2480, 2019), not novel",
+          "strongest_point": "The bare-metal axis reduces to Rust's pre-existing core/alloc dependency line, witnessed off-diagonal by heapless's bounded core-only ref-counting pool, so its real content is unbounded-allocation vs caller-provided-storage \u2014 already on the map since Rust 1.36."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "argued-past",
+          "attacker-implementation": "argued-past",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "TRADEOFF",
+        "tradeoffs": [
+          "Bare-metal exclusion: sound re-import requires a global-allocator-backed runtime refcount manager, so no-heap kernel/embedded targets cannot link the seam at all (the seventh axis: global-allocator dependency vs caller-provided fixed storage).",
+          "#5 trades against unbounded dynamic count: bare-metal is recoverable only via a capacity-bounded pool/arena Rc (heapless-style), a genuine #5\u2194capacity exchange.",
+          "Novelty caveat: the axis is real and independent of zero-cost but NOT new \u2014 it is Rust's core/alloc boundary (RFC 2480, stable 1.36), best named 'unbounded-dynamic-allocation vs caller-provided-bounded-storage'; drop the 'undiscovered dimension' framing.",
+          "Wording: spec should state the count-overflow abort guard explicitly rather than leave C2's 'free iff pre-decrement count was 1' implicit (out of scope for UB, but a real gap vs shipping Rc)."
+        ],
+        "headline": "Shared<T> re-import is sound (Rc minus Weak/RefCell); pays one recorded runtime-manager/bare-metal axis.",
+        "rationale": "No attacker exhibited AM-UB; soundness and compilability hold (Rc minus Weak/interior-mutability). The seam is admissible only alongside the bare-metal/runtime-manager cost \u2014 a real seventh axis, but one that reduces to Rust's pre-existing core/alloc boundary, not a new discovery."
+      },
+      "outcome": "TRADEOFF",
+      "cost_usd": 2.4326,
+      "timestamp": "2026-06-28T11:41:30+00:00"
     }
   ],
   "settled": [],
   "incompatibilities": [],
   "blind_spot_flags": [],
-  "total_cost_usd": 20.8356
+  "total_cost_usd": 23.2682
 }

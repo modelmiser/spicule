@@ -247,4 +247,26 @@ theorem refined_seam_closes :
   rw [seam_closes_iff_factors]
   exact ⟨id, fun _ => rfl⟩
 
+/-- Shared-ownership shape (a minimal `Rc` — std `rc::Rc` minus `Weak`/`RefCell`). The soundness
+    fact (C1∧C2: the strong count equals the live-owner set, freed on the last drop) is carried by a
+    *runtime reference-count manager*, so the seam CLOSES, once more indistinguishably from SPSC in
+    the kernel (`Pshared` is definitionally `V`).
+
+    What the kernel cannot see — and the cold panel (REPORT_SEAM_SPEC_shared) made precise — is that
+    this witness needs a *runtime memory-management subsystem* (a global allocator), where every
+    prior seam needed only `core`. That is the seventh axis, **bare-metal / runtime-freedom (seed
+    #5)**, confirmed independent of zero-cost (#6) by the off-diagonal against the slab: both pay a
+    runtime cost, but the slab's witness is a fixed `core`-only pool (bare-metal ✓) while this one is
+    a global-heap manager (bare-metal ✗). Honest deflation the panel insisted on: the axis is real and
+    independent but NOT novel — it is Rust's own `core`/`alloc` boundary (RFC 2480), best named
+    *unbounded-dynamic-allocation vs caller-provided-bounded-storage* (a `heapless`-pool `Rc` is
+    bare-metal but capacity-bounded). Like every column past "concentration", whether the witness
+    needs a heap is modeling-dictionary; the kernel sees only that it suffices. -/
+def Pshared (p : Prog) : Bool := V p
+
+theorem shared_seam_closes :
+    ∃ d : Prog → Bool, SoundW Pshared d ∧ UsableW Pshared d ∧ ConcW V d := by
+  rw [seam_closes_iff_factors]
+  exact ⟨id, fun _ => rfl⟩
+
 end SeamGap

@@ -1,17 +1,19 @@
 # The realizability table — the Seam Trilemma is a 3-of-N projection
 
-*Phases D–E. The constructive question the slab opened, the branded index extended, and the refined
-index closed: is the Seam Trilemma the whole story (3 horns), or a low-dimensional shadow of a larger
-tension? Answer: it is a **3-of-N projection with N ≥ 6**. Each constructive primitive lit up one more
-axis by being the **witness that two configurations the trilemma treated as identical actually
-differ.***
+*Phases D–F. The constructive question the slab opened, the branded index extended, the refined index
+closed, and the shared-ownership seam pushed to seven: is the Seam Trilemma the whole story (3 horns),
+or a low-dimensional shadow of a larger tension? Answer: it is a **3-of-N projection with N ≥ 7** —
+where the recovered axes are known PL boundaries, not novel discoveries (see the meta-pattern below).
+Each constructive primitive lit up one more axis by being the **witness that two configurations the
+trilemma treated as identical actually differ.***
 
-> **A note on the "#5/#6/#7" shorthand.** `#6` (zero-cost) and `#7` (AI-legible) are the literal
-> seed-property numbers. `#5` is used throughout as shorthand for the *fifth lattice axis*,
-> **API-locality / brand-freedom** — which is the *type-face of seed property #2 (no-seam)*, NOT seed
-> property #5 (bare-metal, which is uniform and conceded here). So "the #5⟂#7 cell" = "API-locality
-> ⟂ AI-legibility." The shorthand is kept because it is now shared vocabulary; this note disambiguates
-> it from the seed numbering.
+> **A note on the "#5/#6/#7" shorthand (and a numbering collision).** `#6` (zero-cost) and `#7`
+> (AI-legible) are the literal seed-property numbers. The "**#5⟂#7 cell**" shorthand, coined for the
+> refined phase, uses `#5` for the *fifth lattice axis* — **API-locality / brand-freedom**, the
+> *type-face of seed property #2 (no-seam)*. The shared phase then recovered the *actual* seed
+> property #5 — **bare-metal** — as the seventh lattice axis. To avoid the clash: **API-locality is
+> referred to by name or as the "#5 cell"; bare-metal is referred to by name (it is seed #5).** Lattice
+> numbering ≠ seed numbering; this note is the key.
 
 ---
 
@@ -30,8 +32,9 @@ verdict** (`REPORT_SEAM_SPEC_*.md`), never asserted by the builder.
 ## The axes (columns)
 
 The original seed had seven properties. In the *seam* framing the floor concedes #1 (executable
-spec) and #3 (derived ownership) by construction (the floor is a fixed checker), and #5 (bare-metal)
-holds for every primitive here (none needs a GC/runtime allocator). The live, per-primitive axes:
+spec) and #3 (derived ownership) by construction (the floor is a fixed checker). The live,
+per-primitive axes — note **seed #5 (bare-metal) is no longer uniform**: the shared-ownership seam
+pays it:
 
 | Axis | Seed # | What it asks | Folded into the trilemma as |
 |---|---|---|---|
@@ -41,6 +44,7 @@ holds for every primitive here (none needs a GC/runtime allocator). The live, pe
 | **API-locality (brand-freedom)** | #2 (type face) | Does the witness stay out of consumer **type signatures** (no viral `'id`, no forced scope-closure)? | **folded inside "concentration"** — un-bundled by the branded index |
 | **Zero-cost erasure** | #6 | Does the witness erase at compile time (no runtime residue)? | **folded inside "concentrated & proof-free"** — un-bundled by the slab |
 | **AI-legible** | #7 | Is the witness's *meaning* reconstructible (a readable predicate), not a nominal token? | not in the trilemma at all — surfaced by the branded index, **confirmed independent by the refined index** |
+| **Bare-metal (runtime-freedom)** | **#5** | Does sound re-import avoid a *runtime memory manager* (no global allocator / GC)? Operationally: compiles under `#![no_std]` with no `alloc`? | not in the trilemma — surfaced by the shared-ownership seam; **= Rust's `core`/`alloc` boundary (RFC 2480)**, real & independent but pre-existing, *not* a novel dimension |
 
 Two separate "cost" categories sit *outside* the axes and must not be miscounted as horns:
 - **TCB axiom** (MMIO): a physical-world fact ("this address really is this register") no checker
@@ -50,14 +54,15 @@ Two separate "cost" categories sit *outside* the axes and must not be miscounted
 
 Legend: ✓ holds / aced · ✗ paid or dropped · ◐ conditional · *(plain)* a non-viral ordinary lifetime.
 
-| Primitive | Sound | Decidable | Concentration | **API-locality** | **Zero-cost** | **AI-legible** | What it costs |
-|---|:--:|:--:|:--:|:--:|:--:|:--:|---|
-| **SPSC ring buffer** | ✓ | ✓ | ✓ O(1) | ✓ *(plain `'a`)* | ✓ | ✓ | nothing — the fully-encapsulable corner |
-| **MMIO read-to-clear** | ✓ | ✓ | ✓ O(1)¹ | ✓ | ✓ | ✓ | a **TCB axiom** (outside the axes) |
-| **Generational slab** | ✓ | ✓ | ✓ O(1) | ✓ *(plain `Key`)* | **✗** | **✗**² | **zero-cost (#6)** — runtime generation+occupancy check |
-| **Branded index** | ✓ | ✓ | ✓ O(1) | **✗** *(viral `'id`)* | ◐³ | **✗**⁴ | **API-locality (#5)** + deferred zero-cost; brand is nominal |
-| **Refined index** | ✓ | ◐⁶ | ✓ O(1) | ✓ *(brand-free; `Refined` escapes)* | ◐⁷ | **✓**⁸ | **horn-2 solver-freedom** (SMT in the TCB) + the R2 trade |
-| **Intrusive list** (branded) | **✗**⁵ | ✓ | ✗ O(accesses) | ✗ | ◐ | ✗ | a **horn genuinely drops** — no sound+usable+concentrated decision exists |
+| Primitive | Sound | Decidable | Concentration | **API-locality** | **Zero-cost** | **AI-legible** | **Bare-metal** | What it costs |
+|---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|---|
+| **SPSC ring buffer** | ✓ | ✓ | ✓ O(1) | ✓ *(plain `'a`)* | ✓ | ✓ | ✓ | nothing — the fully-encapsulable corner |
+| **MMIO read-to-clear** | ✓ | ✓ | ✓ O(1)¹ | ✓ | ✓ | ✓ | ✓ | a **TCB axiom** (outside the axes) |
+| **Generational slab** | ✓ | ✓ | ✓ O(1) | ✓ *(plain `Key`)* | **✗** | **✗**² | ✓⁹ | **zero-cost (#6)** — runtime generation+occupancy check |
+| **Branded index** | ✓ | ✓ | ✓ O(1) | **✗** *(viral `'id`)* | ◐³ | **✗**⁴ | ✓ | **API-locality (#5)** + deferred zero-cost; brand is nominal |
+| **Refined index** | ✓ | ◐⁶ | ✓ O(1) | ✓ *(brand-free; `Refined` escapes)* | ◐⁷ | **✓**⁸ | ✓ | **horn-2 solver-freedom** (SMT in the TCB) + the R2 trade |
+| **Shared (Rc)** | ✓ | ✓ | ✓ O(1) | ✓ *(plain `Shared`)* | **✗** | ✓ | **✗**¹⁰ | **bare-metal (seed #5)** — needs a global-allocator refcount manager |
+| **Intrusive list** (branded) | **✗**⁵ | ✓ | ✗ O(accesses) | ✗ | ◐ | ✗ | ✓ | a **horn genuinely drops** — no sound+usable+concentrated decision exists |
 
 ¹ with a foundation `Send` opt-in, else O(ISRs). ² **reclassified legible→illegible** (cold panel,
 endorsed by two independent attackers vs the slotmap/generational-arena precedent): a `Copy` `Key`'s
@@ -74,7 +79,13 @@ trusted loop, and the fragment is too weak for the bitwise/modular/stride index 
 runtime `bound ≤ len` compare (the shipped artifact — *not* zero-cost); recovering erasure forces a
 viral length-index brand (`const N`) — the #5↔#6 trade, from the other side. ⁸ **legible** — the
 predicate `value < bound` *is* the type's contract; the safety invariant is reconstructible from the
-signature alone. This is the cell-closing witness.
+signature alone. This is the cell-closing witness. ⁹ **bare-metal ✓** — the slab is a fixed
+`[Slot; N]` pool, `core`-only, no heap; it is the off-diagonal partner that proves bare-metal ⟂
+zero-cost (both pay a runtime cost, only `Shared` needs a manager). ¹⁰ **bare-metal ✗** —
+`Shared::new` allocates on the global heap; it is the sole reason the crate pulls in `extern crate
+alloc` (compile-enforced: the other six are `core`-only). The axis is real and independent but *not
+novel* — it is Rust's `core`/`alloc` boundary (RFC 2480), precisely *unbounded-dynamic-allocation vs
+caller-provided-bounded-storage* (a `heapless`-pool `Rc` would be bare-metal but capacity-bounded).
 
 ## What the table proves
 
@@ -91,6 +102,7 @@ SPSC-shaped preconditions.
 | API-locality ⟂ Concentration | branded index: O(1) seam-width yet viral `'id`; and the `runST`/lightweight-capabilities lineage pays the brand tax **in languages with no seam or `unsafe` at all** — a cost that exists where seam-width is *undefined* cannot *be* seam-width | **gauntlet-confirmed** (this phase) |
 | API-locality ⟂ Zero-cost | slab (zero-cost ✗, API-local ✓) vs branded index (brand erases, API-local ✗) — opposite corners | **gauntlet-confirmed** |
 | AI-legible ⟂ API-locality | **the off-diagonal, now built.** Refined index = (brand-free, **legible**) vs slab = (brand-free, **illegible**): holds #5 fixed, flips #7. Branded index = (viral, illegible) vs slab = (brand-free, illegible): holds #7 fixed, flips #5. Both directions witnessed. | **gauntlet-confirmed** (refined phase): the judge ruled "#5⟂#7 close? — **YES**", and the slab→illegible reclassification was endorsed by two independent attackers. Promoted argued→**confirmed**. |
+| Bare-metal ⟂ Zero-cost | slab (zero-cost ✗ runtime check, **bare-metal ✓** fixed pool) vs Shared (zero-cost ✗ refcount, **bare-metal ✗** global heap): agree on #6, flip bare-metal. A runtime *check* ≠ a runtime *manager*. | **gauntlet-confirmed** (shared phase): the judge ruled bare-metal a real, independent seventh axis — *but* "reduces-to-X for novelty": X = Rust's `core`/`alloc` boundary (RFC 2480); `heapless::pool` already witnesses the bare-metal⟂capacity trade. **Real and independent, but pre-existing — not a new dimension.** |
 
 **3. The trilemma is exactly ONE forbidden pattern in this space.** {Sound ∧ Decidable ∧
 Concentrated} is unachievable *only* when the precondition factors through no available witness — and
@@ -113,16 +125,29 @@ Seam Trilemma               3 horns: {sound, #4 decidable, #2 concentration}
         │                              + surfaces #7 (legibility), dissociable from #5
  refined│  un-bundles horn 2          ⇒ decidable ✓ vs solver-free ✗; CLOSES #5⟂#7 (off-diagonal)
         │                              (solver-freedom = the `unified` "keep" horn, NOT a new axis)
+  shared│  recovers seed #5 bare-metal ⇒ 3-of-≥7  (runtime-manager axis; ⟂ #6 via slab/heapless)
+        │                              (= Rust's core/alloc boundary, RFC 2480 — real but pre-existing)
         ▼
-Realizability table         N ≥ 6 axes (≥5 confirmed + #7 confirmed); the trilemma is one 3-D shadow
+Realizability table         N ≥ 7 axes (sound, decidable, concentration, API-locality, #6, #7, bare-metal)
 ```
 
 Each constructive primitive is the **witness that two trilemma-identical configurations differ** —
 the only way to prove a folded axis was ever really there. The slab proved a concentrated seam can
 still cost runtime; the branded index proved a concentrated, erasing seam can still cost the type
 surface; the refined index proved legibility (#7) is its own axis (the brand-free-yet-legible
-off-diagonal the slab-vs-branded pair could not reach) **and** that horn 2 itself was a bundle of
-*decidability* and *solver-freedom*.
+off-diagonal the slab-vs-branded pair could not reach) **and** that horn 2 was a bundle of
+*decidability* and *solver-freedom*; the shared seam recovered seed #5 (bare-metal), the
+runtime-manager axis, distinct from runtime *cost* (#6).
+
+**The honest meta-pattern.** *Every* axis the method recovers turns out to be an **already-named PL
+concern**: zero-cost abstraction (#6), generativity/API-locality, refinement-legibility (#7), and now
+the `core`/`alloc` bare-metal split (RFC 2480). The constructive phase did not discover new physics.
+What it found is that the trilemma's three horns silently *bundle together a set of independently
+known PL design axes*, and that one rubric — **"what does the safe witness cost?"** — unifies them.
+The contribution is the unification and the method that recovers each axis (build the dissociating
+witness, let a cold panel adjudicate), not the novelty of any single axis. Twice now (solver-freedom,
+bare-metal) the panel has had to *deflate* a "new dimension" claim to "real, but pre-existing" — and
+that deflation is itself the result: the seam tension is where these known axes meet.
 
 ## Structure among the axes (not just a count)
 
@@ -143,13 +168,19 @@ The axes are not independent toggles you can set freely — **two trades** show 
 
 ## Honest bounds
 
-- N ≥ 6 is a **lower bound**: six gauntlet-confirmed live axes — sound, decidable, concentration,
-  API-locality (#5), zero-cost (#6), and AI-legibility (#7, promoted argued→confirmed by the refined
+- N ≥ 7 is a **lower bound**: seven gauntlet-confirmed live axes — sound, decidable, concentration,
+  API-locality, zero-cost (#6), AI-legibility (#7), and bare-metal (#5, recovered by the shared
   phase). More may exist; the method (build a dissociating witness, let the cold panel adjudicate) is
   open-ended, not exhausted.
-- The #5⟂#7 dissociation **is now witnessed** (refined index = brand-free + legible; slab = brand-free
-  + illegible). The refined phase also surfaced that horn 2 un-bundles into decidability + solver-
-  freedom — but that face is the original "keep" horn, so it sharpens the map rather than extending N.
+- The #5⟂#7 dissociation **is witnessed** (refined index = brand-free + legible; slab = brand-free +
+  illegible). Bare-metal ⟂ #6 **is witnessed** (slab = bare-metal + runtime-cost; Shared = global-heap
+  + runtime-cost). The refined phase surfaced that horn 2 un-bundles into decidability + solver-freedom
+  — that face is the original "keep" horn, so it sharpens the map rather than extending N.
+- **Novelty is bounded, and that is the honest headline.** Two of the recovered axes (solver-freedom,
+  bare-metal) the cold panel deflated to "real but *pre-existing*" — they are named PL boundaries
+  (Liquid-Types' solver-in-TCB; RFC 2480's `core`/`alloc`). The lattice's value is *unification under
+  one cost rubric*, not novel dimensions. Treat "N ≥ 7" as "at least seven *known* PL axes are all
+  faces of the seam tension," not "seven new discoveries."
 - The Lean kernel (`../proof/SeamGap.lean`) sees only whether a precondition factors through a
   Boolean witness — so it certifies *closure* (`spsc`/`branded`/`refined` all close, like SPSC) but is
   blind to *which axis a closing seam spends*. Every column past "concentration" lives in this
