@@ -96,3 +96,14 @@ already on the map* (validity) — and only a richer adjudication (the cold pane
 That last outcome — a brand-new danger class adding nothing new — is what shows the cost-basis is
 **closed**. See `REALIZABILITY.md` for the full face lattice (the confirmed axes, the rejected probe, the
 inseparable category, and the closed-basis capstone) and `SYNTHESIS.md` for the cross-primitive map.
+
+**A note on the thirteenth primitive — and the instrument's domain.** The constant-time secret
+(`seam/src/secret.rs`) is deliberately *not* in the table above, because this instrument cannot measure
+it: it has **no `unsafe` keyword** (the "seam crossing" the metric counts), and its danger is a *timing
+side-channel*, not UB. That is the point. Seam-width — and the whole nine-axis basis — is a
+**memory-safety** instrument; the secret seam belongs to a **different soundness domain**
+(information-flow / non-interference), where the cold panel ruled it **out of frame** and the seam itself
+**breaks** (the intrusive list's horn-drop re-run in a new domain — sound non-interference is not a
+concentrated decidable seam). So even the seam-width metric is domain-relative: the cost-basis is closed
+*per domain*, and information-flow would need its own instruments (auditing constant-time codegen,
+tracking declassification) for a domain whose axes have no memory-safety analog.
