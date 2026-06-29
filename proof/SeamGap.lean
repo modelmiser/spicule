@@ -515,4 +515,33 @@ theorem lock_registry_typed_discipline_factors :
   rw [seam_closes_iff_factors]
   exact ⟨id, fun _ => rfl⟩
 
+/-- Must-run-cleanup shape — the *linearity* probe (a `MustRun<F: FnOnce()>` RAII guard), built
+    breadth-wise: a new precondition rather than a new domain. Read `Pr`/`Wt` by analogy: the
+    precondition is *must-run-cleanup* (the finalizer runs exactly once before the scope is abandoned)
+    and the witness is the affine ownership of the guard plus its `Drop`. In the kernel the typed
+    discipline factors (`Plinear` is definitionally `V`), as always — the closure is run *at most* once
+    (the `Option<F>` one-shot), which is exactly the AFFINE half the floor does carry.
+
+    The real seam BREAKS, and the break is compiler-settled (not a panel judgment call): `core::mem::forget`
+    is a **safe** function, so no destructor is mandatory — the *leakpocalypse* (RFC 1066; the removal of
+    `thread::scoped`, RFC 1084). "Must run *exactly* once" is a **linear** requirement; Rust's floor is
+    **affine** (*at most* once), so it cannot forbid the skip. The cold panel (REPORT_SEAM_SPEC_linear)
+    grades the affine floor against this precondition — and rules whether the `#[must_use]` lint is a
+    *partial* fragment of the floor or a non-type advisory layer (*none* at the type level), whether the
+    liveness domain hosts multiple preconditions of different grades (sharpening the floor-match unit from
+    *domain* to *precondition*), and confirms this is the **enforcement** face of the ninth axis
+    (leak-freedom) — the *inverse* of the tenth seam `drain`, which *closed* by leak-**tolerance** — so N
+    is unchanged. `..._factors` (not `..._closes`) certifies only the trivial affine sub-fact; the kernel
+    sees neither the linearity gap nor the `forget`/`ManuallyDrop` escape. -/
+def Plinear (p : Prog) : Bool := V p
+
+/-- Trivial sub-fact only (see the docstring): the *affine* discipline factors — the closure runs at most
+    once. The real seam BREAKS — "runs *exactly* once" is linear, and Rust's affine floor permits the skip
+    (`mem::forget` is safe), so the must-run-cleanup floor-match is at most partial (lint-level), never the
+    type-level closure memory safety enjoys. -/
+theorem linear_typed_discipline_factors :
+    ∃ d : Prog → Bool, SoundW Plinear d ∧ UsableW Plinear d ∧ ConcW V d := by
+  rw [seam_closes_iff_factors]
+  exact ⟨id, fun _ => rfl⟩
+
 end SeamGap

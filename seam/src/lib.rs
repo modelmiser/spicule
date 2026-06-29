@@ -213,6 +213,19 @@ pub mod ordered_locks;
 #[cfg(feature = "lockdep")]
 pub mod lock_registry;
 
+/// Seventeenth seam (Phase P — a *breadth-wise* probe): a must-run cleanup guard. A new precondition —
+/// **"this finalizer MUST run"** (a *linearity* requirement: the guard must be *consumed*, not merely
+/// droppable) — re-exported as a RAII scope-exit guard. It is the **inverse** of the tenth seam
+/// (`drain`): where `drain` *closed* by making a skipped `Drop` harmless (leak-**tolerance**), this one
+/// needs a skipped `Drop` to be impossible (leak-**intolerance**) — the same ninth-axis danger from the
+/// opposite side. Rust's floor is **affine** (use *at most* once), so `core::mem::forget` / `ManuallyDrop`
+/// / leaking — all **safe** — skip the destructor (the leakpocalypse, RFC 1066 / 1084); enforcing a
+/// must-run finalizer needs **linear** types (use *exactly* once) the floor does not have. The break is
+/// compiler-settled; the spec poses the open rulings (the **grade** of the affine floor against a
+/// linearity precondition; whether the liveness domain hosts multiple preconditions of different grades;
+/// that this is the *enforcement* face of axis 9, not a new axis). See `linear`.
+pub mod linear;
+
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 use core::sync::atomic::{AtomicUsize, Ordering};
