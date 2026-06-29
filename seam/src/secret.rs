@@ -25,30 +25,47 @@
 //! explicitly-named [`Choice::expose_bool`] — the *one* place the secret-derived bit re-enters ordinary
 //! control flow, used once at the end (e.g. "accept or reject the MAC").
 //!
-//! ## The honest twist — there is NO `unsafe`, and the guarantee is a TCB axiom
+//! ## The cold panel's verdict (REPORT_SEAM_SPEC_secret): the seam BREAKS in the IFC sense
 //!
-//! Two things make this seam different from the previous twelve, and both are load-bearing for the §6
-//! ruling:
-//! 1. **No `unsafe` keyword anywhere.** The foundation is ordinary safe arithmetic. The "danger" lives
-//!    entirely in a *non-functional* property (wall-clock time), which the Rust Abstract Machine does not
-//!    model at all. So the project's usual question — "can safe code reach AM-level UB?" — is *trivially*
-//!    answered (no), and yet the seam can still be *broken* in the only sense that matters here.
-//! 2. **Constant-time-ness is not guaranteed by the floor.** `rustc`/LLVM may compile the branchless
-//!    `ct_eq` *back into* a branch (e.g. via a peephole or a `cmov`-to-branch lowering on some target).
-//!    So the seam's soundness rests on a **trusted assumption the compiler does not discharge** — exactly
-//!    the shape of MMIO's TCB axiom, but for a security property instead of a hardware fact. Real
-//!    constant-time code needs `core::hint::black_box`, assembly, or tooling (`dudect`, `ctgrind`) to
-//!    *audit* it; the type system only forecloses the *obvious* leaks (branching in source).
+//! The gauntlet ruled **SEAM-BREAKS [horn 1]** — the information-flow analog of the intrusive list's
+//! memory-safety horn-drop. The attack used only the vended ops, no `unsafe`:
+//! `secretA.ct_eq(&secretB).expose_bool()` then `if b { … }` **type-checks** and leaks a secret
+//! *relationship* (key reuse / equality) through ordinary source-level control flow. The type forecloses
+//! branching *on `Secret`*, but [`Choice::expose_bool`] returns an **untainted `bool`** the consumer may
+//! then branch on — so "expose once, at the end, on an intended observable" is **etiquette, not
+//! type-structure**. Closing it requires propagating a secret label through arbitrary intervening code —
+//! a **whole-program, undecidable** non-interference pass (a full IFC type system: Jif / FlowCaml). So a
+//! *concentrated, decidable* seam **cannot** soundly enforce non-interference: Horn 2 ("decidable &
+//! proof-free") passes **only because the strong property is never actually checked** — the typed
+//! discipline (privacy + absent traits) is a *syntactic proxy* for a property it does not discharge.
+//! **This is the Seam Trilemma recurring in the information-flow domain, with a sharper bite.** (The
+//! `ct_eq`/`select` interface is sound for its narrow `subtle`-style compare-and-select fragment; it is
+//! the *general* non-interference claim, and the §4 "no source-level leak can be written" universal, that
+//! break.)
 //!
-//! ## What §6 must rule
+//! ## Two builder over-claims the panel corrected
 //!
-//! Is information-flow a **tenth axis** of the (closed) memory-safety basis, **out of frame** (a
-//! different soundness domain, with its own basis — refining "closed" to "closed *per domain*"), or does
-//! its cost **project onto** the nine (e.g. the lost data-dependent control flow is an *expressiveness*
-//! cost; the trust-the-codegen part is a *TCB axiom* like MMIO)? The builder's hypothesis: **out of
-//! frame** — the basis is closed *within memory safety*, and IFC is an orthogonal domain the same method
-//! would re-run to find a *different* basis (whose first members look like "constant-time discipline" and
-//! "a no-data-dependent-branch TCB axiom").
+//! 1. **There is no `unsafe`, and the AM models no time** — true, and load-bearing: the project's usual
+//!    "can safe code reach UB?" is *trivially* no (the UB slot is empty), yet the seam still *breaks* in
+//!    the only sense that matters here. That is *why* information-flow is a **different domain**.
+//! 2. **Constant-time-ness is NOT an MMIO-shaped (irreducible) TCB axiom — it is *dischargeable*.** An
+//!    earlier draft equated the trust that the optimizer keeps `ct_eq` branchless with MMIO's physical
+//!    axiom; the prior-art attacker correctly falsified that. MMIO's trust is irreducible *in principle*;
+//!    constant-time codegen has been **formally preserved** by CompCert-CT, Jasmin, and FaCT. So the
+//!    codegen assumption is *contingent* (an artifact of building on stock `rustc`/LLVM), not a permanent
+//!    axiom — a different category than MMIO's.
+//!
+//! ## The §6 domain ruling — vindicated and enriched: the closed basis is PER DOMAIN
+//!
+//! The panel **vindicated hypothesis (2)**: information-flow is **out of frame** — a *different soundness
+//! domain* (non-interference, not UB) with its **own basis**. So the memory-safety result "the cost-basis
+//! is closed" refines to **closed *per domain***. And the IFC domain's basis is genuinely *different*:
+//! two attackers independently surfaced **declassification discipline** (which / where / how-often a
+//! `Choice` may exit — exactly the hole that broke this seam) as a real IFC-domain axis with **no
+//! memory-safety analog**, alongside termination channels and concurrency channels. The build-and-break
+//! *method* transfers — its very first IFC seam reproduced the trilemma and surfaced a new axis — but the
+//! *coordinates* are the new domain's, not the nine. **The Seam Trilemma and the closed cost-basis are
+//! domain-parameterized; memory safety is one domain, information flow is another.**
 //!
 //! ### CF1 — safe code cannot branch on a secret (no `PartialEq`, no `bool`, no `Index`):
 //! ```compile_fail

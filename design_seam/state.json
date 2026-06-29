@@ -1141,10 +1141,73 @@
       "outcome": "TRADEOFF",
       "cost_usd": 1.6869,
       "timestamp": "2026-06-28T16:55:07+00:00"
+    },
+    {
+      "round": 19,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_secret.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 a constant-time secret (re-import rule under attack)\n\nThis is a **design proposal** for a thirteenth *seam* in the same hypothetical systems language (same\nfloor, same rules) as the twelve before it \u2014 but the first one deliberately aimed at a **different\nsoundness domain**. The previous twelve were all about **memory safety** (can safe code reach UB?), and\nacross them the cold panel found the cost-basis **closed**: nine clean axes + an inseparable category +\ntwo outside-the-axes, with a brand-new memory-safety danger (validity) projecting cleanly onto it. This\nseam asks whether that closure is **absolute** or **domain-relative**, by re-importing a danger that is\n**not UB at all** \u2014 an **information-flow / timing side-channel**.\n\nYou are attacking a **text specification** backed by real `rustc`-checked code (`seam/src/secret.rs`).\n\n> **Read \u00a76 first if you only read one thing.** The deliverable is *not* \"soundness vs UB\" (there is no\n> UB here) but the **domain question**: is information-flow a tenth axis of the memory-safety basis, is it\n> *out of frame* (a different soundness domain with its **own** basis \u2014 refining \"closed\" to \"closed *per\n> domain*\"), or does its c",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Type either can't compute real crypto, or its mandatory byte exit reopens the in-scope secret-indexed-table-lookup leak \u00a74 claims to foreclose.",
+          "strongest_point": "\u00a74's 'no source-level timing dependence can be written' is false: any usable byte exit makes `SBOX[exposed_secret_byte]` \u2014 the canonical cache-timing leak, explicitly in-scope per \u00a75 \u2014 writable in plain safe code, while the no-exit reading makes the type unable to express any cipher at all."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "minor",
+          "summary": "\u00a74's 'no source-level timing dependence' is refuted: expose_bool branching on secret-equality is accepted, unconstrained by type.",
+          "strongest_point": "secretA.ct_eq(&secretB).expose_bool() then `if` type-checks and leaks a secret relationship through source-level control flow, so declassification is etiquette, not foreclosure."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Type foreclosure stops branching on Secret, not on secret-derived bool from expose_bool; closing that is undecidable whole-program IFC.",
+          "strongest_point": "expose_bool() returns an untainted bool, so the \u00a74 claim 'no source-level timing dependence can be written' is false \u2014 branching on the de-secreted value is type-accepted, and rejecting it requires the very timing-sensitive non-interference pass the proposal files as a different, undecidable domain."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Interface vends compare/select but no secret arithmetic; even secret\u2295secret (OTP) needs byte exposure, voiding \u00a74's no-leak claim.",
+          "strongest_point": "The foundational non-interfering operation secret\u2295secret is inexpressible without exposing raw bytes, after which a source-level secret-dependent branch compiles fine \u2014 so \u00a74's 'no timing dependence can be written' holds only inside a fragment too thin for real constant-time crypto."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Token is subtle reimplemented; the 'MMIO-shaped codegen axiom' is falsified by CompCert-CT/Jasmin/FaCT, which discharge it.",
+          "strongest_point": "Constant-time codegen has been formally preserved by real compilers (CompCert-CT, Jasmin, FaCT), so the trusted-codegen assumption is a dischargeable engineering limit, not an irreducible MMIO-class TCB axiom as \u00a76 claims."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "genuine-flaw",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Interface is closed over compare+select only; elementary non-interfering ops (secret\u2295secret, any cipher/KDF/key-schedule) require a byte exit the spec doesn't vend \u2014 expressiveness/typed_nat-confound cost.",
+          "Token is `subtle`+`secrecy` re-implemented; Horns 1\u20133 are confirmed by precedent, not advanced by this seam.",
+          "Declassification discipline (which/where/how-often a Choice may exit) emerges as a genuine new IFC-domain axis with no memory-safety analog \u2014 supports domain ruling (2)."
+        ],
+        "headline": "\u00a74's universal no-leak claim and \u00a76's MMIO-axiom analogy are both refuted; revise.",
+        "rationale": "ct_eq(a,b).expose_bool() then branch type-checks with only vended ops and leaks a secret relationship, falsifying \u00a74's universal foreclosure (declassification is etiquette, not type-structure). Independently, CompCert-CT/Jasmin/FaCT show the codegen axiom is dischargeable, not MMIO-shaped. Both claims require revision."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.913,
+      "timestamp": "2026-06-29T18:31:59+00:00"
     }
   ],
   "settled": [],
   "incompatibilities": [],
   "blind_spot_flags": [],
-  "total_cost_usd": 37.129
+  "total_cost_usd": 40.042
 }

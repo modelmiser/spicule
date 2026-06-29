@@ -402,4 +402,32 @@ theorem validity_seam_closes :
   rw [seam_closes_iff_factors]
   exact ⟨id, fun _ => rfl⟩
 
+/-- Constant-time-secret shape (`subtle`-style timing-safe ops). This is the first instance from a
+    **different soundness domain** — information flow / non-interference, not memory safety — so read
+    `Pr`/`Wt` by analogy: the precondition is *timing-safety* (running time independent of the secret)
+    and the witness is the constant-time API (no `PartialEq`/`Index` to branch on; branchless `ct_eq`).
+    The precondition factors through that witness (source-level data-dependent branching is foreclosed),
+    so the seam CLOSES, indistinguishably from SPSC in the kernel (`Psecret` is definitionally `V`).
+
+    The kernel's blindness is *deeper* here than for any prior seam, and that depth is the §6 point: the
+    Lean does not model time at all. So this `..._closes` theorem certifies only the trivial sub-fact — the
+    *typed* discipline (no `PartialEq`/`Index` to branch on `Secret`) factors as a Boolean witness. The
+    cold panel (REPORT_SEAM_SPEC_secret) ruled the actual seam **SEAM-BREAKS** in the information-flow
+    sense: `ct_eq(a,b).expose_bool()` then `if b` type-checks with only vended ops and leaks a secret
+    relationship — declassification is *etiquette, not type-structure*, and closing it needs whole-program
+    undecidable IFC. The intrusive list's horn-drop, re-run in a new domain: a concentrated decidable seam
+    cannot soundly enforce non-interference. The §6 **domain ruling was vindicated**: information-flow is
+    *out of frame* — a different soundness domain with its **own basis** (declassification discipline,
+    termination/concurrency channels), so the closed memory-safety basis is **closed per domain**, and the
+    Seam Trilemma is domain-parameterized. (`Psecret = V` certifies none of this — it is the sharpest
+    illustration of the modeling-dictionary caveat: the kernel models neither time nor non-interference.) -/
+def Psecret (p : Prog) : Bool := V p
+
+/-- Trivial sub-fact only (see the docstring): the *typed* discipline factors as a Boolean witness. The
+    real seam BREAKS in the IFC sense — non-interference is not a concentrated decidable property. -/
+theorem secret_typed_discipline_factors :
+    ∃ d : Prog → Bool, SoundW Psecret d ∧ UsableW Psecret d ∧ ConcW V d := by
+  rw [seam_closes_iff_factors]
+  exact ⟨id, fun _ => rfl⟩
+
 end SeamGap
