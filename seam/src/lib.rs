@@ -74,6 +74,13 @@
 #![no_std]
 extern crate alloc;
 
+// The sixteenth seam alone needs OS thread-local storage (a runtime lock-order registry), so it
+// links `std` — gated behind the `lockdep` feature. The base crate stays `no_std`; this `extern
+// crate std` is compiled in *only* with `--features lockdep`, making the bare-metal (#5) cost of a
+// runtime registry visible in the build graph rather than hidden in prose.
+#[cfg(feature = "lockdep")]
+extern crate std;
+
 /// Second seam (Phase C contrast): an MMIO read-to-clear register. Memory-safe seam
 /// closes to O(1) width like SPSC — but its soundness rests on an external physical-world
 /// axiom (M1/M4) no checker can discharge. See `mmio::StatusReg`.
@@ -191,6 +198,18 @@ pub mod labeled;
 /// the floor-domain match into full (memory safety) / partial (this) / none (information flow). See
 /// `ordered_locks`.
 pub mod ordered_locks;
+
+/// Sixteenth seam (Phase O — the *floor-upgrade* probe; feature `lockdep`): a **runtime** lock-order
+/// registry (lockdep-in-miniature). Same liveness domain and same danger as `ordered_locks`, but on an
+/// *upgraded floor*: a `thread_local!` held-stack of **runtime** ranks, checked on each acquire. This
+/// fixes the static seam's two gaps — **granularity** (thread-local ⇒ genuinely per-thread, the
+/// nested-`root` hole closes structurally) and **coverage** (runtime ranks express *dynamic* orderings —
+/// bank-transfer `min/max`, hand-over-hand). It tests whether *upgrading the floor lifts the match*
+/// (partial → full), and at what price: a runtime check (#6), OS thread-local (bare-metal #5 — why it is
+/// feature-gated and not `no_std`), and a **modality shift** from static *prevention* to runtime
+/// *detection* (an inversion is trapped only on paths that execute). See `lock_registry`.
+#[cfg(feature = "lockdep")]
+pub mod lock_registry;
 
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;

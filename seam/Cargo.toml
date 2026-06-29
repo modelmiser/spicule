@@ -9,5 +9,12 @@ publish = false
 name = "seam_spsc"
 path = "src/lib.rs"
 
+[features]
+# The sixteenth seam (`lock_registry`) is a RUNTIME lock-order registry (lockdep-in-miniature).
+# It needs OS thread-local storage, so — unlike every other seam — it CANNOT be `no_std`. Gating
+# it behind a feature makes that bare-metal (#5) cost *structural and visible in the build config*:
+# `cargo test --features lockdep`. The default build stays `no_std`.
+lockdep = []
+
 [profile.test]
 opt-level = 0
