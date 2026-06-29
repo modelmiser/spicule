@@ -40,7 +40,7 @@ A primitive whose precondition has a conjunct that *cannot* be internalized (one
 caller-owned state) would force the caller to carry it — pushing seam width from O(buffers)
 toward O(operations). That is the Phase-C contrast (MMIO; intrusive list).
 
-## All eleven primitives — and why seam width misses *several* axes, not one
+## All twelve primitives — and why seam width misses *several* axes, not one
 
 | Primitive | Consumer seam width | Runtime cost (zero-cost #6) | Type surface (API-locality) |
 |---|---|---|---|
@@ -54,6 +54,7 @@ toward O(operations). That is the Phase-C contrast (MMIO; intrusive list).
 | Take-and-replace | **O(1)/call** (`take(slot,f)` once) | erases on the happy path (the abort-bomb is a ZST `mem::forget`-ten); mild codegen dent (an optimization barrier) | plain `take` — non-viral; **but a mid-take panic aborts the process** (the 8th axis, **unwind-safety** — a hidden cost no width/cost/type column captures) |
 | Drain-and-yield | **O(1)/drain** (`drain()` once) | erases — ordinary iteration, no proof residue | plain `Drain<'a>` — non-viral, **no closure**; **but a leaked guard silently loses the un-yielded tail** (the 9th axis, **leak-freedom** — a hidden cost no width/cost/type column captures) |
 | Self-ref cell | **O(1)/cell** (`init` once) | erases — `Pin` is a marker, no runtime residue | **viral, `&mut`-revoking `Pin`** — flips API-locality; *and* the deeper cost is **immovability** (move-stability), which is **inseparable** — *not* a clean column at all (N stays 9) |
+| Validity (bytes→enum) | **O(1)/read** (`tag_at`) | **non-zero** — a set-membership tag check per read (zero-cost #6, the slab's place via a different predicate) | plain `Tag`; **but the zero-copy `&[u8]→&[Tag]` view needs a sealed ctor (API-locality)** — so the cost is **inseparable**, and it adds **no new axis** (the closed-basis proof) |
 | Intrusive list (branded) | **O(accesses)** — the token threads through every access | (design A erases; the cost is seam width / lost reclaim) | **viral `'brand`** |
 
 **Two instructive rows now show seam width is necessary but not sufficient.** The slab *aces* seam
@@ -70,7 +71,7 @@ That a primitive can be O(1) on this instrument and *still* impose a real consum
 distinct hidden axes is precisely why the Seam Trilemma is a **3-of-N projection (N ≥ 9)**, not
 3-of-3. Seam-width measures one axis well and is blind to the rest.
 
-**Three more rows (plus a fourth) sharpen the same point from the opposite direction — and are a caution against both
+**Four more rows sharpen the same point from the opposite direction — and are a caution against both
 over- and under-counting.** The **type-level index** is O(1) on width, *fully erases*, and is non-viral
 — a near-perfect corner — yet its real tax, **static-index-only expressiveness** (it cannot index a
 runtime `usize`), is invisible to *all three* columns. That invisibility is what let the builder
@@ -85,9 +86,13 @@ runs at a bad time). The **self-ref cell** completes the lesson with a *third* o
 **move-stability / immovability** — is *also* a danger no width/cost column captures, but it is *neither*
 a clean axis *nor* a confounded non-axis. The panel ruled it **real but structurally inseparable**: a
 distinct danger with no isolable cost (immovability is non-uniform — stack-pin spends API-locality,
-`Box::pin` spends bare-metal). So a primitive that aces every column the instrument can see may be paying
-on a hidden cost that is *a real clean axis* (take, drain), a *confounded non-axis* (type-level index), or
-*a real danger with no clean coordinate at all* (self-ref cell) — and only a richer adjudication (the
-cold panel) tells the three apart. See `REALIZABILITY.md` for the full face lattice (the confirmed
-eighth and ninth axes, the rejected probe, and the inseparable category) and `SYNTHESIS.md` for the
-cross-primitive map.
+`Box::pin` spends bare-metal). And the **validity** seam adds a *fourth* outcome — the one that closes
+the basis: its hidden cost (bit-level validity) is *also* invisible to the width column, but it lands on
+a coordinate the instrument *already has* (#6 per read, API-locality for the zero-copy view), adding **no
+new axis**. So a primitive that aces every column the instrument can see may be paying on a hidden cost
+that is *a real clean axis* (take, drain), a *confounded non-axis* (type-level index), *a real danger
+with no clean coordinate at all* (self-ref cell), or *a real danger that projects onto a coordinate
+already on the map* (validity) — and only a richer adjudication (the cold panel) tells the four apart.
+That last outcome — a brand-new danger class adding nothing new — is what shows the cost-basis is
+**closed**. See `REALIZABILITY.md` for the full face lattice (the confirmed axes, the rejected probe, the
+inseparable category, and the closed-basis capstone) and `SYNTHESIS.md` for the cross-primitive map.
