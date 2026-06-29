@@ -402,6 +402,7 @@ decidable trait bounds):
 | **Self-ref cell** | SEAM-HOLDS (TRADEOFF) | all 3 horns hold; pays an **inseparable** danger | **O(1)**, but a viral `&mut`-revoking `Pin` | *A value whose **address** is load-bearing (a self-pointer); moving it dangles it.* Sound via `Pin` over a `!Unpin` cell (the post-`init` move is unconstructible). **Ruled REAL-BUT-INSEPARABLE (outcome 3, N stays 9)** — a distinct danger (no other axis concerns a value's address) with **no isolable cost**: the price is *immovability* (heavier than API-locality), **non-uniform** across witnesses (stack-pin → API-locality, `Box::pin` → bare-metal). A new verdict category. Caveats: contingent (RFC 2349 rejected `?Move` immovable types); crisp only for a non-composable toy. |
 | **Validity** (bytes→enum) | SEAM-HOLDS (TRADEOFF) | all 3 horns hold; the **closed-basis** test | **O(1)**/read; a viral sealed ctor for the view | *A **validity invariant** — a `#[repr(u8)]` enum byte that must be a valid discriminant, UB even without a deref.* A genuinely new danger class, built to ask: does it add an axis? Sound via `transmute`-after-**set-membership** (a *range* check, unsound for non-contiguous discriminants, was the bug two gauntlets forced out). **Unanimous: NO tenth axis — it projects onto the basis.** Its own cost is **(3) inseparable** (2nd example): per-read → #6, the zero-copy `&[u8]→&[Tag]` view → API-locality. **The cost-basis is closed.** Non-novel (`num_enum`/`bytemuck`/`zerocopy`). |
 | **Constant-time secret** (different DOMAIN) | SEAM-BREAKS [horn 1, IFC sense] | a horn drops — *in the information-flow domain* | no `unsafe`; the danger is timing | *Branching on a secret leaks it via timing — **not UB**.* The first probe outside memory safety. `ct_eq(a,b).expose_bool()` then `if b` leaks a relationship using only vended ops — **declassification is etiquette, not type-structure**; closing it needs whole-program **undecidable** IFC. **The intrusive list's horn-drop re-run in a new domain — the trilemma recurs, sharper.** Panel ruling: information-flow is **out of frame**, a *different domain* with its **own basis** (declassification discipline, …). **Closure is per-domain; the framework is domain-parameterized.** (Correction: constant-time codegen is *dischargeable* — CompCert-CT/Jasmin/FaCT — not MMIO-shaped.) |
+| **Capability-gated declassify** (IFC domain) | SEAM-BREAKS [horn 1] — **5/5 unanimous** | a horn drops — *no closing IFC seam on Rust's floor* | an affine `Cap`, but the wall is open | *Probes whether the IFC domain has a **closing** seam.* It does not: `map(self, f)` hands the closure the **bare plaintext** (a captured-`&mut` closure exfiltrates it — **no effect system**), and the affine "budget" counts **uses, not bits** (a loop mints N; one cap → a megabyte). What it enforces (release *location*) **projects onto the affine memory-safety axis**; the real IFC coordinate (*amount* — **quantitative info-flow**, Smith min-entropy) an affine floor can't bound. **THE FINDING: a closing seam exists only when the FLOOR matches the DOMAIN.** Rust's affine floor: matched to memory safety, *mismatched* to IFC (needs Jif/FlowCaml/QIF). |
 
 **Six primitives forced a deeper finding: the Seam Trilemma is a 3-of-N projection (N ≥ 9).** The
 **slab** keeps all three horns yet pays on *zero runtime cost* (#6), the property the trilemma had
@@ -465,10 +466,23 @@ basis**, so the closure is **per domain**. Two confirmations: the secret seam **
 (the intrusive list's horn-drop re-run in a new domain — `ct_eq(a,b).expose_bool()` then `if b` leaks a
 secret relationship; declassification is etiquette, not type-structure; sound non-interference needs
 whole-program *undecidable* IFC — **the trilemma recurs, sharper**), and the IFC domain has its own axis
-with **no memory-safety analog** (*declassification discipline*). So the deepest form of the result is
-**domain-parameterized**: the Seam Trilemma and the cost-basis are the same shape in every soundness
-domain, with a different basis each — memory safety mapped (basis closed), information flow sketched. The
-constructive arc concludes here. Full face lattice: `design_seam/REALIZABILITY.md`.
+with **no memory-safety analog** (*declassification discipline*).
+
+**And a deeper refinement.** A *fourteenth* primitive — a capability-gated declassification — probed
+whether the IFC domain has a *closing* seam (the IFC analog of SPSC). It **also breaks, unanimously
+(5/5)**, and the reason is the project's deepest result: to *compute* on a secret, `map(self, f)` must
+hand the closure the **bare plaintext**, which a captured-`&mut` closure exfiltrates (cap-free, no
+`declassify` site — **unpatchable without an effect system Rust's floor disclaims**); and the affine
+"budget" counts **uses, not bits** (a loop mints N caps; one cap leaks a megabyte). What it *can* enforce
+— release *location* — **projects onto the memory-safety affine axis**; the real IFC coordinate, the
+*amount* (**quantitative information flow**, Smith min-entropy), an affine floor cannot bound. So **both
+IFC seams break, for one reason: Rust's affine floor carries none of the IFC precondition.** It is
+*matched* to memory safety (SPSC closes free, basis closed) and *mismatched* to information flow (no seam
+closes). So the final shape of the result is three-part: **the Seam Trilemma is a domain-general tension;
+each soundness domain has its own cost-basis; and a floor closes a domain's seams only when it carries
+that domain's precondition.** Memory safety mapped (on a matched floor); information flow sketched — its
+seams all break on Rust's floor, pointing at the quantitative/effect floor (Jif, FlowCaml, QIF) it would
+need instead. The constructive arc concludes here. Full face lattice: `design_seam/REALIZABILITY.md`.
 
 **Decontamination, across primitives.** The seamful2 theorem predicted that a failing seam's
 obstruction *relocates* to the re-import boundary rather than vanishing. SPSC: it **vanished**
@@ -498,7 +512,7 @@ was the whole verdict — including the one mirage (the fuel knob), the two genu
 the one *real-but-inseparable* destination (immovability), and the one that landed *on coordinates already
 on the map* (validity) — the last of which is what closes the basis.
 
-**The adversary earned its keep — twelve times.** On MMIO it named the axiom's category correctly
+**The adversary earned its keep — thirteen times.** On MMIO it named the axiom's category correctly
 (a TCB boundary, not a horn) and surfaced a horn-3 cost the builder had under-weighted. On the
 intrusive list it proved something *worse* than the builder predicted: branding does not restore
 soundness at all (a brand is an *access* capability, not a *storage* lifetime), correcting a real
@@ -544,19 +558,25 @@ leaks a secret relationship; declassification is etiquette, not type-structure) 
 enriched the builder's domain hypothesis — information-flow is **out of frame**, a different domain with
 its own axis (declassification discipline), closure is **per domain** — while correcting two over-claims
 (the §4 universal; the false MMIO-axiom analogy, since constant-time codegen is dischargeable per
-CompCert-CT/Jasmin/FaCT). Spec↔impl divergences, sharpened overclaims, three novelty-deflations, one
-axis-rejection, one relabel, one distinctness-ruling, an inseparable-category finding (twice), the
-closed-basis certification, and a domain-generalization (with a horn-drop in the new domain) — exactly
+CompCert-CT/Jasmin/FaCT). And on the **capability-gated declassification** it landed the deepest blow:
+**broke it 5/5** and, in doing so, finished the generalization — `map` must hand the closure the bare
+plaintext (an uncapped exit, no effect system), and the affine cap bounds *uses*, not *bits* (the IFC
+coordinate is *quantitative* leakage, which an affine floor cannot express) — so **no IFC seam closes on
+Rust's floor**, because the floor is *matched* to memory safety and *mismatched* to information flow.
+Spec↔impl divergences, sharpened overclaims, three novelty-deflations, one axis-rejection, one relabel,
+one distinctness-ruling, an inseparable-category finding (twice), the closed-basis certification, a
+domain-generalization, and a floor-domain-mismatch diagnosis (two horn-drops in the new domain) — exactly
 what build/break separation exists to surface. A discovery procedure that can say "no", "the right name",
-"why it doesn't merge", "real but unmeasurable", "real but adds nothing — the basis is closed", and "this
-is a *different domain* entirely" is measuring something real; this one did all six.
+"why it doesn't merge", "real but unmeasurable", "real but adds nothing — the basis is closed", "this is a
+*different domain* entirely", and "this floor is the wrong floor for that domain" is measuring something
+real; this one did all seven.
 
 **Mechanization.** `proof/SeamGap.lean` was upgraded from the one-direction triviality its own
 cold review had flagged to a genuine characterization — `seam_closes_iff_factors`: a seam
 closes **iff** its precondition factors through the safe witness — with the regimes as
 machine-checked instances (`spsc_seam_closes`, `intrusive_seam_does_not_close`, the slab's
 `slab_runtime_closes_but_static_does_not`: the same precondition closes through a *runtime*
-witness but not the *static* one, and `branded_seam_closes`/`refined_seam_closes`/`shared_seam_closes`/`typed_nat_seam_closes`/`take_seam_closes`/`drain_seam_closes`/`selfref_seam_closes`/`validity_seam_closes`/`secret_typed_discipline_factors`:
+witness but not the *static* one, and `branded_seam_closes`/`refined_seam_closes`/`shared_seam_closes`/`typed_nat_seam_closes`/`take_seam_closes`/`drain_seam_closes`/`selfref_seam_closes`/`validity_seam_closes`/`secret_typed_discipline_factors`/`labeled_typed_discipline_factors`:
 all close like SPSC, the recovered axes invisible to the kernel), `propext` only. Honest bound unchanged: the
 *math* is now a real characterization, but the faithfulness of "precondition" and "witness" to
 actual Rust primitives — *which axis a closing seam spends* (zero-cost, API-locality, legibility,
