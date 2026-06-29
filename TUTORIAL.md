@@ -9,7 +9,7 @@ languages"; and (c) what newlang discovered and *why it matters*.
 **What newlang is.** Not a language. It is a research project that asked "what would the
 perfect systems language look like?", listed seven properties such a language should have,
 and then **proved — adversarially — that the seven cannot coexist**, mapped exactly where the
-wall is, and then **built seventeen real things that live right up against the wall (seven that close, plus ten probes — ending by showing the closed basis is *per soundness domain*, that which seams close is *graded* by the *floor-precondition match* (full for memory safety, none for information flow, partial then none for liveness), that *upgrading the floor is non-monotone* — the granularity gap is a ladder — and that a floor can be the *wrong structural logic* (affine vs linear) no upgrade fixes)** to show what
+wall is, and then **built eighteen real things that live right up against the wall (seven that close, plus eleven probes — ending by showing the closed basis is *per soundness domain*, that which seams close is *graded* by the *floor-precondition match* (full for memory safety, none for information flow, partial then none for liveness), that *upgrading the floor is non-monotone* — the granularity gap is a ladder — that a floor can be the *wrong structural logic* (affine vs linear) no upgrade fixes, and finally that the *same* danger is a soundness *break* or a mere concentration *cost* depending on how the re-import rule **packages** it)** to show what
 you *can* do. The deliverables are an impossibility result, a theorem (the *Seam Trilemma*),
 a Lean proof, and a small Rust crate of worked examples.
 
@@ -53,19 +53,33 @@ point at real files in this repo (`seam/`, `proof/`, `design_seam/`).
 >    finalizer must run") — and **broke** in a *new mode*: a clean **none** (a safe `mem::forget` skips the
 >    destructor — the affine floor cannot compel a *linear* obligation), the **wrong structural logic** (no
 >    floor *upgrade* fixes it — every sound decidable fix needs linearity Rust rejected), which also sharpens
->    the unit of the match from *domain* to *precondition*. The Seam Trilemma is *domain-general*, the
+>    the unit of the match from *domain* to *precondition*. And finally (18, a *session-typed channel*) took
+>    that *same* `mem::forget` linearity gap and — by **packaging** it differently — made it merely **cost**
+>    instead of break: it is the **first** out-of-memory-safety probe to **hold** (SEAM-COSTS), because its
+>    precondition *decomposes* and the floor matches it **component-wise** — the *order-safety* half **closes**
+>    via affine typestate (no `root`-hole, unlike #15), while the *completion* half is the #17 gap again but
+>    now only an undischargeable **horn-3 concentration cost** (it recurs at every `?`/early-exit) rather than
+>    a soundness break, because completion is *one component beside a sound safety core* rather than the whole
+>    promise. So **which horn a danger threatens is set by how the rule packages it** — the same gap unsounds
+>    #17 and merely de-concentrates #18. (Honest deflations the panel forced: a single-handle typestate
+>    *walk*, not a binary session; "usable" only for infallible straight-line protocols; and the split is
+>    documented folklore — the contribution is *locating* it.) The Seam Trilemma is *domain-general*, the
 >    cost-basis *per-domain*, the match *graded* along *granularity* and *coverage* and keyed to the
->    *precondition*, *upgrading the floor trades one gap for a finer one*, and *a floor can be the wrong
->    structural logic*. A discovery procedure that only confirms is measuring nothing; this one rejected,
->    confirmed, distinguished, recognised the inseparable, certified closure, recognised a new domain,
->    diagnosed a floor-domain mismatch, graded a partial match, showed the grade cannot be bought up by
->    upgrading the floor, *and named a wrong-structural-logic floor* — all **nine** verdict modes.
+>    *precondition*, *upgrading the floor trades one gap for a finer one*, *a floor can be the wrong
+>    structural logic*, and *the horn a danger threatens is a packaging choice*. A discovery procedure that
+>    only confirms is measuring nothing; this one rejected, confirmed, distinguished, recognised the
+>    inseparable, certified closure, recognised a new domain, diagnosed a floor-domain mismatch, graded a
+>    partial match, showed the grade cannot be bought up by upgrading the floor, *and named a
+>    wrong-structural-logic floor* — all **nine** verdict modes (the eighteenth seam adds no new mode; it
+>    *re-packages* an existing one, turning #17's break into a cost).
 >
-> If you read the earlier version, the genuinely new content is **Primitives 5–17** (Part 9), the
+> If you read the earlier version, the genuinely new content is **Primitives 5–18** (Part 9), the
 > "un-bundlings" + the rejection + the inseparable ruling + the closed-basis capstone + the
 > domain-generalization + the floor-domain refinement + the **graded** (full/partial/none) match + the
 > **non-monotone floor-upgrade** (granularity is a ladder) + the **wrong-structural-logic** mode (affine vs
-> linear), and **meta-lessons 6–10** (Part 11). Everything in Parts 1–8 is unchanged prerequisite material.
+> linear) + the **packaging** finding (the same gap breaks #17 but only *costs* #18 — the first
+> out-of-memory-safety probe to **hold**), and **meta-lessons 6–10** (Part 11). Everything in Parts 1–8 is
+> unchanged prerequisite material.
 
 > **One-paragraph spoiler.** A type system that is *decidable* (the compiler always halts with
 > yes/no and never asks you to write a proof) fundamentally cannot also be *expressive enough*
@@ -458,7 +472,7 @@ doesn't exist.
 
 ---
 
-# Part 9 — Build and break: seventeen real seams (the heart of it)
+# Part 9 — Build and break: eighteen real seams (the heart of it)
 
 Theory in hand, the project stopped arguing and *built*. Crucial design of the experiment:
 **build and break are different machines.** Construction is continuity, so a *stateful builder*
@@ -1098,6 +1112,41 @@ commit-or-rollback after all. The residual incoherence is not noise; it is posit
 verdict. A guard that cannot compel its finalizer cannot be honestly dressed as a closing interface, and the
 gauntlet keeps finding the seam wherever you paper over it.
 
+### Primitive 18 — a session-typed channel → the same gap can be a *cost*, not a break (`seam/src/session.rs`)
+
+The seventeenth seam broke on the linearity gap. The eighteenth asks a question the break makes irresistible:
+is "you can `mem::forget` it" *always* fatal? Take a **session-typed channel** — a `Chan<P>` whose type
+parameter `P` is the *remaining protocol* (markers `Tx`/`Rx`/`End`); each operation consumes the handle and
+returns one at the successor state. Its precondition is a **composite**: *safety* (operations in protocol
+order) **and** *completion* (the protocol runs to `End`). This is the crucible for the two prior liveness
+findings — #15 showed affine **typestate carries static order**, #17 showed the floor **cannot compel
+completion** — so it asks whether the floor matches a composite precondition **component by component**.
+
+It **held** — SEAM-COSTS, the *first* out-of-memory-safety probe to survive rather than break. The panel
+confirmed the components are genuinely **orthogonal** (the soundness attacker's sharpest move — can
+`mem::forget` release the `&'a mut Transport` early to start a *second*, conflicting session? — fails,
+because *leaking a value holding a `&'a mut` does not shorten `'a`*), so the completion gap cannot infect
+safety:
+
+> - **Safety (order) CLOSES** via affine typestate: `send`/`recv`/`close` exist *only* at the matching state,
+>   so an out-of-order step names a method that does not exist (`E0599`), and — unlike #15 — there is **no
+>   `root` to re-enter**, so the granularity hole has no analog. A sound, concentrated sub-seam.
+> - **Completion (progress) only COSTS — horn 3, not horn 1.** It is the *same* `mem::forget` gap as #17, but
+>   here it is one undischargeable *"don't abandon"* obligation that recurs at every `?`/panic/early-return —
+>   a **concentration** cost, not a soundness break, because the hazard is liveness and completion is *one
+>   component beside a sound safety core*, not the whole promise.
+
+That contrast is the finding: **the same linearity gap is a horn-1 *break* (#17) or a horn-3 *cost* (#18)
+depending on how the re-import rule packages it** — whether abandoned-completion is the entire soundness
+claim, or a recoverable obligation sitting beside an independently-sound core. "Which horn a danger
+threatens" is not a property of the danger; it is a design choice. (The panel deflated three over-claims I
+made, all accepted: this `core`/no-`unsafe` witness has no duality — a single-handle typestate *walk*, not a
+binary session (E0499 forecloses two endpoints), so abandonment is *self*-abandonment; "usable" holds only
+for *infallible straight-line* protocols, because a fallible transport forces `?`, which *is* the
+abandonment; and the order-closes/completion-breaks split is documented folklore — Jespersen–Munksgaard–Larsen
+2015, RFC 1066, ECOOP 2022 *"Stay Safe Under Panic"* — so the contribution is *locating* a known split on the
+lattice, not discovering it. The seam adds **no new verdict mode**: it *re-packages* an existing one.)
+
 ### The taxonomy (the whole point, in one table)
 
 | Primitive | What the missing conjunct *is* | Fate | Pays with |
@@ -1225,7 +1274,7 @@ You can forget every primitive and keep these.
    the professional move is to (a) put it in one place (concentration), (b) make the obligation
    at it as visible as possible, and (c) choose *consciously* whether the boundary costs you
    soundness, decidability, concentration, runtime, API surface, a solver in your toolchain, or
-   exception-safety, leak-freedom. The seventeen-primitive taxonomy is a decision procedure for that choice.
+   exception-safety, leak-freedom. The eighteen-primitive taxonomy is a decision procedure for that choice.
 
 4. **Adversarial separation of build and break.** Construction wants continuity; demolition wants
    a cold, context-free skeptic. Keeping them as separate machines — and *calibrating* your
@@ -1434,7 +1483,7 @@ mode.)
    shared ownership trades *unbounded dynamic allocation* against *caller-provided bounded storage*.
 8. **Verus** and **Creusot** docs — what "Rust but `unsafe` is proof" actually looks like when
    someone ships it (the productive horn from Part 8).
-9. This repo's `WRITEUP.md` (the full result), `design_seam/SYNTHESIS.md` (the seventeen-primitive map),
+9. This repo's `WRITEUP.md` (the full result), `design_seam/SYNTHESIS.md` (the eighteen-primitive map),
    `design_seam/REALIZABILITY.md` (the face lattice / 3-of-N proof), and `THE-SAME-WALL.md` (the
    cross-field boundary/veil discipline).
 

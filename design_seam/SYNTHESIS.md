@@ -6,8 +6,8 @@ distilled the **Seam Trilemma**: a seam cannot simultaneously have (1) sound re-
 phase asked the next question: *take the trilemma as a map and actually build a seam.* The
 stateful builder authored each seam spec + a real `rustc`-checked implementation; the cold
 adversarial harness (5 attackers + judge + an independent horn-classifier) red-teamed the
-**re-import rule only**, never the author. Seventeen primitives, chosen so their preconditions have
-seventeen different *shapes* — and so that each later one becomes the witness un-bundling an axis the
+**re-import rule only**, never the author. Eighteen primitives, chosen so their preconditions have
+eighteen different *shapes* — and so that each later one becomes the witness un-bundling an axis the
 trilemma had folded (zero-cost, API-locality, AI-legibility, solver-freedom, bare-metal, unwind-safety,
 leak-freedom). The discriminating moments exercise **nine** adjudication modes: a type-level-proof
 index pitched as *checker-tractability* was **rejected** (off-diagonal confounded with expressiveness);
@@ -36,7 +36,13 @@ wrong *domain*. **The cost-basis is closed (per domain), *which seams close* is 
 floor-domain–precondition match, and that grade is *not monotonically liftable*** — memory safety a **full**
 match (basis closed), information flow **no** match (both seams break), liveness a **partial-to-none** match
 that an upgraded floor relocates rather than fills (deadlock-freedom partial, must-run-cleanup none) — the
-constructive arc's conclusion and its generalizations.
+constructive arc's conclusion and its generalizations. And an eighteenth — a *session-typed channel* — is
+the **first** out-of-(memory-safety) probe to **hold with a cost** rather than break (SEAM-COSTS [horn 3]):
+it shows the floor matches a *composite* precondition **component-wise** — protocol **order** *closes* via
+affine typestate (sound, no `root`-hole), while **completion** is a horn-3 *concentration* cost — and the
+*same* `mem::forget` linearity gap that **broke** #17's horn 1 only **costs** here, because completion is one
+component beside a sound safety core, not the whole promise: *which horn a danger threatens is set by how the
+rule packages it.*
 
 ## The headline result
 
@@ -392,7 +398,7 @@ last one closing the basis.
 
 ## What the harness added that the builder missed
 
-The adversarial process earned its keep seventeen times:
+The adversarial process earned its keep eighteen times:
 
 1. **MMIO:** the builder framed M1/M4 as possibly "a different shape than the trilemma." The
    harness sharpened it to the exact right category — a TCB `assume` boundary, standard in
@@ -538,11 +544,27 @@ The adversarial process earned its keep seventeen times:
     wrong *domain* — sharpened to Boats' *scoped-task trilemma* (Rust rejected the linear horn). Both rounds
     FAILED on *spec-coherence*, not the break — a seam designed to break cannot be coherently dressed as
     usable, which is itself evidence for the verdict.
+17. **Session-typed channel (the composite — same gap, different horn; the first out-of-domain HOLD):** a
+    `Chan<P>` affine typestate handle, built as the crucible for #15 (typestate carries static **order**) and
+    #17 (the floor cannot compel **completion**). The panel ruled **SEAM-COSTS [horn 3]** (TRADEOFF, **survived
+    1/1**, r25) — the **first** out-of-(memory-safety) probe to *hold with a cost* rather than break. The floor
+    matches this *composite* precondition **component-wise**, and the components are *orthogonal* (the
+    soundness attacker confirmed `mem::forget` cannot shorten `'a` to start a second session, so completion
+    cannot infect safety): protocol **order** *closes* via affine typestate (sound, decidable, concentrated;
+    **no `root`-hole**, unlike #15), while **completion** is an undischargeable horn-3 *concentration* cost
+    (the #17 linearity gap, recurring at every `?`/panic/early-return). The illumination: the *same*
+    `mem::forget` gap that **broke** #17's horn 1 only **costs** here, because completion was #17's *whole*
+    promise but is *one component beside a sound safety core* here — **which horn a danger threatens is set by
+    how the rule packages it.** Three deflations recorded: it is a single-handle typestate **walk**, not a
+    binary session (`core`/no-`unsafe` forecloses dual endpoints, `E0499`; the abandonment is *self*-
+    abandonment); "usable" holds only for *infallible straight-line* protocols; and the split is documented
+    **folklore** (Jespersen–Munksgaard–Larsen 2015; RFC 1066; ECOOP 2022 "Stay Safe Under Panic") — the
+    contribution is *locating* it on the lattice, not discovering it.
 
 ## Artifacts
 
-- Specs (attacked as text): `SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat,take,drain,selfref,validity,secret,labeled,ordered_locks,lock_registry,linear}.md`
-- Cold verdicts: `REPORT_SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat,take,drain,selfref,validity,secret,labeled,ordered_locks,lock_registry,linear}.md` (+ raw transcripts in `runs_seam/`)
+- Specs (attacked as text): `SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat,take,drain,selfref,validity,secret,labeled,ordered_locks,lock_registry,linear,session}.md`
+- Cold verdicts: `REPORT_SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat,take,drain,selfref,validity,secret,labeled,ordered_locks,lock_registry,linear,session}.md` (+ raw transcripts in `runs_seam/`)
 - Real Rust (rustc-checked, `#![no_std]`): `../seam/` — `src/lib.rs` (SPSC), `src/mmio.rs`,
   `src/intrusive.rs`, `src/slab.rs`, `src/branded.rs`, `src/refined.rs`, `src/shared.rs` (the lone
   `alloc` user), `src/typed_nat.rs` (eighth-axis probe 1 — sound, no new axis), `src/take.rs`
@@ -554,17 +576,20 @@ The adversarial process earned its keep seventeen times:
   full/partial/none), `src/lock_registry.rs` (the floor-UPGRADE probe — feature `lockdep`, needs `std`;
   *breaks*, the upgrade is non-monotone — granularity recurs token→thread→task), `src/linear.rs` (the
   breadth-wise *linearity* probe — `core`-only; *breaks*, a clean **none** grade and a new
-  *wrong-structural-logic* mode — affine vs linear); consumer code is
+  *wrong-structural-logic* mode — affine vs linear), `src/session.rs` (the *composite-precondition* probe —
+  `core`-only, no `unsafe`; *holds with a cost* — SEAM-COSTS [horn 3]: order-safety closes, completion costs;
+  the same `mem::forget` gap that broke #17's horn 1 only costs here); consumer code is
   `#![forbid(unsafe_code)]`; laundering paths are `compile_fail`
-  doctests (61 `tests/` integration tests + 29 doctests = 90 total in the default `no_std` build; with
-  `--features lockdep` the runtime registry adds its tests for **97 total**).
+  doctests (65 `tests/` integration tests + 33 doctests = 98 total in the default `no_std` build; with
+  `--features lockdep` the runtime registry adds its tests for **105 total**).
 - Seam-width instrument: `SEAM_WIDTH.md`; full face lattice: `REALIZABILITY.md`
 - Mechanization: `../proof/SeamGap.lean` — `seam_closes_iff_factors` + the
   `spsc`/`intrusive`/`slab`/`branded`/`refined`/`shared`/`typed_nat`/`take`/`drain`/`selfref`/`validity` instances,
   plus `secret_typed_discipline_factors`, `labeled_typed_discipline_factors`,
   `ordered_locks_typed_discipline_factors`, `lock_registry_typed_discipline_factors`, and
   `linear_typed_discipline_factors` (the two IFC seams' + the three liveness seams' trivial sub-facts —
-  all five break) (propext-only).
+  all five break), plus `session_order_safety_closes` (the eighteenth seam *holds* with a horn-3 cost — its
+  order-safety component closes like a closing seam; the completion cost is modeling-dictionary) (propext-only).
 
 ## The one-sentence upgrade to the trilemma
 
@@ -603,9 +628,16 @@ seventeenth — a *must-run cleanup guard*, probing **breadth-wise** — showed 
 **precondition, not the domain** (the *same* liveness domain grades deadlock-freedom *partial* but
 must-run-cleanup *none*) and that a floor can be the wrong *structural logic* entirely (affine "at most
 once" vs linear "exactly once": a *safe* `mem::forget` skips the finalizer, no decidable fix buys it back —
-the ninth, *wrong-structural-logic* mode). So the final shape of the result: **the Seam Trilemma is a
-domain-general tension; each soundness domain has its own cost-basis; a floor closes a domain's seams only
-to the degree it carries that *precondition* — a graded match, full (memory safety) / partial-to-none
-(liveness, by precondition) / none (information flow) — that grade cannot be freely lifted (upgrading the
-floor trades one gap for a finer one and spends the closed cost-basis), and the floor can fail a
-precondition not only by domain but by *structural logic* (affine vs linear).**
+the ninth, *wrong-structural-logic* mode); and an eighteenth — a *session-typed channel* — was the
+**first** out-of-(memory-safety) probe to *hold with a cost* (SEAM-COSTS [horn 3]), showing the floor
+matches a *composite* precondition **component-wise** (protocol order *closes* via affine typestate;
+completion is a horn-3 *concentration* cost — the #17 linearity gap), and that the *same* `mem::forget` gap
+that **broke** #17's horn 1 only **costs** here, because completion is one component beside a sound safety
+core: *which horn a danger threatens is set by how the rule packages it*. So the final shape of the result:
+**the Seam Trilemma is a domain-general tension; each soundness domain has its own cost-basis; a floor
+closes a domain's seams only to the degree it carries that *precondition* — a graded match, full (memory
+safety) / partial-to-none (liveness, by precondition) / none (information flow) — that grade cannot be
+freely lifted (upgrading the floor trades one gap for a finer one and spends the closed cost-basis), the
+floor can fail a precondition not only by domain but by *structural logic* (affine vs linear), and a single
+*composite* precondition can be matched *component-wise* — one horn closing while another costs, with which
+horn a danger threatens set by how the re-import rule packages it.**

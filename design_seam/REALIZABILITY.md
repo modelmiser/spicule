@@ -1,6 +1,6 @@
 # The realizability table — the Seam Trilemma is a 3-of-N projection
 
-*Phases D–P. The constructive question the slab opened, the branded index extended, the refined index
+*Phases D–Q. The constructive question the slab opened, the branded index extended, the refined index
 closed, the shared-ownership seam pushed to seven, the take-and-replace seam to eight, and the
 drain-and-yield seam to nine: is the Seam Trilemma the whole story (3 horns), or a low-dimensional
 shadow of a larger tension? Answer: it is a **3-of-N projection with N ≥ 9** — where the recovered axes
@@ -33,7 +33,20 @@ match-unit from *domain* to *precondition* (the *same* liveness domain grades de
 but must-run-cleanup *none*) and adding the **ninth** method mode — *wrong-structural-logic*: the floor is
 **affine** ("at most once") where the precondition needs **linear** ("exactly once"), so `mem::forget`
 skips the finalizer and *no decidable price* buys it back (Boats' scoped-task trilemma, linear horn
-rejected; the leakpocalypse) — distinct from a domain-mismatch.** (Phases L–P.)*
+rejected; the leakpocalypse) — distinct from a domain-mismatch. And an eighteenth — a *session-typed
+channel* (a `Chan<P>` typestate walk) — was the **first** out-of-(memory-safety) probe to **hold with a
+cost** rather than break: **SEAM-COSTS [horn 3]**, because protocol fidelity is a *composite* matched
+**component-wise** (the components orthogonal — `mem::forget` cannot shorten `'a` to start a second
+session, so completion cannot infect safety): the *order-safety* half **closes** (affine typestate, no
+`root`-hole) while the *completion* half is an undischargeable horn-3 *concentration* cost (the #17
+linearity gap, recurring at every `?`/early-exit). The illumination: the **same** `mem::forget` gap that
+**broke** #17's horn 1 only **costs** here — completion was #17's *whole* soundness promise but is *one
+component beside a sound core* here, so **which horn a linearity gap threatens depends on how the rule
+*packages* it**, not on the gap. (Deflations, accepted: a single-handle *walk* not a binary session
+[no duality in `core`/no-`unsafe`, E0499]; "usable" only for infallible straight-line protocols; and the
+split is documented folklore — Jespersen–Munksgaard–Larsen 2015, ECOOP 2022 *Stay Safe Under Panic* — so
+the contribution is *locating* it on the lattice.) N stays 9; the five broken seams are unchanged — this
+one holds.** (Phases L–Q.)*
 
 > **A note on the "#5/#6/#7" shorthand (and a numbering collision).** `#6` (zero-cost) and `#7`
 > (AI-legible) are the literal seed-property numbers. The "**#5⟂#7 cell**" shorthand, coined for the
@@ -487,6 +500,38 @@ adds two things the deadlock probes could not:
 > given a coherent "usable" spec — *the incoherence IS the break* (both rounds FAILED on spec-coherence, not
 > on the conceded `forget` skip), which is itself positive evidence for the verdict.
 
+#### The match is COMPONENT-WISE — an eighteenth primitive HOLDS with a cost, and the same gap lands on a different horn
+
+The four out-of-(memory-safety) probes above all *broke*. An eighteenth — a **session-typed channel**
+(`Chan<P>`, an affine typestate handle whose type parameter is the *remaining protocol*) — was the first
+to **hold with a cost** instead: the cold panel (r25) ruled **SEAM-COSTS [horn 3]** (TRADEOFF, survived).
+It is the crucible for the two prior liveness findings — #15 (typestate carries static *order*) and #17
+(the floor cannot compel *completion*) — and it asks whether the floor matches a *composite* precondition
+**component by component**.
+
+> **Protocol fidelity decomposes, and the floor matches it component-wise — the components orthogonal.**
+> The soundness attacker exhausted the surface (forge a `Chan` at a wrong state → blocked by nominal
+> non-subtyping + private fields; skip/reorder → `E0599`; transport-aliasing → `E0499`; and the sharp
+> cross-component move — can `mem::forget` shorten `'a` to start a second session? **no**, leaking a value
+> holding a `&'a mut` does not shorten `'a`), so **completion cannot infect safety**. The *order-safety*
+> component **closes** — sound, decidable, concentrated, and (unlike #15) with **no `root`-hole**, a
+> genuine closing sub-seam. The *completion* component is an undischargeable **horn-3 concentration** cost:
+> the "don't abandon" obligation recurs at every `?`/panic/early-return, de-concentrating the completion
+> half — but no horn fully drops, so the seam holds.
+>
+> **The same linearity gap, a different horn.** The *same* safe `mem::forget` that **broke** #17's horn 1
+> only **costs** here. Completion was #17's *whole* soundness promise (so the gap **unsounds** it); here it
+> is *one component beside an independently-sound safety core* (so the gap merely **de-concentrates**).
+> **Which horn a linearity gap threatens is not a property of the gap but of how the re-import rule
+> *packages* it.** Deflations the panel forced, all accepted: the witness has no duality (`core`/no-`unsafe`
+> forecloses two live endpoints, `E0499`), so it is a single-handle *walk*, not a binary session, and the
+> abandonment is *self*-abandonment; "usable" holds only for *infallible straight-line* protocols (a
+> fallible transport forces `?`, which *is* the abandonment); and the order-closes/completion-breaks split
+> is **documented folklore** (Jespersen–Munksgaard–Larsen 2015; RFC 1066; ECOOP 2022 *Stay Safe Under
+> Panic*, Cutner–Yoshida–Vassor), so the contribution is **locating** the known split on the lattice. N
+> stays 9; the five broken seams are unchanged — this one is the arc's first SEAM-COSTS *hold* outside
+> memory safety.
+
 ## The recursion: each primitive un-bundled one folded axis
 
 ```
@@ -549,6 +594,18 @@ registry│  UPGRADES the floor (runtime)  ⇒ BREAKS [horn1] (FAILED, r22). Flo
         │                              1066/1084). NEW MODE wrong-structural-logic: affine≠linear (Boats'
         │                              scoped-task trilemma, linear horn rejected), not domain-mismatch.
         ▼
+session │  COMPOSITE precondition       ⇒ HOLDS WITH COST: SEAM-COSTS [horn3] (TRADEOFF, survived r25). FIRST
+        │  (session-typed channel)       out-of-domain probe to HOLD, not break. Matched COMPONENT-WISE
+        │                              (orthogonal — mem::forget can't shorten 'a to start a 2nd session):
+        │                              order-SAFETY CLOSES (affine typestate, no root-hole) / COMPLETION COSTS
+        │                              horn-3 (the #17 linearity gap; recurs at every ?/early-exit — de-
+        │                              concentrates, doesn't unsound). SAME gap, DIFFERENT horn: it BROKE #17's
+        │                              horn1 (completion = whole promise) but only COSTS here (one component
+        │                              beside a sound core) — which horn depends on how the rule PACKAGES it.
+        │                              Deflations: single-handle WALK not a binary session (E0499); "usable"
+        │                              infallible-straight-line only; FOLKLORE (JML'15; ECOOP'22 Stay Safe
+        │                              Under Panic) → contribution = LOCATING it. N stays 9; 5 broken unchanged.
+        ▼
 Realizability table         MEMORY-SAFETY domain (on a MATCHED affine floor): N ≥ 9 CLOSED axes (sound,
                             decidable, concentration, API-locality, #6, #7, bare-metal, unwind-safety,
                             leak-freedom) + INSEPARABLE (move-stability, validity) + 2 outside-the-axes
@@ -560,7 +617,11 @@ Realizability table         MEMORY-SAFETY domain (on a MATCHED affine floor): N 
                             granularity RECURS thread→task (a containment-scope LADDER no ambient floor tops);
                             and a DIFFERENT liveness precondition — must-run-cleanup — grades a clean NONE and
                             BREAKS on wrong-structural-logic (affine≠linear), so the match-unit is the
-                            PRECONDITION, not the domain. The Seam Trilemma is DOMAIN-GENERAL, the cost-basis
+                            PRECONDITION, not the domain. And a COMPOSITE precondition (session-typed channel)
+                            is matched COMPONENT-WISE and HOLDS WITH COST (SEAM-COSTS [horn3]): order-safety
+                            CLOSES, completion COSTS horn-3 — the same linearity gap that BROKE #17 only de-
+                            concentrates here, because which horn it threatens depends on how the rule PACKAGES
+                            it. The Seam Trilemma is DOMAIN-GENERAL, the cost-basis
                             PER-DOMAIN, and WHICH SEAMS CLOSE depends on the FLOOR-DOMAIN MATCH — GRADED (full /
                             partial / none), set per PRECONDITION not per domain, and not monotonically liftable.
                             Nine method modes:
@@ -673,7 +734,7 @@ The axes are not independent toggles you can set freely — **two trades and a d
   invisible in non-leak code), yet still real — a reminder that "deflatable" and "not an axis" are
   different verdicts (the rejected checker-tractability probe is the latter; leak-freedom the former).
 - The Lean kernel (`../proof/SeamGap.lean`) sees only whether a precondition factors through a
-  Boolean witness — so it certifies *closure* (`spsc`/`branded`/`refined`/`shared`/`typed_nat`/`take`/`drain`/`selfref`/`validity` (+ `secret`/`labeled`/`ordered_locks`/`lock_registry`/`linear`, which certify only the trivial typed sub-fact — the two IFC seams break, and three liveness-domain seams break: the static lock-ordering one partially-matches, the runtime registry shows the floor-upgrade is non-monotone, and the must-run-cleanup one is a clean NONE breaking on wrong-structural-logic, affine≠linear)
+  Boolean witness — so it certifies *closure* (`spsc`/`branded`/`refined`/`shared`/`typed_nat`/`take`/`drain`/`selfref`/`validity` — and `session_order_safety_closes`, the eighteenth seam, whose *order-safety* component closes like a holding seam (it HOLDS with a horn-3 completion cost the kernel cannot see) — (+ `secret`/`labeled`/`ordered_locks`/`lock_registry`/`linear`, which certify only the trivial typed sub-fact — the two IFC seams break, and three liveness-domain seams break: the static lock-ordering one partially-matches, the runtime registry shows the floor-upgrade is non-monotone, and the must-run-cleanup one is a clean NONE breaking on wrong-structural-logic, affine≠linear)
   all close, like SPSC) but is blind to *which axis a closing seam spends* — or whether that "axis" is
   even separable (the self-ref cell closes in the kernel exactly like the rest; its inseparability is
   pure modeling-dictionary). Every column past

@@ -133,7 +133,9 @@ containment-scope **ladder** — token < thread < task < … — and no ambient 
 domain needs its own floor and its own instruments — a quantitative/effect type system (Jif, FlowCaml, QIF)
 for information flow; a runtime, learned acquires-before graph (FreeBSD WITNESS, `lockdep`, Abseil — all of
 which abandoned static ranks) or a *task-local* discipline for liveness — for domains whose axes have no
-memory-safety analog.
+memory-safety analog. (A *sixth* out-of-memory-safety primitive — the session-typed channel below — is the
+exception that proves the rule: it does **not** break, because its *order-safety* component genuinely
+**closes** and only its *completion* component costs, so the broken count stays **five**.)
 
 **A fifth primitive breaks — and it sharpens what the *match* is a match *of*.** The must-run cleanup
 guard (`seam/src/linear.rs`, a `MustRun<F: FnOnce()>` RAII finalizer — core-only, *in* the default
@@ -151,3 +153,22 @@ back (every sound fix is either undecidable reachability or a viral `Leak`/linea
 trilemma, whose linear horn Rust rejected). It is the **enforcement** face of the ninth axis (leak-freedom)
 — `drain` (#10) is the **tolerance** face (a leaked guard is *harmless*), while `linear` needs a leak to be
 *impossible* and cannot get it — so **N is unchanged**.
+
+**A sixth out-of-domain primitive HOLDS — and shows which *horn* a linearity gap hits depends on how the
+rule packages it.** The session-typed channel (`seam/src/session.rs`, a `Chan<P>` affine typestate over
+`Tx`/`Rx`/`End` — core-only, no `unsafe`) is the eighteenth seam, and the **first out-of-(memory-safety)
+primitive to hold with a cost rather than break** (cold panel r25: **SEAM-COSTS [horn 3]**, survived). Its
+precondition — *protocol fidelity* — is a **composite**, and the affine floor matches it **component-wise**,
+the two components *orthogonal* (the soundness attacker confirmed a `mem::forget` cannot shorten the `&'a
+mut Transport`'s `'a` to start a second session, so completion cannot infect safety): **order-safety
+closes** (sound, concentrated, and — unlike #15 — with no `root`-hole to re-enter), while **completion costs
+horn 3** — an undischargeable "don't abandon" obligation that recurs at every `?`/panic/early-return. The
+illumination is the contrast with the *fifth* break: the **same** safe `mem::forget` gap that **broke**
+#17's horn 1 only **costs** here, because completion was #17's *whole* soundness promise but is *one
+component beside a sound safety core* here — so **which horn a linearity gap threatens is not a property of
+the gap but of how the re-import rule *packages* it.** Honest deflations the panel recorded: this
+`core`/no-`unsafe` witness has no duality (a single-handle typestate *walk*, not a binary session — `E0499`
+forecloses two concurrently-live endpoints), "usable" holds only for *infallible straight-line* protocols (a
+fallible step forces `?`, which *is* the abandonment), and the order-closes/completion-breaks split is
+documented folklore (Jespersen–Munksgaard–Larsen 2015; RFC 1066; ECOOP 2022 *"Stay Safe Under Panic"*) — the
+contribution is *locating* it on the lattice, not discovering it.

@@ -370,7 +370,7 @@ the second alone. A 0/N adversarial result is only as good as your ability to ru
 "the proposer was just weak," and the cleanest way to do that is to *hand the proposer
 the known-good sub-component and watch the failure move, not disappear.*
 
-## 10. The constructive phase — build and break seventeen real seams
+## 10. The constructive phase — build and break eighteen real seams
 
 The trilemma is a map, so the next step was to stop arguing in the abstract and **build**.
 A different harness shape: the negative half used cold instances to *propose* (and they
@@ -551,6 +551,28 @@ dressed as a coherent usable interface — **the incoherence *is* the break**, r
 over — so the residual defects are positive evidence for the verdict, not noise. Full face lattice:
 `design_seam/REALIZABILITY.md`.
 
+**A composite coda — the same linearity gap is a *break* or a *cost* depending on how the rule packages
+it.** An *eighteenth* primitive (`session.rs`) composes the two prior liveness findings into one: a
+session-typed channel, `Chan<P>` an affine typestate handle whose parameter is the *remaining* protocol
+(`Tx`/`Rx`/`End`). Its precondition is a **composite** — *safety* (operations in protocol order) plus
+*completion* (the protocol reaches `End`) — and the question is whether the affine floor matches it
+**component-wise**. It is the first out-of-(memory-safety) probe to **hold with a cost** rather than break:
+the cold panel ruled **SEAM-COSTS [horn 3]** (TRADEOFF, survived). The components turn out *orthogonal* (the
+soundness attacker confirmed the sharp cross-move fails — `mem::forget` cannot shorten `'a` to start a second
+session, so completion cannot infect safety): **safety closes** (per-state methods make an out-of-order step
+a type error, and unlike #15 there is *no `root` to re-enter*), while **completion costs horn 3** — an
+undischargeable "don't abandon" obligation that recurs at every `?`/panic/early-return. The yield is the
+contrast with #17: the *same* `mem::forget` linearity gap that **broke** `linear`'s horn 1 only **costs**
+here, because completion *was* `linear`'s whole soundness promise but is *one component beside an
+independently-sound safety core* in `session` — so the gap **de-concentrates** rather than **unsounds**.
+**Which horn a danger threatens is not a property of the danger but of how the re-import rule packages it.**
+Three deflations, all accepted: this `core`/no-`unsafe` witness has no duality (a single-handle typestate
+*walk*, not a binary session — `E0499` forecloses two live endpoints, so the abandonment is *self*-
+abandonment); "usable" holds only for infallible straight-line protocols (a fallible transport forces `?`,
+which *is* the abandonment); and the order-closes/completion-breaks split is **documented folklore**
+(Jespersen–Munksgaard–Larsen 2015; RFC 1066; ECOOP 2022 *"Stay Safe Under Panic"*, which names it) — the
+contribution is *locating* it on the lattice, not discovering it.
+
 **Decontamination, across primitives.** The seamful2 theorem predicted that a failing seam's
 obstruction *relocates* to the re-import boundary rather than vanishing. SPSC: it **vanished**
 (precondition factors through the witness). MMIO: it **moved and stayed decidable** (the
@@ -579,7 +601,7 @@ was the whole verdict — including the one mirage (the fuel knob), the two genu
 the one *real-but-inseparable* destination (immovability), and the one that landed *on coordinates already
 on the map* (validity) — the last of which is what closes the basis.
 
-**The adversary earned its keep — sixteen times.** On MMIO it named the axiom's category correctly
+**The adversary earned its keep — seventeen times.** On MMIO it named the axiom's category correctly
 (a TCB boundary, not a horn) and surfaced a horn-3 cost the builder had under-weighted. On the
 intrusive list it proved something *worse* than the builder predicted: branding does not restore
 soundness at all (a brand is an *access* capability, not a *storage* lifetime), correcting a real
@@ -645,12 +667,20 @@ builder's grade and named a new verdict mode** — the affine floor earns a *cle
 partial-via-lint, foreclosed by `scopeguard`), the obstruction is **wrong-structural-logic** (affine vs linear,
 no decidable price), and — most tellingly — it **FAILED the spec on coherence in both rounds without ever
 disputing the break**, demonstrating that a seam designed to break cannot be coherently dressed as usable.
+And on the **session-typed channel** it did the tenth thing — the first **hold** among the out-of-domain
+probes: it confirmed (against the builder's own "first/novel" framing) that the order/completion split is
+*published folklore* and that the witness is a single-handle *walk* not a binary session, yet ruled the
+component-wise structure *real* (the soundness attacker proved `mem::forget` cannot parlay abandonment into
+an order violation), so the seam **holds with a horn-3 cost** — the same linearity gap that *broke* `linear`
+only *de-concentrates* here, a SEAM-COSTS not a new mode, because completion sits beside a sound safety core.
 Spec↔impl divergences, sharpened overclaims, novelty-deflations, one axis-rejection, one relabel,
 one distinctness-ruling, an inseparable-category finding (twice), the closed-basis certification, a
 domain-generalization, a floor-domain-mismatch diagnosis (two horn-drops in the IFC domain), and a
 graded-partial-match diagnosis (the liveness domain — across *two* probes: a static floor that *partly*
 fits, then a runtime floor that fits *differently* but not *more*, so upgrading the floor proved
-non-monotone and "granularity" a ladder) — exactly what build/break separation exists to surface. A
+non-monotone and "granularity" a ladder), and one *component-wise hold* (the session channel — order-safety
+closes while completion costs horn 3, the same gap that broke one seam only costing another) — exactly what
+build/break separation exists to surface. A
 discovery procedure that can say "no", "the right name", "why it doesn't merge", "real but unmeasurable",
 "real but adds nothing — the basis is closed", "this is a *different domain* entirely", "this floor is the
 wrong floor for that domain", "this floor *partly* fits that domain — and a better floor trades the gap,
