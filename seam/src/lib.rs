@@ -163,6 +163,14 @@ pub mod selfref;
 /// the dual of the `get_unchecked` family. See `validity`.
 pub mod validity;
 
+/// Thirteenth seam (Phase L — the *different-domain* probe): a constant-time secret. The first primitive
+/// aimed *outside* memory safety: its danger is an **information-flow / timing leak** (branching on a
+/// secret), not UB, and it has **no `unsafe` keyword** at all — the foundation is plain arithmetic, and
+/// constant-time-ness is a *trusted* property the compiler does not guarantee (a TCB axiom, like MMIO's,
+/// but for a security guarantee). Built to ask whether the closed cost-basis is closed *absolutely* or
+/// only *within memory safety* — i.e. whether IFC is a different domain with its own basis. See `secret`.
+pub mod secret;
+
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 use core::sync::atomic::{AtomicUsize, Ordering};
