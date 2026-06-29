@@ -9,7 +9,7 @@ languages"; and (c) what newlang discovered and *why it matters*.
 **What newlang is.** Not a language. It is a research project that asked "what would the
 perfect systems language look like?", listed seven properties such a language should have,
 and then **proved — adversarially — that the seven cannot coexist**, mapped exactly where the
-wall is, and then **built eleven real things that live right up against the wall (seven that close, plus four axis probes past seven — one rejected, two confirmed, one ruled real-but-inseparable)** to show what
+wall is, and then **built twelve real things that live right up against the wall (seven that close, plus five probes past seven — one rejected, two confirmed, one real-but-inseparable, and one that closed the basis)** to show what
 you *can* do. The deliverables are an impossibility result, a theorem (the *Seam Trilemma*),
 a Lean proof, and a small Rust crate of worked examples.
 
@@ -22,25 +22,28 @@ point at real files in this repo (`seam/`, `proof/`, `design_seam/`).
 > ended at the seven-property impossibility result and its first four worked seams. It has since
 > been carried through the project's *constructive* arc, and the story got materially deeper. Two
 > additions, both in Parts 9–11:
-> 1. **The trilemma turned out to be a *projection*.** Its three horns are a low-dimensional shadow
->    of an object with **at least nine axes** — and each of those axes is an *already-named* PL
->    concern (zero-cost abstraction, generativity, refinement-legibility, the `core`/`alloc` split,
->    exception-safety, leak-freedom). Seven more primitives (5–11) probed them one at a time, so the
->    result is a **unification** of known axes under one question — *what does the safe witness cost?* —
->    not a pile of new discoveries. That honest deflation is the spine of the new material.
-> 2. **The method has *four* verdict modes.** The probes past seven exercise all of them, and the
->    contrast is the capstone. (8, a type-level index) was **rejected** — its axis confounded with
->    expressiveness. (9, take-and-replace) was **confirmed** — the eighth axis, *unwind-safety*. (10,
->    drain-and-yield) was **confirmed and ruled distinct** from its sibling — the ninth, *leak-freedom*
->    (`Drop` never runs) vs unwind-safety (`Drop` runs at a bad time), taking the count to **N ≥ 9**.
->    (11, a self-referential cell) was ruled **real but structurally inseparable** — *move-stability* is
->    a genuinely distinct danger (a value's address) yet has *no isolable cost*, so it is neither a clean
->    axis nor a confound; N stays 9, a new category. A discovery procedure that only confirms is measuring
->    nothing; this one rejected a confound, confirmed two clean axes, refused to merge two siblings, *and*
->    recognised a real danger that cannot be made a clean coordinate.
+> 1. **The trilemma turned out to be a *projection* — of a *closed* object.** Its three horns are a
+>    low-dimensional shadow of an object with **nine clean axes** — each an *already-named* PL concern
+>    (zero-cost abstraction, generativity, refinement-legibility, the `core`/`alloc` split,
+>    exception-safety, leak-freedom) — plus an *inseparable category* and two *outside-the-axes* slots.
+>    Eight more primitives (5–12) probed it one at a time, so the result is a **unification** of known
+>    axes under one question — *what does the safe witness cost?* — a question with **finitely many
+>    answers**. That honest deflation, and the *closure* of the basis, is the spine of the new material.
+> 2. **The method has *five* verdict modes** — and the fifth closes the basis. The probes past seven
+>    exercise all of them. (8, a type-level index) was **rejected** — confounded with expressiveness.
+>    (9, take-and-replace) was **confirmed** — the eighth axis, *unwind-safety*. (10, drain-and-yield)
+>    was **confirmed and ruled distinct** from its sibling — the ninth, *leak-freedom* (`Drop` never
+>    runs) vs unwind-safety (`Drop` runs at a bad time), N ≥ 9. (11, a self-referential cell) was ruled
+>    **real but structurally inseparable** — *move-stability* is a distinct danger with *no isolable
+>    cost*. (12, a validity-checked bytes→enum read) was built to ask whether the basis is *closed*, and
+>    the panel ruled, unanimously, that this brand-new danger class **projects entirely onto the existing
+>    basis** — no tenth axis. *The cost-basis is closed.* A discovery procedure that only confirms is
+>    measuring nothing; this one rejected a confound, confirmed two clean axes, recognised the
+>    inseparable (twice), and certified when a new danger adds nothing.
 >
-> If you read the earlier version, the genuinely new content is **Primitives 5–11** (Part 9), the
-> "un-bundlings" + the rejection + the inseparable ruling, and **meta-lessons 6–8** (Part 11). Everything
+> If you read the earlier version, the genuinely new content is **Primitives 5–12** (Part 9), the
+> "un-bundlings" + the rejection + the inseparable ruling + the closed-basis capstone, and
+> **meta-lessons 6–9** (Part 11). Everything
 > in Parts 1–8 is unchanged prerequisite material.
 
 > **One-paragraph spoiler.** A type system that is *decidable* (the compiler always halts with
@@ -434,7 +437,7 @@ doesn't exist.
 
 ---
 
-# Part 9 — Build and break: eleven real seams (the heart of it)
+# Part 9 — Build and break: twelve real seams (the heart of it)
 
 Theory in hand, the project stopped arguing and *built*. Crucial design of the experiment:
 **build and break are different machines.** Construction is continuity, so a *stateful builder*
@@ -442,13 +445,14 @@ Theory in hand, the project stopped arguing and *built*. Crucial design of the e
 Demolition is coldness, so the cold harness is the **red team**, aimed *only* at the re-import
 rule. Each seam ships as a **text spec** (what the cold attackers attack) *and* a real,
 `rustc`-checked crate (`seam/`) whose consumer code is `#![forbid(unsafe_code)]` and whose UB-
-laundering attempts are `compile_fail` tests. Eleven primitives: the first four chosen because their
+laundering attempts are `compile_fail` tests. Twelve primitives: the first four chosen because their
 preconditions have four *different shapes*; the next three (5–7) because they reopened a deeper
-question — *how many axes is the trilemma actually a projection of?* — each recovering one; and **four
-axis probes past seven** (8–11) — one *no* (rejected, confounded), two *yes* (unwind-safety at N ≥ 8,
-leak-freedom at N ≥ 9, ruled *distinct*), and one *"real but inseparable"* (move-stability — a genuine
-danger with no clean coordinate, N stays 9). The four verdicts together are the point. The headline
-finding:
+question — *how many axes is the trilemma actually a projection of?* — each recovering one; and **five
+probes past seven** (8–12) — one *no* (rejected, confounded), two *yes* (unwind-safety at N ≥ 8,
+leak-freedom at N ≥ 9, ruled *distinct*), one *"real but inseparable"* (move-stability — a genuine danger
+with no clean coordinate, N stays 9), and one that asked whether the axis-list was *finished* and got
+back *"yes — this new danger adds nothing, the basis is closed"* (validity). The five verdicts together
+are the point, and the last one concludes the arc. The headline finding:
 
 > **Whether a seam closes is a function of the precondition's shape** — specifically, *what the
 > dangerous conjunct is*: can the cheap checker carry it, can a runtime check carry it, is it an
@@ -795,6 +799,43 @@ slab entry that move-stability exists to serve forces `unsafe` pin-projection or
 *fourth* verdict mode, beyond {reject, confirm, confirm-and-distinguish}: **a real danger with no clean
 coordinate** — the lattice's first inseparable entry. N stays 9.
 
+### Primitive 12 — validity-checked bytes→enum → the basis is CLOSED (`seam/src/validity.rs`)
+
+Eleven primitives in, a different question presses: are we *finding* axes, or just enumerating them
+forever? Every danger so far either landed on a clean axis, a confound, or the inseparable category — but
+maybe the next danger adds a tenth coordinate, and the one after that an eleventh, with no end. The
+twelfth primitive is built to test that directly: **is the cost-basis closed?**
+
+Its danger is genuinely new — a **validity invariant**. A `#[repr(u8)]` enum `Tag {A=0, B=5, C=200}` is
+one byte, but only the bytes `0,5,200` are valid; `transmute::<u8,Tag>(7)` is **UB the moment it exists**
+(no dereference — the compiler may assume a `Tag` is always a valid discriminant, e.g. an exhaustive
+`match` with no fallthrough). No prior axis is about a value's *bit pattern*. The seam reads a `Tag` out
+of a byte buffer via `transmute`-after-check; sound because the check (set membership `b ∈ {0,5,200}`)
+precedes the unsafe. *(A teaching aside from the real run: the first two gauntlets **FAILED** — the first
+on a genuine bug, a *range* check `b <= 200` that launders the non-contiguous bytes `3,4,6..199` into
+invalid enums; the second on a fix the builder propagated incompletely, leaving a stale `b <= 2` in
+another section. The adversary earned its keep to the very last primitive. The third, fully-corrected,
+survived.)*
+
+And the verdict is the **capstone of the whole arc**: *unanimously*, this brand-new danger class adds
+**no tenth axis**. Every witness for it spends a coordinate *already on the map* — a single checked read
+is a runtime tag check (**zero-cost #6**, the slab's axis via a different predicate), and the zero-copy
+`&[u8] → &[Tag]` view that systems code actually wants is either eager-O(n) (#6) or a sealed constructor
+(**API-locality**). (That non-uniformity also makes validity a *second* inseparable danger, after
+move-stability — so inseparability recurs.) This is the **dual** of the `get_unchecked` family: there
+*one* danger had *many* witnesses spending *different* axes; here *many* dangers (stale-key, bit-validity)
+converge on the *same* axis. Read together, the two directions say the cost-space is a **small fixed
+basis** that dangers *project onto*. The fifth verdict mode — **"real, but it adds nothing new"** — is the
+one that *closes* the basis.
+
+So the constructive arc concludes: the Seam Trilemma is a **3-of-N projection of a closed object** —
+**nine clean axes**, an **inseparable category** (move-stability, validity), and **two outside-the-axes**
+(the MMIO TCB axiom, the intrusive horn-drop). *"What does the safe witness cost?"* has finitely many
+answers. (Honest caveats the panel logged: validity is sound only in the fieldless single-byte corner —
+data-carrying enums need a recursive `is_bit_valid` — and the whole thing is non-novel, the shipped
+design of `num_enum`/`bytemuck`/`zerocopy`. The bound stays a *lower* bound; but a brand-new danger
+projecting cleanly onto the basis is what closure looks like.)
+
 ### The taxonomy (the whole point, in one table)
 
 | Primitive | What the missing conjunct *is* | Fate | Pays with |
@@ -808,10 +849,11 @@ coordinate** — the lattice's first inseparable entry. N stays 9.
 | Take-and-replace | transient broken invariant across an unwind | **closes** | **unwind-safety (8th axis)** — via a discharge menu (abort / repair / poisoning) |
 | Drain-and-yield | a load-bearing guard `Drop` on a leak-permitting floor | **closes** | **leak-freedom (9th axis)** — pre-pessimize; a leaked guard loses the tail (distinct from unwind-safety) |
 | Self-ref cell | a value whose *address* is load-bearing | **closes (sound)** | **move-stability — INSEPARABLE** (immovability; non-uniform: stack-pin→API-locality, heap-pin→bare-metal). A distinct danger with **no clean axis**; N stays 9 |
+| Validity (bytes→enum) | a value whose *bit pattern* must be valid | **closes (sound)** | **PROJECTS ONTO THE BASIS** — per-read → #6, zero-copy view → API-locality. **No new axis** (2nd inseparable). The closed-basis proof; N stays 9 |
 | MMIO | external physical axiom | **sound modulo TCB** | a trusted `assume` |
 | Intrusive list | aliasing+liveness that escapes to the caller | **breaks** | a trilemma horn |
 
-The decontamination signal (Part 6) held across all eleven: the obstruction *vanished* (SPSC),
+The decontamination signal (Part 6) held across all twelve: the obstruction *vanished* (SPSC),
 *moved and stayed decidable* (MMIO), *moved onto a runtime witness* (slab), *moved onto the type
 surface* (branded index), *moved into the trusted toolchain* (refined index — into the SMT solver),
 *moved into a runtime subsystem* (shared — into the global allocator), *moved onto the resolver's fuel
@@ -819,8 +861,9 @@ budget* (type-level index — but that site proved *not* to be a clean axis), *m
 (take-and-replace — a mid-take panic becomes an abort; that site *was* a clean axis, the eighth),
 *moved onto the leak path* (drain-and-yield — a forgotten guard loses the tail; the ninth axis, distinct
 from the eighth), *moved onto immovability* (self-ref cell — a `Pin`-revoked move capability; a real
-danger but with no clean coordinate, the inseparable category), or *moved and broke soundness*
-(intrusive) — and **where it moves is the entire verdict.**
+danger but with no clean coordinate, the inseparable category), *moved onto an already-occupied axis*
+(validity — bit-validity → #6 or API-locality, adding nothing new; the closed-basis signature), or *moved
+and broke soundness* (intrusive) — and **where it moves is the entire verdict.**
 
 ---
 
@@ -836,15 +879,16 @@ Instantiated: `spsc_seam_closes` (precondition = witness → closes); `intrusive
 (precondition is the gap → no closing decision exists); the slab pairing
 `slab_runtime_closes_but_static_does_not` (the *same* precondition closes through a *runtime*
 witness but not a *static* one — the zero-cost axis, made formal at the model level); and
-`branded_seam_closes`/`refined_seam_closes`/`shared_seam_closes`/`typed_nat_seam_closes`/`take_seam_closes`/`drain_seam_closes`/`selfref_seam_closes`
+`branded_seam_closes`/`refined_seam_closes`/`shared_seam_closes`/`typed_nat_seam_closes`/`take_seam_closes`/`drain_seam_closes`/`selfref_seam_closes`/`validity_seam_closes`
 (all close *indistinguishably from SPSC* in the kernel — which is the point: the branded index's viral
 type-parameter cost, the refined index's solver dependency, the shared seam's heap requirement, the
 type-level index's `recursion_limit` cost, the take seam's abort-on-panic, the drain seam's leaked-tail,
-and the self-ref cell's immovability are alike invisible to a kernel that sees only whether a Boolean
-witness suffices — which is *exactly* why the axis claims had to be adjudicated by the cold panel in
-prose, not the kernel: the kernel certifies that all of `typed_nat`/`take`/`drain`/`selfref` *close*, and
-says nothing about the fact that one spends a confounded non-axis, two spend clean distinct axes, and one
-spends a real-but-inseparable danger with no clean coordinate at all).
+the self-ref cell's immovability, and the validity seam's bit-check are alike invisible to a kernel that
+sees only whether a Boolean witness suffices — which is *exactly* why the axis claims had to be
+adjudicated by the cold panel in prose, not the kernel: the kernel certifies that all of
+`typed_nat`/`take`/`drain`/`selfref`/`validity` *close*, and says nothing about the fact that one spends a
+confounded non-axis, two spend clean distinct axes, one spends a real-but-inseparable danger, and one
+spends a coordinate *already on the map* — the last of which is how you know the basis is closed).
 
 **The honest bound — and why it matters as a lesson.** A cold adversarial review of the proof
 returned the right verdict: the *checked* math is a real characterization, but the *faithfulness*
@@ -883,7 +927,7 @@ You can forget every primitive and keep these.
    the professional move is to (a) put it in one place (concentration), (b) make the obligation
    at it as visible as possible, and (c) choose *consciously* whether the boundary costs you
    soundness, decidability, concentration, runtime, API surface, a solver in your toolchain, or
-   exception-safety, leak-freedom. The eleven-primitive taxonomy is a decision procedure for that choice.
+   exception-safety, leak-freedom. The twelve-primitive taxonomy is a decision procedure for that choice.
 
 4. **Adversarial separation of build and break.** Construction wants continuity; demolition wants
    a cold, context-free skeptic. Keeping them as separate machines — and *calibrating* your
@@ -941,12 +985,27 @@ witness, and the honest move is to drop the claim.
    axis (stack-pin → API-locality, heap-pin → bare-metal), so it is neither a clean coordinate nor a
    confound. A procedure that only ever confirms is a confirmation machine; one that only ever rejects is
    a cynic; one that confirms but can't tell two neighbors apart is a blurry lens; one that calls every
-   real danger a "dimension" is an over-counter. This one did all of it — reject, confirm, relabel,
-   distinguish, *and recognise the inseparable* — which is exactly why you can trust the nine axes it
-   reports (and the one danger it honestly declined to make a tenth). Seek the input that makes your
-   method return *false*, the input that makes it confirm *the wrong thing*, the input that tempts it to
-   *merge two different things*, and the input that is *real but cannot be cleanly measured*; the value is
-   in those four gaps.
+   real danger a "dimension" is an over-counter. And on the fifth (a validity-checked read) it returned
+   the answer that *ends the search* — **yes, this danger is real and brand-new, but it adds nothing to
+   the list; its cost is a coordinate you already have**. This one did all of it — reject, confirm,
+   relabel, distinguish, recognise-the-inseparable, *and certify-that-a-new-thing-adds-nothing* — which is
+   exactly why you can trust the nine axes it reports (and the dangers it honestly declined to make a
+   tenth). Seek the input that makes your method return *false*, the input that makes it confirm *the
+   wrong thing*, the input that tempts it to *merge two different things*, the input that is *real but
+   cannot be cleanly measured*, and the input that is *new but redundant*; the value is in those five gaps.
+
+9. **A measuring system is finished when a genuinely new input lands on an old coordinate.** The whole
+   constructive arc was a search for axes, and the honest way to *end* it was not to run out of energy
+   but to find a stopping criterion. That criterion is the **closed basis**: when you deliberately feed
+   in a danger from a category you have never touched (here, bit-level validity — no prior axis was about
+   a value's bit pattern) and the cost it pays is *already on your map*, you have evidence the map is
+   complete. It is the dual of the discovery move — there, *one* danger (out-of-bounds access) needed
+   *many* witnesses that each spent a *different* axis (so the axes were really distinct); here, *many*
+   dangers (a stale handle, an invalid bit pattern) spend the *same* axis (so the axis-list is really
+   finite). Neither direction is a proof — the bound stays a *lower* bound, a future danger could still
+   surprise — but "a new danger class projecting cleanly onto the basis" is what closure *looks like*,
+   and naming that as a result is more honest than either claiming completeness or probing forever. When
+   your taxonomy stops growing under new inputs, say so, and stop.
 
 ---
 
@@ -959,30 +1018,28 @@ witness, and the honest move is to drop the claim.
 - `lean proof/SeamGap.lean` — read the characterization; change a definition and watch it break.
 - Skim `design_seam/REPORT_SEAM_SPEC_*.md` — the cold attackers' actual verdicts, in their words.
 
-**Build a twelfth primitive (a day).** Pick a primitive whose precondition has a *new* shape — a
-typed atomic cell, a bump allocator handing out overlapping views — write the spec + a `rustc`-checked
-toy, predict which horn (or recovered axis) it hits, and run it through the harness (`python3 -m
-orchestrator.seam_phase --spec ... --gauntlets 1 --prior-art-web`). The trilemma is a 3-of-N projection
-with **nine** confirmed axes (slab → zero-cost #6; branded → API-locality; refined → AI-legibility #7,
-plus horn 2 = decidability vs solver-freedom; shared → bare-metal #5; take-and-replace → unwind-safety;
-drain-and-yield → leak-freedom). The four probes past seven are the standing lesson: (1) *split
-decidability from termination-of-the-checker* (type-level index, Primitive 8) was **rejected**
-(confounded with expressiveness, encoding-relative, mislabels terminating-resolution); (2) *survive an
-unwind through a transiently-broken invariant* (take-and-replace, Primitive 9) was **confirmed**
-(unwind-safety, N ≥ 8); (3) *survive a leaked guard whose `Drop` is load-bearing* (drain-and-yield,
-Primitive 10) was **confirmed and ruled distinct** (leak-freedom, N ≥ 9); (4) *a value whose address is
-load-bearing* (the `Pin`-based self-referential cell, `seam/src/selfref.rs`, Primitive 11) was ruled
-**real but structurally inseparable** — a distinct danger whose cost (immovability) is non-uniform
-across witnesses (stack-pin → API-locality, `Box::pin` → bare-metal), so it cannot be isolated as a
-clean axis; N stays 9. So a newly-split axis is almost always an *already-named* PL boundary; *some
-candidates are not axes at all* (confound); the real ones arrive *mislabeled*; the real ones with
-siblings must be *shown distinct*; and *some real dangers have no clean coordinate at all* (inseparable).
-The real prize is the unification. If you try a twelfth, find a precondition shape whose cost you can
-isolate with a **clean** off-diagonal (everything but the candidate held fixed); if you can't, you have
-either a confound (Primitive 8) or — if the danger is genuinely distinct but every witness spends another
-axis — an *inseparable* one (Primitive 11). (See `design_seam/REALIZABILITY.md` for the current face
-lattice, the filled cells, the confirmed eighth and ninth axes, the rejected probe, and the inseparable
-category.)
+**Build a thirteenth primitive (a day) — but know the basis is closed.** Pick a primitive whose
+precondition has a *new* shape — a typed atomic cell, a bump allocator handing out overlapping views —
+write the spec + a `rustc`-checked toy, predict which coordinate it spends, and run it through the harness
+(`python3 -m orchestrator.seam_phase --spec ... --gauntlets 1 --prior-art-web`). The trilemma is a 3-of-N
+projection with **nine** confirmed axes (slab → zero-cost #6; branded → API-locality; refined →
+AI-legibility #7, plus horn 2 = decidability vs solver-freedom; shared → bare-metal #5; take-and-replace
+→ unwind-safety; drain-and-yield → leak-freedom). The five probes past seven are the standing lesson, and
+they now cover *every outcome a probe can have*: (1) *checker-termination* (type-level index, Primitive 8)
+was **rejected** (confounded with expressiveness); (2) *unwind-safety* (take-and-replace, Primitive 9)
+was **confirmed** (N ≥ 8); (3) *leak-freedom* (drain-and-yield, Primitive 10) was **confirmed and ruled
+distinct** (N ≥ 9); (4) *move-stability* (the `Pin`-based self-referential cell, Primitive 11) was ruled
+**real but structurally inseparable** (cost non-uniform across witnesses); and (5) *bit-validity*
+(`seam/src/validity.rs`, Primitive 12) **projected entirely onto the existing basis** — a brand-new
+danger class adding **no tenth axis**, the **closed-basis** result. So a new danger is almost always an
+*already-named* PL boundary; some candidates are *confounds* (8); the real ones arrive *mislabeled* (9);
+the real ones with siblings must be *shown distinct* (10); some have *no clean coordinate* (11,
+inseparable); and — the conclusion — a genuinely new one most likely just *projects onto the basis you
+already have* (12). **The honest expectation for a thirteenth probe is therefore one of these five, not a
+tenth axis.** If you build it anyway, the most interesting outcome would be a danger that *fails* to
+project — a real tenth coordinate — which is exactly why it is worth a day to check. (See
+`design_seam/REALIZABILITY.md` for the current face lattice, the filled cells, the confirmed axes, the
+rejected probe, the inseparable category, and the closed-basis capstone.)
 
 **Reading path, in dependency order:**
 1. *The Rust Book*, ownership/borrowing chapters — the affine system in practice.
@@ -1007,7 +1064,7 @@ category.)
    shared ownership trades *unbounded dynamic allocation* against *caller-provided bounded storage*.
 8. **Verus** and **Creusot** docs — what "Rust but `unsafe` is proof" actually looks like when
    someone ships it (the productive horn from Part 8).
-9. This repo's `WRITEUP.md` (the full result), `design_seam/SYNTHESIS.md` (the eleven-primitive map),
+9. This repo's `WRITEUP.md` (the full result), `design_seam/SYNTHESIS.md` (the twelve-primitive map),
    `design_seam/REALIZABILITY.md` (the face lattice / 3-of-N proof), and `THE-SAME-WALL.md` (the
    cross-field boundary/veil discipline).
 
