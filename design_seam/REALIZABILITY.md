@@ -1,16 +1,19 @@
 # The realizability table — the Seam Trilemma is a 3-of-N projection
 
-*Phases D–J. The constructive question the slab opened, the branded index extended, the refined index
+*Phases D–K. The constructive question the slab opened, the branded index extended, the refined index
 closed, the shared-ownership seam pushed to seven, the take-and-replace seam to eight, and the
 drain-and-yield seam to nine: is the Seam Trilemma the whole story (3 horns), or a low-dimensional
 shadow of a larger tension? Answer: it is a **3-of-N projection with N ≥ 9** — where the recovered axes
 are known PL boundaries, not novel discoveries (see the meta-pattern below). Each constructive primitive
 lit up one more axis by being the **witness that two configurations the trilemma treated as identical
-actually differ** — and the method's discrimination is now demonstrated in **four** modes, not just
+actually differ** — and the method's discrimination is now demonstrated in **five** modes, not just
 accumulation: it **confirmed** axes (cleanly deflated to pre-existing), **sharpened** a horn without
 extending N (solver-freedom), **rejected** a confounded candidate (checker-tractability → not an axis),
-and — newest — found one **real but structurally inseparable** (move-stability → a distinct danger with
-no isolable cost; the self-referential-cell phase). N stays 9; the inseparable category is the find.*
+found one **real but structurally inseparable** (move-stability → a distinct danger with no isolable
+cost), and — the capstone — found a new danger class that **projects entirely onto the existing basis**
+(validity → no tenth axis), which together with the recurrence of inseparability (validity is a second
+inseparable danger) is the evidence that **the cost-basis is CLOSED** (see "The cost-basis is closed",
+below). N stays 9; the closed basis is the conclusion of the constructive arc.*
 
 > **A note on the "#5/#6/#7" shorthand (and a numbering collision).** `#6` (zero-cost) and `#7`
 > (AI-legible) are the literal seed-property numbers. The "**#5⟂#7 cell**" shorthand, coined for the
@@ -73,6 +76,7 @@ Legend: ✓ holds / aced · ✗ paid or dropped · ◐ conditional · *(plain)* 
 | **Take-and-replace** | ✓ | ✓ | ✓ O(1) | ✓ *(plain `take`)* | ◐¹² | ✓ | ✓ | **◐**¹³ | ✓ | **unwind-safety (8th axis)** — sound via an abort-bomb; basic guarantee downgraded |
 | **Drain-and-yield** | ✓ | ✓ | ✓ O(1) | ✓ *(plain `Drain<'a>`)* | ✓ | ✓ | ✓ | ✓ | **◐**¹⁴ | **leak-freedom (9th axis)** — sound via pre-pessimization; a leaked guard loses the tail |
 | **Self-ref cell** | ✓ | ✓ | ✓ O(1) | **✗**¹⁵ *(viral, `&mut`-revoking `Pin`)* | ✓ | ✓ | ✓ | ✓ | ✓ | **move-stability — REAL but INSEPARABLE**, *not* a new axis (N stays 9); cost = *immovability*, non-uniform (stack-pin→API-locality, heap-pin→bare-metal) |
+| **Validity (bytes→enum)** | ✓ | ✓ | ✓ O(1) | ◐¹⁶ | ◐¹⁶ | ✓ | ✓ | ✓ | ✓ | **validity — INSEPARABLE (2nd), and the CLOSED-BASIS proof**: a new danger class adds *no tenth axis* (unanimous); its own cost is non-uniform (per-read→#6, zero-copy view→API-locality) |
 | **Intrusive list** (branded) | **✗**⁵ | ✓ | ✗ O(accesses) | ✗ | ◐ | ✗ | ✓ | ✓ | ✓ | a **horn genuinely drops** — no sound+usable+concentrated decision exists |
 
 ¹ with a foundation `Send` opt-in, else O(ISRs). ² **reclassified legible→illegible** (cold panel,
@@ -137,6 +141,17 @@ its real price is *immovability* (heavier than API-locality), and it is *non-uni
 (stack-pin spends API-locality, `Box::pin` spends bare-metal). So this row does **not** add a 10th axis
 column; it adds a new *category*. Soundness held (the move is unconstructible: `Pin::get_mut` needs
 `Unpin`, the cell is `!Unpin`).
+¹⁶ **API-locality ◐ / zero-cost ◐ — non-uniform, hence inseparable; and the closed-basis proof.** A
+`transmute`-after-set-membership-check read of a `#[repr(u8)]` enum byte. Sound (set membership = the
+validity predicate *exactly*; moving from a *range* check, unsound for non-contiguous discriminants, was
+the fix two gauntlets forced). Its cost is **witness-non-uniform**, the move-stability signature: a
+single `tag_at` is a per-read runtime check (**zero-cost #6**), but the zero-copy `&[u8] → &[Tag]` view
+that restores concentration needs either eager O(n) validation (#6) or a **sealed constructor**
+(**API-locality**). So validity is **inseparable** — a *second* example, making inseparability a
+recurring category. The unanimous meta-ruling: it adds **no tenth axis**; every witness spends a
+pre-existing coordinate. Caveats: sound only in the *fieldless single-byte corner* (data-carrying /
+`repr(C)` enums need a recursive `is_bit_valid`), and wholly non-novel (`num_enum` / `bytemuck` /
+`zerocopy` + refinement types).
 
 ## What the table proves
 
@@ -258,8 +273,45 @@ necessary** — RFC 2349's *rejected* `?Move`/`Move` immovable types *were* a de
 witness; Rust **chose** hookless `memcpy` moves + a library `Pin`, so "no free-standing witness can
 exist" overstates it. (b) The crisp `core`-only reading is the isolation of a **non-composable**
 single-frame toy; any real intrusive node / `Future` / slab entry forces `unsafe` pin-projection or
-`Box::pin`. **N stays 9.** The find is the *category*: the lattice's first axis that is real yet
-inseparable — a distinct danger with no clean coordinate, only a menu of *other* axes to spend.
+`Box::pin`. **N stays 9.** The find is the *category*: a real danger with no clean coordinate, only a
+menu of *other* axes to spend. **And it is not a one-off** — the validity seam (next section) is a
+*second* inseparable danger (bit-level validity, cost non-uniform: per-read #6 vs zero-copy-view
+API-locality), so "inseparable" is a recurring class. Two members so far, both about a property the
+witness can discharge in more than one place: an *address* (move-stability) and a *bit pattern*
+(validity).
+
+## The cost-basis is CLOSED — the constructive arc's conclusion
+
+The validity seam (`seam/src/validity.rs`) was built not to hunt a tenth axis but to ask the question
+all the previous probes were circling: **is the cost-basis closed?** It re-imports a danger no prior
+primitive touched — a **validity invariant** (a `#[repr(u8)]` enum byte that must be a valid
+discriminant, UB even without a dereference). A genuinely new danger class. And the cold panel's
+**unanimous** ruling (across three gauntlets — two of which found real spec bugs first, the adversary
+earning its keep to the last) is the headline:
+
+> **A new danger class added NO new axis. Every witness for it spends a *pre-existing* coordinate.**
+> *"What does the safe witness cost?"* has **finitely many answers** — the nine clean axes, plus the
+> inseparable category. The lattice's cost-basis is **closed**.
+
+Concretely, validity's cost is **(3) inseparable** (the panels split (2)-projects-onto-#6 vs
+(3)-inseparable, and the more careful reading won): a single checked read spends **zero-cost #6** (a
+runtime tag check, the slab's axis via a different predicate), but the zero-copy `&[u8] → &[Tag]` view —
+the real reason systems code transmutes byte buffers — spends either eager #6 or a sealed constructor's
+**API-locality**. Either way the cost lands on coordinates *already on the map*. This is the **dual** of
+the `get_unchecked` family: there *one* danger (out-of-bounds) had *many* witnesses spending *different*
+axes (branded → API-locality, refined → solver-freedom, typed_nat → confounded, slab → #6); here *many*
+dangers (stale-key, bit-validity) converge on the *same* axis (#6). Read together, the two directions
+say the cost-space is a small fixed basis that dangers *project onto*, not an open-ended list of
+discoveries.
+
+So the constructive arc concludes: the Seam Trilemma is a **3-of-N projection of a closed object** —
+**nine clean axes** (sound, decidable, concentration, API-locality, zero-cost, AI-legibility,
+bare-metal, unwind-safety, leak-freedom), **plus an inseparable category** (move-stability, validity) of
+real dangers with no clean coordinate, **plus the two outside-the-axes categories** (the MMIO TCB axiom;
+the intrusive list's genuine horn-drop). Every danger probed since lands in one of these. The honest
+bound stays a *lower* bound (a future danger could still surprise), but the evidence — a brand-new
+danger class projecting cleanly onto the basis, and inseparability recurring rather than appearing once
+— is what closure looks like.
 
 ## The recursion: each primitive un-bundled one folded axis
 
@@ -288,11 +340,15 @@ typednat│  PROBES checker-tractability ⇒ REJECTED (off-diagonal confounded b
         │                              is-safe/RFC 1066, pre-existing; the THINNEST axis but genuinely distinct)
  selfref│  PROBES move-stability        ⇒ INSEPARABLE (a distinct danger — a value's address — with NO
         │                              isolable cost: stack-pin→API-locality, heap-pin→bare-metal; cost is
-        │                              immovability, heavier than API-locality. N stays 9. NEW VERDICT CATEGORY)
+        │                              immovability. N stays 9. NEW VERDICT CATEGORY)
+validity│  PROBES bit-level validity    ⇒ PROJECTS ONTO THE BASIS (a NEW danger class, NO tenth axis —
+        │                              unanimous) + 2nd INSEPARABLE (per-read→#6, zero-copy view→API-locality).
+        │                              THE COST-BASIS IS CLOSED. The constructive arc's conclusion.
         ▼
-Realizability table         N ≥ 9 axes (sound, decidable, concentration, API-locality, #6, #7,
-                            bare-metal, unwind-safety, leak-freedom) — plus the method's FOUR modes:
-                            confirm (clean), sharpen (sub-face), reject (confounded), inseparable (no isolable cost)
+Realizability table         N ≥ 9 CLOSED axes (sound, decidable, concentration, API-locality, #6, #7,
+                            bare-metal, unwind-safety, leak-freedom) + an INSEPARABLE category (move-
+                            stability, validity) + 2 outside-the-axes (MMIO TCB axiom; intrusive horn-drop).
+                            The method's FIVE modes: confirm / sharpen / reject / inseparable / projects-onto-basis.
 ```
 
 Each constructive primitive is the **witness that two trilemma-identical configurations differ** —
@@ -311,17 +367,19 @@ affine types). The constructive phase did not discover new physics. What it foun
 three horns silently *bundle together a set of independently known PL design axes*, and that one rubric
 — **"what does the safe witness cost?"** — unifies them. The contribution is the unification and the
 method that recovers each axis (build the dissociating witness, let a cold panel adjudicate), not the
-novelty of any single axis. The adjudicator showed **four distinct modes**, which is exactly what makes
+novelty of any single axis. The adjudicator showed **five distinct modes**, which is exactly what makes
 it an instrument and not a rubber stamp: it **confirmed-but-deflated** three new dimensions (bare-metal,
 unwind-safety, leak-freedom → "real, but pre-existing", growing N to 9); it **sharpened without
 extending** once (solver-freedom = horn 2's "keep" face, not a new axis); it **rejected outright** once
-(checker-tractability — off-diagonal confounded with expressiveness); and it found one **real but
-structurally inseparable** (move-stability — a distinct danger with no isolable cost; N stays 9, a new
-category). The seam tension is where *known* axes meet, and the panel both recovers the clean ones,
-refuses the confounded one, and — the subtlest call — recognises a real danger that *cannot* be made a
-clean coordinate. A discovery procedure with only a "yes" is a rubber stamp; this one has "yes", "yes
-but pre-existing", "no — confounded", "sharpens not extends", and "real but inseparable", each on the
-record.
+(checker-tractability — off-diagonal confounded with expressiveness); it found two **real but
+structurally inseparable** dangers (move-stability, validity — distinct dangers with no isolable cost; a
+recurring category); and — the capstone — it ruled a new danger class **projects entirely onto the
+existing basis** (validity adds no tenth axis), the evidence that **the cost-basis is closed**. The seam
+tension is where *known* axes meet; the panel recovers the clean ones, refuses the confounded, recognises
+the inseparable, and certifies when a new danger adds nothing. A discovery procedure with only a "yes" is
+a rubber stamp; this one has "yes", "yes but pre-existing", "no — confounded", "sharpens not extends",
+"real but inseparable", and "real but it projects onto what's already here" — each on the record, the
+last one closing the basis.
 
 ## Structure among the axes (not just a count)
 
@@ -362,9 +420,15 @@ The axes are not independent toggles you can set freely — **two trades and a d
   *clean* off-diagonal and was **confirmed**; the ninth (drain-and-yield → leak-freedom) likewise. So N
   reached 9 only on witnesses that hold every other axis fixed — the rejection of the confounded
   candidate is what makes the confirmations trustworthy. A tenth probe (self-ref cell → move-stability)
-  then found the **inseparable** category: a distinct danger with no isolable cost (N stays 9). So the
-  bound is "≥ 9 *clean* axes, plus at least one real-but-inseparable danger" — and "more may exist" now
-  covers *three* possible shapes, not one: another clean axis, another confound, or another inseparable.
+  found the **inseparable** category (a distinct danger with no isolable cost; N stays 9), and an
+  eleventh (validity → bit-level validity) found *both* a **second** inseparable danger *and* the
+  **closed-basis** result: a brand-new danger class that adds **no tenth axis**, every witness spending a
+  pre-existing coordinate. So the honest bound is now: **≥ 9 clean axes + an inseparable category (≥ 2
+  members) + 2 outside-the-axes (TCB axiom, horn-drop), and the basis is *closed* under the dangers
+  probed** — "more may exist" remains true (it is a lower bound), but the *evidence* of a new danger
+  projecting cleanly onto the basis, and inseparability recurring, is what closure looks like. The four
+  shapes a future probe can take are now all attested: a clean axis, a confound, an inseparable, or a
+  plain projection onto the basis.
 - The #5⟂#7 dissociation **is witnessed** (refined index = brand-free + legible; slab = brand-free +
   illegible). Bare-metal ⟂ #6 **is witnessed** (slab = bare-metal + runtime-cost; Shared = global-heap
   + runtime-cost). Unwind-safety ⟂ all seven **is witnessed** (take-and-replace vs SPSC: the cleanest
@@ -383,7 +447,7 @@ The axes are not independent toggles you can set freely — **two trades and a d
   invisible in non-leak code), yet still real — a reminder that "deflatable" and "not an axis" are
   different verdicts (the rejected checker-tractability probe is the latter; leak-freedom the former).
 - The Lean kernel (`../proof/SeamGap.lean`) sees only whether a precondition factors through a
-  Boolean witness — so it certifies *closure* (`spsc`/`branded`/`refined`/`shared`/`typed_nat`/`take`/`drain`/`selfref`
+  Boolean witness — so it certifies *closure* (`spsc`/`branded`/`refined`/`shared`/`typed_nat`/`take`/`drain`/`selfref`/`validity`
   all close, like SPSC) but is blind to *which axis a closing seam spends* — or whether that "axis" is
   even separable (the self-ref cell closes in the kernel exactly like the rest; its inseparability is
   pure modeling-dictionary). Every column past
