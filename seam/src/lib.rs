@@ -183,10 +183,12 @@ pub mod labeled;
 /// Fifteenth seam (Phase N — a *third* domain): type-level lock ordering. The first primitive in the
 /// **liveness / progress** domain — its danger is **deadlock** (a cyclic lock-acquisition wait), which is
 /// neither UB nor an information leak; a deadlocked program is memory-safe and confidential, it just never
-/// progresses. The witness is a type-level lock *rank* plus an affine `Floor` capability: acquiring a lock
-/// requires its rank be strictly below everything held, so a lock-order inversion is unconstructible. It
-/// tests the **positive** half of the floor-domain match — whether a *closing* seam reappears once the
-/// floor (here, a type-level order) carries the new domain's precondition (an acyclic global order). See
+/// progresses. The witness is a type-level lock *rank* plus an affine `Floor` capability. It tested the
+/// **positive** half of the floor-domain match — and **broke** (the third seam to drop a horn): a
+/// re-entrant `Floor::root` mints a second token lineage, so safe code types a lock-order *inversion*
+/// (wrong **granularity** — per-token, not per-thread), and even patched, the dynamic-acyclicity fragment
+/// (runtime-ordered/same-rank locks) escapes the static floor (wrong **coverage**). The break **grades**
+/// the floor-domain match into full (memory safety) / partial (this) / none (information flow). See
 /// `ordered_locks`.
 pub mod ordered_locks;
 

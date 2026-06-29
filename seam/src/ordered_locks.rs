@@ -1,12 +1,16 @@
-//! # Fifteenth seam — type-level lock ordering (a *closing* deadlock-freedom seam).
+//! # Fifteenth seam — type-level lock ordering (a *partially-matched* deadlock-freedom seam — it BREAKS).
 //!
 //! *(Project ordinal: the fifteenth primitive, and the **first** in a third soundness domain —
 //! **liveness / progress**. Seams 1–12 live in memory safety; 13–14 in information flow, where **both
-//! broke** because Rust's affine floor carries none of the IFC precondition. This one tests the
+//! broke** because Rust's affine floor carries none of the IFC precondition. This one tested the
 //! **positive** half of the floor-domain match: does a *closing* seam reappear in a new domain once the
 //! floor carries **that** domain's precondition? Deadlock-freedom is the clean test — a deadlocked
 //! program is perfectly memory-safe and leaks nothing, so this is a genuinely distinct domain — and its
-//! precondition is **exactly a partial order**, which Rust's trait resolver carries natively.)*
+//! precondition looks like a partial order, which Rust's trait resolver carries natively. The answer came
+//! back **not "yes" but "partly"**: the seam **breaks** (see the verdict section below), and the break
+//! grades the floor-domain match into **full / partial / none**. The construction is preserved as the
+//! attacked artifact; read the module-doc top-down as the *hypothesis*, then the verdict section for what
+//! the cold panel actually found.)*
 //!
 //! ## The danger — a liveness hazard, not UB
 //!
@@ -55,17 +59,68 @@
 //!   is an **MMIO-shaped TCB axiom**: the floor guarantees "you obeyed the order you declared," not
 //!   "the order you declared is the right one."
 //!
-//! ## The hypothesis under test
+//! ## The cold panel's verdict (REPORT_SEAM_SPEC_ordered_locks, r21): the seam BREAKS — and the break
+//! ## grades the floor-domain match.
 //!
-//! If this seam **closes** (sound + decidable + concentrated), it is the **positive instance** of the
-//! floor-domain match the project's frontier asked for: memory safety closes on the *affine* floor,
-//! information flow *fails to close* on it, and liveness/deadlock-freedom closes on a *type-level-order*
-//! floor — three domains, each matched (or not) to a different floor. The cost it pays — and whether
-//! that cost is a clean new axis, a projection onto an axis already on the map, or a trusted axiom — is
-//! the cold panel's to rule. *(Builder's prediction, non-load-bearing: closes for the static
-//! lock-order fragment, modulo the rank-assignment axiom, paying API-locality — `Floor` is viral — and a
-//! static-order-only expressiveness limit: no data-dependent acquisition, no two same-rank locks
-//! co-held. Whether "deadlock-freedom" overclaims a sub-property is itself a likely finding.)*
+//! The hypothesis this module was built to test — "liveness/deadlock-freedom *closes* on a
+//! type-level-order floor, the **positive** instance of the floor-domain match" — is **false**, and *how*
+//! it fails is the deepest result of the phase. The gauntlet ruled **SEAM-BREAKS [horn 1]** (FAILED,
+//! 3/5 attackers broke it, one fatal), the **third** seam to drop a horn — and it breaks along *two*
+//! independent dimensions, both forms of "the floor under-carries the precondition":
+//!
+//! 1. **Fatal soundness break — wrong *granularity* (per-token, not per-thread).** The discipline enforces
+//!    descent *within one `Floor` token lineage*. But [`Floor::root`] is an ordinary safe call, hence
+//!    **re-entrant**: two sibling `root` calls mint two independent `Floor<TopRank>` tokens, and safe code
+//!    acquires a *low* rank under one and a *high* rank under the other — a lock-order **inversion** in
+//!    which every `L: Below<F>` obligation still discharges (it compiles; see the demonstration below).
+//!    The §2 precondition is *per-thread-global* (the whole held set is a chain); affinity on a *value*
+//!    (the token) gives only a *per-token* fact. Rust's floor has **no ambient per-thread one-shot
+//!    resource** to mint `root` from, so even the *static* fragment does not close without bolting on a
+//!    thread-local consumed capability the language does not provide. The "inversion is unconstructible"
+//!    claim (§1/§4) is **false as written**.
+//! 2. **Partial floor-match — wrong *coverage* (static, not dynamic).** Even *granting* a `root` fix, what
+//!    closes is **lock-order-*inversion* freedom**, **not** deadlock-freedom: the canonical deadlock-free
+//!    idioms — bank-transfer `min(i,j)` ordering, hand-over-hand list/tree coupling, address-ordered
+//!    bucket locks, IRQ/cross-stack ordering — are **inexpressible** (same static rank + irreflexive
+//!    `Below` + compile-time-only order). The **dynamic-acyclicity** coordinate (what `lockdep` checks at
+//!    runtime) **escapes the static floor** *exactly as IFC's quantitative coordinate escaped the affine
+//!    floor*. Prior art forces this: it is **Boyapati–Lee–Rinard (OOPSLA'02) minus their dynamic
+//!    tree-order extension**, and **Kobayashi's natural-number levels** — both abandoned pure static
+//!    levels *because* the data-dependent fragment forced them off the wall.
+//!
+//! **So the floor-domain match is GRADED, not binary.** Memory safety on the affine floor: a **full**
+//! match (basis closed). Information flow on the affine floor: **no** match (both seams break). Liveness
+//! on the static-type-order floor: a **partial** match — the static, distinct-rank, single-stack fragment
+//! is carried; the per-thread (granularity) and dynamic (coverage) fragments escape. A floor can fail to
+//! carry a domain's precondition along (at least) two axes — *granularity* and *static-vs-dynamic* — and
+//! this seam fails on both.
+//!
+//! Corrections the panel recorded: (a) the right name is **lock-order-inversion freedom**, never
+//! "deadlock-freedom" (condvar/channel/join cycles remain — BLR over-broadened the name too); (b) the
+//! claim that Rust's *affine* floor is what enables closure is **overstated** — the order-carrying floor
+//! predates affinity by two decades (BLR/Java, Kobayashi/π-calculus, neither affine); affinity buys only
+//! token non-duplication, and per break 1 it does not even buy *that*. One panel sub-claim is itself
+//! refuted by the compiler: the judge asserts CF1/CF2 surface as **E0277**; standalone `rustc` emits
+//! **E0308** (the recursive `Below` impls shape `F` from the obligation *before* unifying the floor
+//! argument), so the doctest labels above stand — the panel adjudicates the *verdict*, but a checkable
+//! diagnostic claim is settled by `rustc`, not by source-level reasoning.
+//!
+//! ### The break, demonstrated — this COMPILES and runs, though it types an inversion:
+//! ```
+//! use seam_spsc::ordered_locks::{OrderedLock, Floor, L2, L5};
+//! let low = OrderedLock::<u32, L2>::new(1);
+//! let high = OrderedLock::<u32, L5>::new(2);
+//! Floor::root(|mut top_a| {                          // lineage A
+//!     Floor::root(|mut top_b| {                      // lineage B — a SECOND independent top token
+//!         low.with(&mut top_a, |_l, _fl| {           // hold rank 2 (low) under lineage A
+//!             high.with(&mut top_b, |_h, _fh| {})    // acquire rank 5 (HIGH) under lineage B — INVERSION
+//!         })                                          // every `L: Below<TopRank>` discharges; it compiles.
+//!     })                                              // two symmetric threads would deadlock here.
+//! });
+//! ```
+//! (Single-threaded it merely runs — two different locks, no self-deadlock — but the *type* accepted a
+//! non-decreasing held set, which is the hole. A real fix needs `root` to consume a thread-local one-shot
+//! capability, or locks branded to a root lineage; neither is on Rust's ambient floor.)
 //!
 //! ### CF1 — an out-of-order acquisition (low rank then high) does not type-check (the discipline):
 //! ```compile_fail

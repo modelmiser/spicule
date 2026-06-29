@@ -458,4 +458,33 @@ theorem labeled_typed_discipline_factors :
   rw [seam_closes_iff_factors]
   exact ⟨id, fun _ => rfl⟩
 
+/-- Type-level-lock-ordering shape — the *third* soundness domain (**liveness / progress**), and the
+    *third* seam to break. Read `Pr`/`Wt` by analogy: the precondition is *lock-order-inversion freedom*
+    (the per-thread held set is a strictly-decreasing chain in a global rank order) and the witness is a
+    type-level rank `L` plus an affine `Floor<F>` capability with `with` bounded by `L: Below<F>`. In the
+    kernel the typed discipline factors (`Pordlocks` is definitionally `V`), as always.
+
+    But the cold panel (REPORT_SEAM_SPEC_ordered_locks, r21) ruled **SEAM-BREAKS [horn 1]**, and the break
+    *grades* the floor-domain match. Two independent failures, both "the floor under-carries the
+    precondition": (1) **granularity** — `Floor::root` is re-entrant, so two sibling roots mint two
+    `Floor<TopRank>` lineages and safe code types a low-then-high *inversion* (the discipline is per-token;
+    the precondition is per-thread-global, and Rust's floor has no ambient per-thread one-shot resource);
+    (2) **coverage** — even patched, the dynamic-acyclicity fragment (runtime-ordered / same-rank locks:
+    bank-transfer `min/max`, hand-over-hand coupling, IRQ ordering) escapes the *static* type-level-order
+    floor, exactly as IFC's quantitative coordinate escaped the affine floor. So the floor-domain match is
+    **graded**: full (memory safety / affine floor), partial (liveness / static-order floor — this), none
+    (information flow / affine floor). Documented precedent: Boyapati–Lee–Rinard OOPSLA'02 *minus* their
+    dynamic tree-order extension, and Kobayashi's natural-number levels. `..._factors` (not `..._closes`)
+    certifies only the trivial typed sub-fact, as the two IFC seams' do; the kernel sees none of the
+    liveness, the granularity gap, or the static/dynamic coverage gap. -/
+def Pordlocks (p : Prog) : Bool := V p
+
+/-- Trivial sub-fact only (see the docstring): the *typed* discipline factors. The real seam BREAKS — the
+    static type-level-order floor carries only a sub-fragment of the deadlock-freedom precondition (wrong
+    granularity per-token, wrong coverage static-only), so the floor-domain match here is *partial*. -/
+theorem ordered_locks_typed_discipline_factors :
+    ∃ d : Prog → Bool, SoundW Pordlocks d ∧ UsableW Pordlocks d ∧ ConcW V d := by
+  rw [seam_closes_iff_factors]
+  exact ⟨id, fun _ => rfl⟩
+
 end SeamGap

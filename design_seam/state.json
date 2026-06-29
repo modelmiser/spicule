@@ -1267,6 +1267,73 @@
       "outcome": "FAILED",
       "cost_usd": 1.7443,
       "timestamp": "2026-06-29T18:58:55+00:00"
+    },
+    {
+      "round": 21,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_ordered_locks.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 type-level lock ordering (re-import rule under attack)\n\nThis is a **design proposal** for a fifteenth *seam*, and the **first in a third soundness domain \u2014\nliveness / progress**. Seams 1\u201312 live in memory safety (the basis is closed there, nine axes); seams\n13\u201314 (`SEAM_SPEC_secret.md`, `SEAM_SPEC_labeled.md`) probed information flow and **both broke** [horn 1,\nIFC sense], establishing the deepest result so far: *a closing seam exists only when the **floor** carries\nthe **domain's** precondition*, and Rust's affine floor carries none of IFC's. That was the **negative**\nhalf of the floor-domain match. This seam tests the **positive** half: pick a *new* domain whose\nprecondition Rust's floor (or a thin typed discipline atop it) **does** carry, and ask whether a *closing*\nseam reappears. If yes, the floor-domain match is confirmed from both sides, and the build-and-break method\nis shown to map a *third* domain.\n\nYou are attacking a **text specification** backed by real `rustc`-checked code (`seam/src/ordered_locks.rs`).\n\n---\n\n## 0. The floor (stipulated, not under attack)\n\nRust's borrow checker exactly as shipped (NLL, **affinity**, **unique `&mut` borrows**), plus its\n*",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Static total-order tower can't type lock-coupling, address-ordered same-rank, or IRQ ordering \u2014 the patterns lock ordering exists for.",
+          "strongest_point": "Hand-over-hand and address-ordered bucket locking need two same-rank locks co-held in a runtime order, unconstructible under irreflexive static ranks \u2014 so the dynamic acyclicity coordinate escapes the floor, making this only a partial match and a non-starter for fine-grained locking."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "Nested Floor::root mints two independent floor lineages; safe code acquires low-then-high, typable lock-order-inversion deadlock.",
+          "strongest_point": "The &mut-downgrade enforces descent only within one Floor token, but re-entrant Floor::root yields a second top-rank token, so a thread can hold a non-decreasing lock set while every with-bound L: Below<F> is satisfied."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Trait solver stays ground, deterministic, linearly-decreasing; the only hard (dynamic) case is excluded, not decided.",
+          "strongest_point": "Every `L: Below<F>` query is ground with a strictly-decreasing single-impl recursion, so the implied trait-solver pass is polynomial and the undecidable dynamic-acyclicity case is unconstructible by syntax \u2014 there is no blow-up to trigger."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Runtime-ordered/same-rank locks (bank transfer, hand-over-hand) inexpressible; dynamic-acyclicity escapes static floor \u2014 only a partial match, not positive confirmation.",
+          "strongest_point": "The canonical deadlock-free idiom \u2014 acquiring same-typed locks in runtime index/address order \u2014 is unconstructible (same rank + irreflexive Below + compile-time-only ordering), forcing escape to raw hand-ordered locks, the very reasoning the seam claimed to eliminate."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Sound (Havender 1968) but a re-encoding of BLR'02 / Kobayashi; static-floor limit is settled, not open",
+          "strongest_point": "Both BLR'02 and Kobayashi already built static level-based deadlock-freedom and then had to abandon pure static levels (tree-order mutations / time tags) to capture the data-dependent fragment \u2014 so \u00a76.3's 'does the dynamic coordinate escape the static floor' is answered 'yes, partial match' by two decades of precedent, not an open finding."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "argued-past",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Partial floor-match: type-level-order floor carries the static distinct-rank single-stack fragment only; dynamic/runtime-ordered, same-rank, and cross-stack (IRQ) acyclicity escape it \u2014 not positive confirmation of the floor-domain match",
+          "Inexpressible canonical idioms force escape to raw hand-ordered locks: address/index-ordered same-rank acquisition (bank transfer) and hand-over-hand coupling",
+          "API-locality virality: Floor<F> threads through every lock-taking signature; no returnable/storable guard; closure-nesting rightward drift; breaks holding-across-.await",
+          "Rank-assignment axiom (MMIO-shaped, human-judged) plus unary-rank \u0398(N\u00b2) type-checking cost / recursion_limit wall \u2014 a projection onto typed_nat's static-index axis, not a new one",
+          "Name must be 'lock-order-inversion freedom', never 'deadlock-freedom' (condvar/channel/join cycles remain) \u2014 over-broad name has BLR'02 precedent",
+          "Novelty/framing: re-encoding of BLR'02 and Kobayashi level systems; the affine floor buys only token non-duplication, not the order \u2014 order-carrying floor predates affinity",
+          "\u00a74 error-code claim is wrong: CF1/CF2 surface as E0277, not E0308 (the Below bound pins no F)"
+        ],
+        "headline": "Re-import rule is unsound: re-entrant Floor::root mints a second top floor, typing a lock-order inversion.",
+        "rationale": "Soundness attack is decisive: the rule enforces per-token descent but the precondition is per-thread-global, and unconstrained Floor::root re-entry yields a second Floor<Top> lineage, making a low-then-high inversion typable in safe code. Other attacks establish a real partial-match cost but no second kill."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 0.0,
+      "timestamp": "2026-06-29T19:36:06+00:00"
     }
   ],
   "settled": [],
