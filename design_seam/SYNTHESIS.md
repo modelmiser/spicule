@@ -6,18 +6,20 @@ distilled the **Seam Trilemma**: a seam cannot simultaneously have (1) sound re-
 phase asked the next question: *take the trilemma as a map and actually build a seam.* The
 stateful builder authored each seam spec + a real `rustc`-checked implementation; the cold
 adversarial harness (5 attackers + judge + an independent horn-classifier) red-teamed the
-**re-import rule only**, never the author. Twelve primitives, chosen so their preconditions have twelve
-different *shapes* — and so that each later one becomes the witness un-bundling an axis the trilemma
-had folded (zero-cost, API-locality, AI-legibility, solver-freedom, bare-metal, unwind-safety,
-leak-freedom). The discriminating moments exercise **five** adjudication modes: a type-level-proof
+**re-import rule only**, never the author. Thirteen primitives, chosen so their preconditions have
+thirteen different *shapes* — and so that each later one becomes the witness un-bundling an axis the
+trilemma had folded (zero-cost, API-locality, AI-legibility, solver-freedom, bare-metal, unwind-safety,
+leak-freedom). The discriminating moments exercise **six** adjudication modes: a type-level-proof
 index pitched as *checker-tractability* was **rejected** (off-diagonal confounded with expressiveness);
 take-and-replace pitched as *unwind-safety* was **confirmed** (N ≥ 8, clean); drain-and-yield pitched as
 *leak-freedom* was **confirmed** (N ≥ 9, distinct from unwind-safety); a self-referential cell pitched as
 *move-stability* was ruled **real but structurally inseparable** (a distinct danger with no isolable
-cost, N stays 9); and — the capstone — a validity-checked bytes→enum read was built *not* to hunt a
-tenth axis but to ask whether the **cost-basis is closed**: the panel ruled, unanimously, that this
-genuinely new danger class **projects entirely onto the existing basis** (no tenth axis), and is a
-*second* inseparable danger besides. **The cost-basis is closed** — the constructive arc's conclusion.
+cost, N stays 9); a validity-checked bytes→enum read — the capstone — asked whether the **cost-basis is
+closed** and got back, unanimously, **yes** (a genuinely new danger class projects entirely onto the
+basis, no tenth axis); and a constant-time secret stepped **outside memory safety** to find that the
+closure is **per domain** — information-flow is a *different soundness domain* with its own basis, so the
+Seam Trilemma and the cost-basis are **domain-parameterized**. **The cost-basis is closed (per domain)** —
+the constructive arc's conclusion and its generalization.
 
 ## The headline result
 
@@ -42,6 +44,7 @@ a runtime-checkable fact, or genuinely unrepairable?*
 | **Drain-and-yield** (leaked guard) | SEAM-HOLDS / SURVIVED (1 cold panel) | sound; all 3 horns hold; pays the 9th axis | O(1) — brand-free, no closure | *The leakpocalypse: `mem::forget` is safe, so a guard whose `Drop` does load-bearing cleanup can be leaked → double-free.* Sound via **pre-pessimization** (`Vec::drain`'s trick — empty the buffer up front, so a leaked guard loses the tail, never double-frees). Aces all eight prior axes, pays on **leak-freedom (the 9th axis)** alone. Confirmed N ≥ 9, **distinct from unwind-safety** (off-diagonal both ways: take is unwind-sensitive/leak-safe, drain is leak-sensitive/unwind-safe). Deflated to pre-existing (leakpocalypse / RFC 1066). The *thinnest* axis but genuinely distinct; aces API-locality *because* the guard owns its data (no closure). |
 | **Self-ref cell** (`Pin`-guarded) | SEAM-HOLDS / TRADEOFF (1 cold panel) | sound; all 3 horns hold; pays an **inseparable** danger | O(1) — but a viral, `&mut`-revoking `Pin` | *A value whose **address** is load-bearing (a pointer into itself); moving it dangles the self-pointer.* Sound via `Pin` over a `!Unpin` cell (the post-`init` move is unconstructible). A danger no other axis touches — **but ruled REAL-BUT-INSEPARABLE (outcome 3, N stays 9):** no isolable cost. The price is *immovability* (heavier than API-locality), **non-uniform** across witnesses (stack-pin → API-locality, `Box::pin` → bare-metal). The lattice's first *inseparable* entry — a new verdict category. Caveats: inseparability is contingent (RFC 2349 rejected `?Move` immovable types); crisp only for a non-composable toy. |
 | **Validity** (bytes→enum) | SEAM-HOLDS / TRADEOFF (3 cold panels: 2 found spec bugs) | sound; all 3 horns hold; **CLOSED-BASIS test** | O(1) per read; a viral sealed ctor for the view | *A **validity invariant** — a `#[repr(u8)]` enum byte that must be a valid discriminant, UB even without a deref.* A genuinely new danger class, built to ask: does it add an axis? Sound via `transmute`-after-**set-membership** (the move from a *range* check — unsound for non-contiguous discriminants — was forced by gauntlet 1). **Unanimous ruling: NO tenth axis — it projects onto the basis.** Its own cost is **(3) inseparable** (2nd example): per-read → #6, the zero-copy `&[u8]→&[Tag]` view → API-locality. **The cost-basis is closed.** Non-novel (`num_enum`/`bytemuck`/`zerocopy`). |
+| **Constant-time secret** (different DOMAIN) | SEAM-BREAKS [horn 1, IFC sense] (1 cold panel) | breaks — a horn drops, *in the information-flow domain* | no `unsafe`; the danger is timing | *Branching on a secret leaks it via timing — **not UB**.* The first probe outside memory safety. `Secret<N>` forecloses branching *on* the secret, but `ct_eq(a,b).expose_bool()` then `if b` leaks a relationship — **declassification is etiquette, not type-structure**; closing it needs whole-program **undecidable** IFC. **The intrusive list's horn-drop, re-run in a new domain — the Seam Trilemma recurs, sharper.** Panel ruling: information-flow is **out of frame**, a *different domain* with its **own basis** (declassification discipline, …). **Closure is per domain; the framework is domain-parameterized.** |
 
 ### The deeper result: the Seam Trilemma is a 3-of-N projection (N ≥ 9)
 
@@ -155,8 +158,24 @@ So the trilemma is a low-dimensional shadow of a **closed object** — **nine cl
 faces, #4's two faces, #5, exception-safety, leak-freedom), **an inseparable category** (move-stability,
 validity — recurring, not a one-off), and **two outside-the-axes** (the MMIO TCB axiom, the intrusive
 horn-drop) — recovered one primitive at a time, with one candidate (checker-tractability) **rejected** as
-confounded and the basis shown **closed** by a new danger class projecting cleanly onto it. The taxonomy
-is now a map of *what the missing conjunct is* **and which axis (or category) closing it spends**:
+confounded and the basis shown **closed** by a new danger class projecting cleanly onto it.
+
+**…and closed *per domain*.** A thirteenth primitive — a **constant-time secret** — stepped outside
+memory safety entirely, re-importing an *information-flow / timing* danger (branching on a secret leaks
+it; **not UB**). The cold panel **generalized the whole result**: information-flow is **out of frame** — a
+*different soundness domain* with its **own basis** — so "the cost-basis is closed" refines to **closed
+*per domain***. Two confirmations: the secret seam **BREAKS [horn 1] in the IFC sense** (the intrusive
+list's horn-drop re-run in a new domain — `ct_eq(a,b).expose_bool()` then `if b` leaks a secret
+relationship; declassification is *etiquette, not type-structure*; closing it needs whole-program
+undecidable IFC, so a concentrated decidable seam *cannot* enforce non-interference — **the trilemma
+recurs, sharper**); and the IFC domain has its own axes with **no memory-safety analog** —
+**declassification discipline**, plus termination/concurrency channels. (Honest correction the panel
+forced: constant-time codegen is *dischargeable* — CompCert-CT/Jasmin/FaCT — not an MMIO-class irreducible
+axiom.) So the deepest form of the result: **the Seam Trilemma and the cost-basis are
+domain-parameterized** — memory safety is one domain (mapped, basis closed), information flow another
+(sketched), and the build-and-break method transfers to each.
+
+The taxonomy is now a map of *what the missing conjunct is* **and which axis (or category) closing it spends**:
 - **Fully floor-expressible** → seam closes free, every axis ✓ (SPSC).
 - **Runtime-checkable** → closes by spending **zero-cost/#6** (slab; `RefCell`).
 - **Cross-object identity via a generative brand** → closes by spending **API-locality/#5** (and
@@ -270,7 +289,7 @@ last one closing the basis.
 
 ## What the harness added that the builder missed
 
-The adversarial process earned its keep eleven times:
+The adversarial process earned its keep twelve times:
 
 1. **MMIO:** the builder framed M1/M4 as possibly "a different shape than the trilemma." The
    harness sharpened it to the exact right category — a TCB `assume` boundary, standard in
@@ -356,22 +375,33 @@ The adversarial process earned its keep eleven times:
     splits #6 vs API-locality), a *second* inseparable danger — but the **meta-claim is unanimous: no
     tenth axis, the cost-basis is closed.** Non-novel (`num_enum`/`bytemuck`/`zerocopy`). The keep that
     *concluded the arc*: a brand-new danger projecting cleanly onto the basis is what closure looks like.
+12. **Constant-time secret (the generalization):** the builder stepped outside memory safety to test
+    whether closure is absolute, predicting information-flow is *out of frame*. The panel **vindicated the
+    domain hypothesis and enriched it** — but **broke the seam** (SEAM-BREAKS, IFC sense): two attackers
+    independently found that `ct_eq(a,b).expose_bool()` then `if b` leaks a secret relationship using only
+    vended ops — *declassification is etiquette, not type-structure*, the intrusive-list horn-drop re-run
+    in a new domain. And two corrections: the §4 universal "no source-level leak" is false; constant-time
+    codegen is **dischargeable** (CompCert-CT/Jasmin/FaCT), *not* MMIO-shaped. The keep that *generalized
+    the result*: the IFC domain has its own axis (**declassification discipline**, no memory-safety
+    analog), the trilemma recurs sharper, and closure is **per domain**.
 
 ## Artifacts
 
-- Specs (attacked as text): `SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat,take,drain,selfref,validity}.md`
-- Cold verdicts: `REPORT_SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat,take,drain,selfref,validity}.md` (+ raw transcripts in `runs_seam/`)
+- Specs (attacked as text): `SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat,take,drain,selfref,validity,secret}.md`
+- Cold verdicts: `REPORT_SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat,take,drain,selfref,validity,secret}.md` (+ raw transcripts in `runs_seam/`)
 - Real Rust (rustc-checked, `#![no_std]`): `../seam/` — `src/lib.rs` (SPSC), `src/mmio.rs`,
   `src/intrusive.rs`, `src/slab.rs`, `src/branded.rs`, `src/refined.rs`, `src/shared.rs` (the lone
   `alloc` user), `src/typed_nat.rs` (eighth-axis probe 1 — sound, no new axis), `src/take.rs`
   (eighth-axis probe 2 — the confirmed unwind-safety axis), `src/drain.rs` (the confirmed leak-freedom
   axis), `src/selfref.rs` (move-stability — real but inseparable), `src/validity.rs` (the closed-basis
-  capstone — a new danger projects onto the basis); consumer code is `#![forbid(unsafe_code)]`;
-  laundering paths are `compile_fail` doctests (43 `tests/` integration tests + 20 `compile_fail`
-  doctests = 63 total).
+  capstone — a new danger projects onto the basis), `src/secret.rs` (the constant-time secret — IFC
+  domain; breaks in the IFC sense, closure is per-domain); consumer code is `#![forbid(unsafe_code)]`;
+  laundering paths are `compile_fail` doctests (46 `tests/` integration tests + 21 `compile_fail`
+  doctests = 67 total).
 - Seam-width instrument: `SEAM_WIDTH.md`; full face lattice: `REALIZABILITY.md`
 - Mechanization: `../proof/SeamGap.lean` — `seam_closes_iff_factors` + the
-  `spsc`/`intrusive`/`slab`/`branded`/`refined`/`shared`/`typed_nat`/`take`/`drain`/`selfref`/`validity` instances (propext-only).
+  `spsc`/`intrusive`/`slab`/`branded`/`refined`/`shared`/`typed_nat`/`take`/`drain`/`selfref`/`validity` instances,
+  plus `secret_typed_discipline_factors` (the IFC seam's trivial sub-fact — the real seam breaks) (propext-only).
 
 ## The one-sentence upgrade to the trilemma
 
@@ -389,6 +419,10 @@ plus the original sound/decidable/concentration), an **inseparable category** (m
 and **two outside-the-axes** (the MMIO TCB axiom, the intrusive horn-drop) — each surfacing only when a
 primitive becomes the witness that two previously-identical configurations differ (and one candidate,
 checker-tractability, was **rejected** as confounded; the basis shown **closed** when a brand-new danger
-class projected cleanly onto it — the method discriminates in five modes). Honest coda: those axes are
+class projected cleanly onto it — the method discriminates in six modes). Honest coda: those axes are
 each a *pre-existing* named PL boundary; the result is their unification under one "what does the witness
-cost?" rubric — a question with **finitely many answers** — not their discovery.
+cost?" rubric — a question with **finitely many answers** — not their discovery. **And one more
+generalization**: that closed object is the **memory-safety** domain's; a constant-time secret showed
+information-flow is a *different* domain with its *own* basis (where even the first seam breaks — sound
+non-interference is not a concentrated decidable seam), so the Seam Trilemma is **domain-parameterized** —
+the same shape, a different basis, in every soundness domain.
