@@ -9,7 +9,7 @@ languages"; and (c) what newlang discovered and *why it matters*.
 **What newlang is.** Not a language. It is a research project that asked "what would the
 perfect systems language look like?", listed seven properties such a language should have,
 and then **proved — adversarially — that the seven cannot coexist**, mapped exactly where the
-wall is, and then **built thirteen real things that live right up against the wall (seven that close, plus six probes — culminating in one that showed the closed basis is *per soundness domain*)** to show what
+wall is, and then **built fourteen real things that live right up against the wall (seven that close, plus seven probes — ending by showing the closed basis is *per soundness domain*, and that which seams close depends on the *floor-domain match*)** to show what
 you *can* do. The deliverables are an impossibility result, a theorem (the *Seam Trilemma*),
 a Lean proof, and a small Rust crate of worked examples.
 
@@ -29,22 +29,24 @@ point at real files in this repo (`seam/`, `proof/`, `design_seam/`).
 >    Eight more primitives (5–12) probed it one at a time, so the result is a **unification** of known
 >    axes under one question — *what does the safe witness cost?* — a question with **finitely many
 >    answers**. That honest deflation, and the *closure* of the basis, is the spine of the new material.
-> 2. **The method has *six* verdict modes** — the fifth closes the basis, the sixth opens a new domain.
->    The probes past seven exercise all of them. (8, type-level index) was **rejected** — confounded.
->    (9, take-and-replace) was **confirmed** — the eighth axis, *unwind-safety*. (10, drain-and-yield)
->    was **confirmed and ruled distinct** — the ninth, *leak-freedom*. (11, a self-referential cell) was
->    ruled **real but structurally inseparable** — *move-stability*. (12, a validity-checked bytes→enum
->    read) **projects entirely onto the existing basis** — no tenth axis, *the cost-basis is closed*. And
->    (13, a constant-time secret) stepped **outside memory safety** to find that the closure is **per
->    domain**: information-flow is a *different soundness domain* with its own basis, where even the first
->    seam *breaks* — so the Seam Trilemma and the cost-basis are **domain-parameterized**. A discovery
->    procedure that only confirms is measuring nothing; this one rejected a confound, confirmed two clean
->    axes, recognised the inseparable (twice), certified when a danger adds nothing, *and* recognised when
->    a danger belongs to a different domain entirely.
+> 2. **The method has *seven* verdict modes** — the fifth closes the basis, the last two leave the
+>    domain. The probes past seven exercise all of them. (8) **rejected** — confounded. (9) **confirmed**
+>    — *unwind-safety*. (10) **confirmed and ruled distinct** — *leak-freedom*. (11) **real but
+>    structurally inseparable** — *move-stability*. (12, a validity read) **projects entirely onto the
+>    basis** — *the cost-basis is closed*. (13, a constant-time secret) stepped **outside memory safety**:
+>    information-flow is a *different soundness domain* with its own basis — closure is **per domain**. And
+>    (14, a capability-gated declassification) probed whether the IFC domain has a *closing* seam and found
+>    it does **not** — both IFC seams break, because **Rust's affine floor carries none of the IFC
+>    precondition** (it bounds resource *uses*, not information *bits*). So the deepest result: **which
+>    seams close depends on the floor-domain match** — the Seam Trilemma is *domain-general*, the
+>    cost-basis *per-domain*, and a floor closes a domain's seams only when it carries that domain's
+>    precondition. A discovery procedure that only confirms is measuring nothing; this one rejected,
+>    confirmed, distinguished, recognised the inseparable, certified closure, *recognised a new domain*,
+>    and *diagnosed a floor-domain mismatch*.
 >
-> If you read the earlier version, the genuinely new content is **Primitives 5–13** (Part 9), the
+> If you read the earlier version, the genuinely new content is **Primitives 5–14** (Part 9), the
 > "un-bundlings" + the rejection + the inseparable ruling + the closed-basis capstone + the
-> domain-generalization, and **meta-lessons 6–10** (Part 11). Everything
+> domain-generalization + the floor-domain refinement, and **meta-lessons 6–10** (Part 11). Everything
 > in Parts 1–8 is unchanged prerequisite material.
 
 > **One-paragraph spoiler.** A type system that is *decidable* (the compiler always halts with
@@ -438,7 +440,7 @@ doesn't exist.
 
 ---
 
-# Part 9 — Build and break: thirteen real seams (the heart of it)
+# Part 9 — Build and break: fourteen real seams (the heart of it)
 
 Theory in hand, the project stopped arguing and *built*. Crucial design of the experiment:
 **build and break are different machines.** Construction is continuity, so a *stateful builder*
@@ -446,15 +448,16 @@ Theory in hand, the project stopped arguing and *built*. Crucial design of the e
 Demolition is coldness, so the cold harness is the **red team**, aimed *only* at the re-import
 rule. Each seam ships as a **text spec** (what the cold attackers attack) *and* a real,
 `rustc`-checked crate (`seam/`) whose consumer code is `#![forbid(unsafe_code)]` and whose UB-
-laundering attempts are `compile_fail` tests. Thirteen primitives: the first four chosen because their
+laundering attempts are `compile_fail` tests. Fourteen primitives: the first four chosen because their
 preconditions have four *different shapes*; the next three (5–7) because they reopened a deeper
-question — *how many axes is the trilemma actually a projection of?* — each recovering one; and **six
-probes past seven** (8–13) — one *no* (rejected, confounded), two *yes* (unwind-safety at N ≥ 8,
-leak-freedom at N ≥ 9, ruled *distinct*), one *"real but inseparable"* (move-stability, N stays 9), one
-that asked whether the axis-list was *finished* and got back *"yes — this new danger adds nothing, the
-basis is closed"* (validity), and one (a constant-time secret) that stepped **outside memory safety** and
-got back *"that is a **different domain** — closure is per-domain"*. The six verdicts together are the
-point: the last two *conclude* the arc and then *generalize* it. The headline finding:
+question — *how many axes is the trilemma actually a projection of?* — each recovering one; and **seven
+probes past seven** (8–14) — one *no* (rejected), two *yes* (unwind-safety at N ≥ 8, leak-freedom at N ≥ 9,
+ruled *distinct*), one *"real but inseparable"* (move-stability, N stays 9), one that asked whether the
+axis-list was *finished* and got back *"yes — the basis is closed"* (validity), and **two that left memory
+safety entirely**: a constant-time secret (*"that is a **different domain** — closure is per-domain"*)
+and a capability-gated declassification (*"and no seam closes in that domain on this floor — the **floor
+is mismatched** to it"*). The seven verdicts together are the point: the last three *conclude* the arc,
+then *generalize* it, then *bound* the generalization to the floor. The headline finding:
 
 > **Whether a seam closes is a function of the precondition's shape** — specifically, *what the
 > dangerous conjunct is*: can the cheap checker carry it, can a runtime check carry it, is it an
@@ -877,8 +880,50 @@ draft called the trust-the-codegen assumption "MMIO-shaped / irreducible"; it is
 
 **So the deepest form of the result is not "the basis is closed" but "the Seam Trilemma and its cost-basis
 are *domain-parameterized*."** Memory safety is one domain — mapped, basis closed, nine axes. Information
-flow is another — sketched, its own basis (declassification, …), its own sharper trilemma. The same shape,
-a different basis, in every soundness domain. *That* is where the constructive arc actually ends.
+flow is another — its own basis (declassification, …), its own sharper trilemma.
+
+### Primitive 14 — capability-gated declassification → a closing seam needs a matching FLOOR (`seam/src/labeled.rs`)
+
+The secret seam established information-flow is a *different domain* — but it *broke*. One question
+completes the picture: does the IFC domain have a **closing** seam (its own SPSC / slab), confirming it is
+a real domain with a real cost-basis, not just a place where things break? The fourteenth primitive tries
+to build one — and its failure is the project's deepest single result.
+
+The secret seam broke because declassification was *etiquette*. The fix is the exact analog of how every
+memory-safety seam works — you don't get *"no `unsafe`"*, you get *concentrated, checked `unsafe`*; so
+here you don't get *"no declassification"*, you get **capability-gated** declassification: `Secret<T>` has
+no read-out except `declassify(self, cap: Cap)`, and `Cap` is **affine** (`!Copy`/`!Clone`, minted only at
+the trust boundary by `Cap::issue()`). Now *where/when/how-often* a secret is released is type-structural,
+not convention — exactly the gap that broke the secret seam, closed.
+
+And yet the cold panel **broke it too, unanimously (5/5)** — for two reasons that *together* are the
+finding. (1) To **compute** on a secret, `map(self, f: FnOnce(T) -> U)` must hand the closure the **bare
+plaintext** `T`; a safe closure with captured `&mut` state exfiltrates it — `s.map(move |x| sink.push(x))`
+— with **zero caps and no `declassify` site**. The affine cap "guards a door while the wall beside it is
+open." Unpatchable without an **effect system** Rust's floor disclaims. (2) The "budget" counts **uses,
+not bits**: `Cap::issue()` in a loop mints N caps (statically unbounded — Rice), and one cap can release a
+megabyte. What the cap *does* enforce — release *location* — **projects onto the memory-safety affine
+axis** (it is one-shot privilege, not a new coordinate); the genuinely-IFC coordinate is the *amount*
+(**quantitative information flow** — Smith min-entropy / g-leakage), and *an affine type system cannot
+bound bits, only uses*.
+
+So **both information-flow seams break, for one structural reason: Rust's affine/borrow floor carries
+*none* of the IFC precondition.** And that is the deepest result of the whole project — not about
+information flow specifically, but about the relationship between a floor and a domain:
+
+> **A closing seam exists only when the floor *matches* the domain.** Rust's affine floor is *matched* to
+> memory safety — where SPSC closes for *free* (the floor's affinity/NLL carry the precondition) and the
+> basis is closed — and *mismatched* to information flow — where *no* seam closes, because affinity tracks
+> *resource uses*, while IFC needs *information amount*. To get closing seams in the IFC domain you need a
+> *different floor*: a quantitative / effect-tracking type system (Jif, FlowCaml, QIF).
+
+So the final shape is three layered claims. **The Seam Trilemma is domain-general** — it recurs in every
+soundness domain. **The cost-basis is per-domain** — memory safety has its nine closed axes; information
+flow has its own (declassification, quantitative leakage). **And which seams close depends on the
+floor-domain match** — a floor closes a domain's seams only when it carries that domain's precondition.
+Memory safety: mapped, on a matched floor. Information flow: a real, distinct domain whose seams all break
+on *this* floor — pointing at the floor it would need instead. *That* is where the constructive arc ends:
+not at a wall, but at a border, with the next country named.
 
 ### The taxonomy (the whole point, in one table)
 
@@ -897,6 +942,7 @@ a different basis, in every soundness domain. *That* is where the constructive a
 | MMIO | external physical axiom | **sound modulo TCB** | a trusted `assume` |
 | Intrusive list | aliasing+liveness that escapes to the caller | **breaks** | a trilemma horn |
 | Constant-time secret | branching on a secret leaks it (timing — **not UB**) | **breaks (IFC sense)** | **DIFFERENT DOMAIN** — information-flow, out of frame. The trilemma recurs; closure is *per domain* (its own basis: declassification discipline, …) |
+| Capability-gated declassify | release of a secret must be *bounded* (where/when/how-much) | **breaks (IFC sense)** | **FLOOR MISMATCH** — `map` hands a closure bare plaintext (needs an effect system); the affine cap counts *uses*, not *bits* (needs QIF). No IFC seam closes on Rust's floor; affinity bounds *resource uses*, not *information amount* |
 
 The decontamination signal (Part 6) held across all twelve **memory-safety** primitives: the obstruction
 *vanished* (SPSC), *moved and stayed decidable* (MMIO), *moved onto a runtime witness* (slab), *moved onto
@@ -911,7 +957,14 @@ danger but with no clean coordinate, the inseparable category), *moved onto an a
 and broke soundness* (intrusive) — and **where it moves is the entire verdict.** The thirteenth, the
 constant-time secret, *moved out of the memory-safety domain entirely* (onto a timing channel the AM does
 not model) and **broke** there — the same decontamination logic, applied in a new domain, locating a
-*different* basis.
+*different* basis. The fourteenth, capability-gated declassification, *tried to close that new domain* on
+Rust's floor and **broke for a structural reason**: the obstruction has nowhere to move *to*, because the
+floor carries none of the IFC precondition — `map` must hand the closure bare plaintext (the contaminant
+escapes uncaught) and the affine cap counts *uses* where the danger is *bits*. So the decontamination
+signal completes its own statement: **the obstruction vanishes only when the floor matches the domain.**
+On a matched floor it moves somewhere nameable (every memory-safety primitive); on a mismatched floor it
+has no landing site and the seam breaks (both IFC primitives) — pointing at the floor that *would* carry it
+(Jif / FlowCaml / QIF).
 
 ---
 
@@ -937,10 +990,11 @@ adjudicated by the cold panel in prose, not the kernel: the kernel certifies tha
 `typed_nat`/`take`/`drain`/`selfref`/`validity` *close*, and says nothing about the fact that one spends a
 confounded non-axis, two spend clean distinct axes, one spends a real-but-inseparable danger, and one
 spends a coordinate *already on the map* — the last of which is how you know the basis is closed). The
-thirteenth, the constant-time secret, is the sharpest illustration: its Lean instance is named
-`secret_typed_discipline_factors`, *not* `..._closes`, because the kernel models neither time nor
-non-interference — it certifies only that the *typed* discipline factors, while the cold panel ruled the
-real seam **breaks** in a domain the kernel cannot see at all.
+last two, the information-flow primitives, are the sharpest illustration: their Lean instances are named
+`secret_typed_discipline_factors` and `labeled_typed_discipline_factors`, *not* `..._closes`, because the
+kernel models neither time nor non-interference nor quantitative leakage — each certifies only that the
+*typed* discipline factors, while the cold panel ruled both real seams **break** in a domain the kernel
+cannot see at all (the secret out of frame, the labeled on a mismatched floor).
 
 **The honest bound — and why it matters as a lesson.** A cold adversarial review of the proof
 returned the right verdict: the *checked* math is a real characterization, but the *faithfulness*
@@ -979,7 +1033,7 @@ You can forget every primitive and keep these.
    the professional move is to (a) put it in one place (concentration), (b) make the obligation
    at it as visible as possible, and (c) choose *consciously* whether the boundary costs you
    soundness, decidability, concentration, runtime, API surface, a solver in your toolchain, or
-   exception-safety, leak-freedom. The thirteen-primitive taxonomy is a decision procedure for that choice.
+   exception-safety, leak-freedom. The fourteen-primitive taxonomy is a decision procedure for that choice.
 
 4. **Adversarial separation of build and break.** Construction wants continuity; demolition wants
    a cold, context-free skeptic. Keeping them as separate machines — and *calibrating* your
@@ -1070,8 +1124,21 @@ witness, and the honest move is to drop the claim.
     lesson: an impossibility result and its cost-basis are usually **domain-parameterized**. The Seam
     Trilemma is the same *shape* in memory safety, information flow, and (one expects) real-time, liveness,
     or distributed consistency — but a *different basis* in each. So "the basis is closed" is never the
-    last word; "**closed in *this* domain; here is the next domain, and the method transfers**" is. The
-    most honest way to finish a map is to draw its border and point past it.
+    last word; "**closed in *this* domain; here is the next domain, and the method transfers**" is.
+
+    **And one refinement deeper — the floor-domain match.** Asking the obvious follow-up — does the new
+    domain have a *closing* seam, the way memory safety has SPSC? — the fourteenth primitive (a
+    capability-gated declassification, the IFC analog of "concentrated checked `unsafe`") tried to build
+    one and **broke, structurally**: to compute on a secret you must hand a closure the bare plaintext (the
+    contaminant escapes uncaught — needs an effect system), and an affine capability counts *uses* where
+    the danger is *bits* (needs quantitative information flow). The reason is general: **a closing seam
+    exists only when the *floor* carries the *domain's* precondition.** Rust's affine/borrow floor is
+    *matched* to memory safety — affinity *is* the cardinality precondition, so SPSC closes for free — and
+    *mismatched* to information flow — affinity bounds resource uses, not information amount, so *no* IFC
+    seam closes on it. The full shape is therefore three-layered: the trilemma is **domain-general**, its
+    cost-basis is **per-domain**, and *which seams close* depends on the **floor-domain match**. The most
+    honest way to finish a map is to draw its border, point past it — *and* name the floor the next country
+    needs (here: Jif / FlowCaml / a QIF type system).
 
 ---
 
@@ -1084,23 +1151,29 @@ witness, and the honest move is to drop the claim.
 - `lean proof/SeamGap.lean` — read the characterization; change a definition and watch it break.
 - Skim `design_seam/REPORT_SEAM_SPEC_*.md` — the cold attackers' actual verdicts, in their words.
 
-**Build a fourteenth primitive — but in a *new domain*.** The memory-safety basis is closed: its six
-verdict outcomes are all attested — a clean axis, a confound, a mislabel, a distinctness-ruling, an
-inseparable, and a plain projection — so a within-memory-safety probe (a typed atomic cell, a bump
-allocator handing out overlapping views) will almost certainly *project*, not extend. The genuinely open
-frontier is the one Primitive 13 opened: **a different soundness domain.** Pick a danger whose "UB" is
-*not* memory corruption — a **timing/cache side-channel** (extend the constant-time seam), a **liveness /
-deadlock-freedom** violation, a **real-time / WCET** miss, a **distributed-consistency** anomaly — write
-the spec + a `rustc`-checked toy, and run the *same* harness (`python3 -m orchestrator.seam_phase --spec
-... --gauntlets 1 --prior-art-web`). Predict three things, because the information-flow probe got all
-three: (a) the Rust Abstract Machine will likely see *nothing* (it models neither time nor schedules), so
-"can safe code reach UB?" is the wrong question for the domain; (b) the Seam Trilemma will *recur* —
-sound + decidable + concentrated, pick two — but with the domain's own sharper bite; and (c) the domain
-will have its *own* axes (information flow's was **declassification discipline**) with no memory-safety
-analog. The deliverable is no longer "a tenth axis" but **"the next domain's basis, and confirmation the
-method transfers."** That is what newlang's last primitive showed is possible — and what it leaves for
-you. (See `design_seam/REALIZABILITY.md` for the memory-safety lattice, the closed-basis capstone, and
-the per-domain generalization.)
+**Build a fifteenth primitive — but in a *new domain*, and on a *matched floor*.** The memory-safety basis
+is closed: its six verdict outcomes are all attested — a clean axis, a confound, a mislabel, a
+distinctness-ruling, an inseparable, and a plain projection — so a within-memory-safety probe (a typed
+atomic cell, a bump allocator handing out overlapping views) will almost certainly *project*, not extend.
+The genuinely open frontier is the one Primitives 13–14 opened: **a different soundness domain — and the
+floor that matches it.** Primitive 13 showed information flow is a *distinct* domain; Primitive 14 showed
+*no IFC seam closes on Rust's affine floor* (affinity counts uses, not bits). So the next move has two
+halves. (i) Pick a danger whose "UB" is *not* memory corruption — a **timing/cache side-channel**, a
+**liveness / deadlock-freedom** violation, a **real-time / WCET** miss, a **distributed-consistency**
+anomaly. (ii) Pick a **floor that carries its precondition** — for information flow a quantitative/effect
+type system (**Jif, FlowCaml, or a QIF-typed DSL**); for real-time a WCET-annotated one; and *there* try to
+close a seam. Write the spec + a checked toy, and run the *same* harness (`python3 -m
+orchestrator.seam_phase --spec ... --gauntlets 1 --prior-art-web`). Predict four things, because the two
+information-flow probes got them all: (a) the Rust Abstract Machine sees *nothing* (it models neither time
+nor schedules), so "can safe code reach UB?" is the wrong question; (b) the Seam Trilemma *recurs* — sound
++ decidable + concentrated, pick two — with the domain's own bite; (c) the domain has its *own* axes
+(information flow's were **declassification discipline** and **quantitative leakage**) with no
+memory-safety analog; and (d) **a seam closes only if your floor matches the domain** — on Rust's floor
+every IFC seam breaks. The deliverable is no longer "a tenth axis" but **"the next domain's basis, the
+floor that closes it, and confirmation the method transfers."** That is what newlang's last two primitives
+showed is possible — and what they leave for you. (See `design_seam/REALIZABILITY.md` for the
+memory-safety lattice, the closed-basis capstone, the per-domain generalization, and the floor-domain
+refinement.)
 
 **Reading path, in dependency order:**
 1. *The Rust Book*, ownership/borrowing chapters — the affine system in practice.
@@ -1125,7 +1198,7 @@ the per-domain generalization.)
    shared ownership trades *unbounded dynamic allocation* against *caller-provided bounded storage*.
 8. **Verus** and **Creusot** docs — what "Rust but `unsafe` is proof" actually looks like when
    someone ships it (the productive horn from Part 8).
-9. This repo's `WRITEUP.md` (the full result), `design_seam/SYNTHESIS.md` (the thirteen-primitive map),
+9. This repo's `WRITEUP.md` (the full result), `design_seam/SYNTHESIS.md` (the fourteen-primitive map),
    `design_seam/REALIZABILITY.md` (the face lattice / 3-of-N proof), and `THE-SAME-WALL.md` (the
    cross-field boundary/veil discipline).
 
