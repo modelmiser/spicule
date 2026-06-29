@@ -1525,10 +1525,73 @@
       "outcome": "FAILED",
       "cost_usd": 1.9078,
       "timestamp": "2026-06-29T21:21:16+00:00"
+    },
+    {
+      "round": 25,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_session.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 session-typed channel (re-import rule under attack)\n\nThis is a **design proposal** for an eighteenth *seam*, built as the **crucible for two prior liveness\nfindings**: #15 (`SEAM_SPEC_ordered_locks.md`) showed affine **typestate carries static order**; #17\n(`SEAM_SPEC_linear.md`) showed the affine floor **cannot compel completion** (linearity, \"use exactly\nonce\"). A session-typed channel needs *both* \u2014 operations in protocol **order** AND the protocol run to\n**completion** \u2014 so it tests whether the floor-match is graded not just *across* preconditions (Phase P) but\n*within* one, **component by component**.\n\nYou are attacking a **text specification** backed by real `rustc`-checked code (`seam/src/session.rs`, the\ndefault `no_std` build \u2014 `core`-only, **no `unsafe`**).\n\n---\n\n## 0. The floor (stipulated, not under attack)\n\nRust's borrow checker as shipped: ownership is **affine** (use *at most* once; you may drop/`mem::forget` a\nvalue without using it). Generic type parameters and method resolution per-type are part of the floor (a\nmethod on `Chan<Tx<C>>` is simply absent on `Chan<Rx<C>>`). The **transport** \u2014 a loopback single-slot\nbuffer that moves the `i32` payload \u2014 ",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Safety sub-seam is sound but 'usable' only for infallible straight-line protocols; abandonment is coextensive with `?`/unwind, with no faithful failure path in scope.",
+          "strongest_point": "Every Rust failure idiom (`?`, panic, early return) silently abandons the session and the scope provides no faithful alternative, so the 'usable closing safety sub-seam' is usable only for protocols that cannot fail \u2014 the ATS2 degeneracy."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Order/safety soundness holds; completion break is conceded not hidden; type checking decidable; no counterexample found.",
+          "strongest_point": "Every order-violating attack (forge, skip, alias) is blocked by nominal-type non-subtyping, &mut exclusivity, or falls into explicitly out-of-scope P-choice; mem::forget cannot release the borrow to enable a second conflicting session."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "In-scope fragment is finite, branchless, monomorphic \u2014 inherent-method resolution is decidable and linear; no blow-up exists.",
+          "strongest_point": "Horn 2's decidability holds only because Rec and offer/choose \u2014 the sole features that would force regular-tree-type equivalence or recursive trait resolution \u2014 are scoped out, so 'decidable & proof-free' is bought by deleting every hard pass rather than solving it."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "No duality/second endpoint; single &mut Transport forecloses binary sessions, so witness is a typestate walk, not a session \u2014 deflation.",
+          "strongest_point": "The defining content of session types \u2014 two dual endpoints whose agreement the type system checks \u2014 is structurally inexpressible here (single &mut Transport, core no_std), reducing the seam to #15-typestate + #17-linearity with no session-specific structure to grade."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "minor",
+          "summary": "Soundness holds but the 'first component-wise split' novelty claim is documented folklore since 2015.",
+          "strongest_point": "The order-closes/completion-breaks decomposition of an affine Rust session type is the named premise of ECOOP 2022 and the leakpocalypse/RFC 1066 settlement, not a first."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "argued-past",
+          "attacker-implementation": "argued-past",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "TRADEOFF",
+        "tradeoffs": [
+          "Usability: the safety sub-seam closes on SOUNDNESS only; its usable envelope is the infallible straight-line protocol \u2014 fallible protocols force `?`/panic/early-return, which IS the conceded abandonment, and no faithful failure path exists in scope. Drop the unqualified word 'usable'.",
+          "Faithfulness: the witness has no duality/second endpoint (single `&mut Transport`, core no_std), so the demonstrated object is a single-lineage typestate walk, not a binary session; abandonment is self-abandonment. Retract the 'session-typed composite' framing in favor of 'single-handle typestate walk'.",
+          "Novelty: the order-closes/completion-breaks decomposition is documented prior art (Jespersen-Munksgaard-Larsen 2015; RFC 1066/leakpocalypse; ECOOP 2022 'Stay Safe Under Panic'). Drop the 'first' claim; the contribution is locating known folklore, resolving rubric #4 toward deflation."
+        ],
+        "headline": "Safety/order soundly closes; completion breaks (conceded) \u2014 a located folklore split, not a novel session composite.",
+        "rationale": "No soundness or compilation defect on the claimed safety component; completion break is conceded. But 'usable', 'session', and 'first' all fail \u2014 three converging costs force qualification and resolve the deflation horn, so admissible only with recorded tradeoffs."
+      },
+      "outcome": "TRADEOFF",
+      "cost_usd": 2.4946,
+      "timestamp": "2026-06-29T23:43:42+00:00"
     }
   ],
   "settled": [],
   "incompatibilities": [],
   "blind_spot_flags": [],
-  "total_cost_usd": 48.1407
+  "total_cost_usd": 50.6353
 }

@@ -13,7 +13,11 @@
 //! operation **consumes** the handle and returns one at the successor state: `Chan<Tx<C>>::send` → `Chan<C>`,
 //! `Chan<Rx<C>>::recv` → `(i32, Chan<C>)`, `Chan<End>::close`. The re-import promise under attack: *"the
 //! protocol is followed in order and run to completion."* The danger is a **liveness/correctness** hazard —
-//! a dual peer left waiting forever, or a protocol corrupted by an out-of-order step — not UB.
+//! a protocol corrupted by an out-of-order step, or a session abandoned before it completes — not UB.
+//! *(The two-peer "a dual peer waits forever" framing is the **motivation**; as the r25 panel noted, this
+//! `core`/`no_std`/no-`unsafe` witness has no duality — one `&'a mut Transport` cannot split into two
+//! concurrently-live endpoints — so the demonstrated object is a **single-handle typestate walk** and the
+//! abandonment is *self*-abandonment. See the verdict below.)*
 //!
 //! ## Why this decomposes — and the floor is suspected to match it *component-wise*
 //!
@@ -58,22 +62,43 @@
 //! assert_eq!(t.completed(), false); // the protocol never reached End — a dual peer would wait forever
 //! ```
 //!
-//! ## The deliverable the spec poses (verdict PENDING the cold panel — `SEAM_SPEC_session.md`)
+//! ## The cold panel's verdict (REPORT_SEAM_SPEC_session, r25): SEAM-COSTS [horn 3] — it HOLDS with a cost.
+//! ## The composite is matched COMPONENT-WISE; the same linearity gap that BROKE #17 only COSTS here.
 //!
-//! The completion break is compiler-settled (it is #17's gap). What the gauntlet adjudicates:
-//! 1. **Component-wise grade.** Does the affine floor match this *composite* precondition component-wise —
-//!    *safety closes* (the typestate fragment is a sound, usable, concentrated sub-seam) while *completion
-//!    breaks* (linearity)? If so, this is the first primitive where a sub-component cleanly **closes** while
-//!    the whole **breaks**, sharpening Phase P ("the unit is the precondition") to *"a precondition
-//!    decomposes, matched component-wise."*
-//! 2. **Does the safety component REALLY close, or is there a typestate hole?** (forge a `Chan` at a wrong
-//!    state, skip a step via some safe path, alias the transport) — or concede sealing/affinity blocks it.
-//! 3. **Domain or composite?** Is "session/protocol fidelity" a *fourth domain*, or a **composite** of a
-//!    safety property (typestate, memory-safety-adjacent) and a liveness property (completion) — i.e. the
-//!    place where domains *compose* rather than a new one?
-//! 4. **Verdict mode.** Completion breaks on the same **wrong-structural-logic** linearity gap as #17 (no
-//!    new mode), OR the *composite* framing is itself the new contribution (component-wise grading), OR the
-//!    safety-closes/completion-breaks split is just "#15 + #17 stapled together" (a deflation).
+//! Unlike the four prior out-of-(memory-safety)-domain probes, this seam **did not break** — it **survived
+//! with a recorded cost** (TRADEOFF, 1/1). The panel confirmed the core structural claim and deflated three
+//! over-statements; all accepted.
+//!
+//! **Confirmed — the component-wise match is real, not illusory.** The soundness attacker exhausted the
+//! surface and found no defect: forging a `Chan` at a wrong state is blocked by nominal non-subtyping +
+//! private fields, skip/reorder is `E0599`, transport-aliasing into two conflicting sessions needs two
+//! `&mut Transport` (`E0499`), and the sharp cross-component move — can `mem::forget` release `&'a mut
+//! Transport` early to start a second session? — fails, because **leaking a value holding a `&'a mut` does
+//! not shorten `'a`**. So the completion break **cannot infect safety**; the two components are orthogonal.
+//! - **Safety (order) CLOSES** — sound, decidable, concentrated; and unlike #15 there is **no `root`-hole**.
+//! - **Completion (progress) COSTS horn 3** — *not* a horn-1 break. The "don't abandon" obligation is
+//!   undischargeable by the type system and **recurs at every `?`/panic/early-return**, de-concentrating the
+//!   completion half. The hazard is liveness, not UB, and §6 routed the concession through horn 3.
+//!
+//! **The illuminating contrast with #17 (the real yield).** The *same* `mem::forget` linearity gap lands on
+//! a **different horn**: #17 (`linear`) **broke** horn 1, because completion *was* its whole soundness
+//! promise; #18 **costs** horn 3, because completion is *one component beside an independently-sound safety
+//! core*, so the gap **de-concentrates** rather than **unsounds**. Which horn a linearity gap threatens is
+//! not a property of the gap but of **how the re-import rule packages it**.
+//!
+//! **Three deflations (recorded costs, accepted — they did not break the seam):**
+//! 1. **Not a binary session — a single-handle typestate *walk*.** `core`/`no_std`/no-`unsafe` structurally
+//!    forecloses two concurrently-live dual endpoints (one `&'a mut Transport`, `E0499`), so the motivating
+//!    "a peer waits forever" hazard is *not expressible* here; the demonstrated abandonment is *self*-
+//!    abandonment of one handle. (The grading result holds for the single-handle walk regardless.)
+//! 2. **"Usable" only for infallible straight-line protocols.** `send`/`recv`/`close` are total/infallible,
+//!    so over a *fallible* transport the programmer reaches for `?` — and `?`/panic/early-return *is* the
+//!    conceded abandonment. With `offer`/`choose`/`Cancel` scoped out, there is no faithful failure path.
+//! 3. **Not "first" — documented folklore.** The affine-typestate-order / cannot-force-completion split is
+//!    Jespersen–Munksgaard–Larsen 2015 (`session_types`), RFC 1066 / the leakpocalypse, and especially
+//!    **ECOOP 2022 "Stay Safe Under Panic" (Cutner–Yoshida–Vassor)**, which *names* it. The contribution is
+//!    **locating** this known split on the realizability lattice (with #15-minus-`root` typestate and the
+//!    #17 linearity gap as its only structural content), not discovering it.
 //!
 //! And the sound use runs in order and completes — see `tests/session_use.rs`.
 

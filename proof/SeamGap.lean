@@ -551,31 +551,37 @@ theorem linear_typed_discipline_factors :
   rw [seam_closes_iff_factors]
   exact ⟨id, fun _ => rfl⟩
 
-/-- Session-typed-channel shape — the *composite-precondition* probe (a `Chan<P>` affine typestate handle).
-    Built as the crucible for #15 (typestate carries static order) and #17 (the floor cannot compel
-    completion). Read `Pr`/`Wt` by analogy: the precondition is *protocol fidelity*, which **decomposes** into
-    a SAFETY half (no out-of-order operation) and a COMPLETION half (the protocol reaches `End`). In the
-    kernel the typed discipline factors (`Psession` is definitionally `V`), as always.
+/-- Session-typed-channel shape — the *composite-precondition* probe (a `Chan<P>` affine typestate handle),
+    and the FIRST out-of-(memory-safety) probe to **hold with a cost** rather than break. Built as the
+    crucible for #15 (typestate carries static order) and #17 (the floor cannot compel completion). Read
+    `Pr`/`Wt` by analogy, but note the kernel models only the component the seam actually CLOSES: the
+    *order-safety* precondition (no out-of-order operation) factors through the affine typestate witness
+    (`Psession` is definitionally `V`), so `send`/`recv`/`close` exist only at the matching state, an
+    out-of-order step is a *type error*, and — unlike #15 — there is no `root` to re-enter, so the safety
+    sub-seam is sound, usable, and concentrated. It CLOSES.
 
-    The cold panel (REPORT_SEAM_SPEC_session) grades the affine floor against this composite **component-wise**:
-    the SAFETY component is carried by affine typestate — `send`/`recv`/`close` exist only at the matching
-    state, so an out-of-order step is a *type error*, and unlike #15 there is no `root` to re-enter (the
-    granularity hole has no analog on a single affine `Chan`) — so that fragment is a sound, usable,
-    concentrated *closing* sub-seam. But the COMPLETION component **breaks** on the #17 linearity gap: a
-    mid-protocol `Chan` is `mem::forget`/`ManuallyDrop`/leak-able in safe code, so the session need not reach
-    `End` (a dual peer waits forever). The composite seam therefore BREAKS — `..._factors` (not `..._closes`)
-    certifies only the trivial typed sub-fact; the kernel sees neither the safety/completion split nor the
-    abandonment. The open rulings the spec poses: is component-wise grading the new contribution (a precondition
-    *decomposes*, matched component-by-component — sharpening Phase P's precondition-as-unit), is session/
-    protocol fidelity a *fourth domain* or the *composite* where a safety property and a liveness property meet,
-    and is the completion break the same wrong-structural-logic mode as #17 or merely "#15 + #17 stapled". -/
+    The cold panel (REPORT_SEAM_SPEC_session, r25) ruled the whole seam **SEAM-COSTS [horn 3]** (TRADEOFF,
+    survived) — it HOLDS with a recorded cost, the first such in this arc. The composite precondition is
+    matched **component-wise**, and the components are *orthogonal* (the soundness attacker confirmed
+    `mem::forget` cannot shorten `'a` to start a second session, so the completion gap cannot infect safety):
+    order **closes** (above); **completion** is an undischargeable horn-3 *concentration* cost (the #17
+    linearity gap — a mid-protocol `Chan` is `mem::forget`-able — recurring at every `?`/panic/early-return),
+    NOT a horn-1 break. The illuminating contrast: the *same* `mem::forget` gap that **broke** #17's horn 1
+    only **costs** here, because completion was #17's *whole* soundness promise but is *one component beside a
+    sound safety core* here — so which horn a linearity gap threatens depends on how the rule **packages** it.
+    Like every column past concentration, the horn-3 cost is modeling-dictionary; the kernel sees only that
+    the order-safety witness suffices. Panel deflations recorded in the prose: this `core`/no-`unsafe` witness
+    has no duality (a single-handle typestate *walk*, not a binary session — E0499 forecloses two endpoints),
+    "usable" holds only for infallible straight-line protocols, and the order/completion split is documented
+    folklore (Jespersen–Munksgaard–Larsen 2015; RFC 1066; ECOOP 2022 "Stay Safe Under Panic") — the
+    contribution is *locating* it on the lattice. -/
 def Psession (p : Prog) : Bool := V p
 
-/-- Trivial sub-fact only (see the docstring): the *typed* discipline factors. The composite seam BREAKS — its
-    SAFETY component (protocol order) closes via affine typestate, but its COMPLETION component (the protocol
-    reaches `End`) breaks on the #17 linearity gap (`mem::forget` abandons a mid-protocol session in safe
-    code), so protocol fidelity is matched only *component-wise* — a partial, decomposed match, not a closure. -/
-theorem session_typed_discipline_factors :
+/-- The seam HOLDS with a cost (SEAM-COSTS [horn 3]): its *order-safety* component closes via affine typestate
+    (sound, usable, concentrated, no `root`-hole), exactly as a closing seam does in the kernel. The completion
+    component is a horn-3 concentration cost (the #17 linearity gap), invisible to the kernel — the same gap
+    that BROKE #17's horn 1 only COSTS here, because order-safety is independently sound. -/
+theorem session_order_safety_closes :
     ∃ d : Prog → Bool, SoundW Psession d ∧ UsableW Psession d ∧ ConcW V d := by
   rw [seam_closes_iff_factors]
   exact ⟨id, fun _ => rfl⟩
