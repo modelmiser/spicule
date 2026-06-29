@@ -1204,10 +1204,73 @@
       "outcome": "FAILED",
       "cost_usd": 2.913,
       "timestamp": "2026-06-29T18:31:59+00:00"
+    },
+    {
+      "round": 20,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_labeled.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 capability-gated declassification (re-import rule under attack)\n\nThis is a **design proposal** for a fourteenth *seam*, and the **second in the information-flow domain**.\nThe thirteenth (the constant-time secret, `SEAM_SPEC_secret.md`) **broke** [horn 1, IFC sense] and\nestablished that information-flow is a **different soundness domain** \u2014 out of frame for memory safety,\nwith its own basis. But it broke. This seam asks the natural follow-up: **does the IFC domain have a\n*closing* seam** \u2014 the IFC analog of SPSC / the slab \u2014 and therefore a real cost-basis of its own (a\nclosing seam + a clean axis), parallel to memory safety? If yes, the per-domain generalization is\ncomplete: IFC is not just \"the trilemma recurs and seams break\" but a domain with axes you pay to close.\n\nYou are attacking a **text specification** backed by real `rustc`-checked code (`seam/src/labeled.rs`).\n\n---\n\n## 0. The floor (stipulated, not under attack)\n\nRust's borrow checker exactly as shipped (NLL, **affinity** \u2014 a non-`Copy`/`Clone` value is consumed by\nuse), plus the two IFC-domain facts from the secret seam: the Abstract Machine models *functional*\nbehaviour, not wall-clock time (a timing chan",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "map/zip closures receive the bare secret and can exfiltrate it with no cap, bypassing declassify",
+          "strongest_point": "Computing on a secret requires the closure to receive T, so any map/zip closure can move the plaintext into captured state \u2014 an uncapped Secret\u2192T exit that falsifies CF1's 'only path is declassify'."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "Secret::map hands the bare plaintext to an arbitrary user closure, which can exfiltrate via captured &mut state \u2014 cap-free, no declassify site.",
+          "strongest_point": "To compute on a secret, map must pass the inner T to the closure, so the closure body holds the plaintext and can leak it with zero caps consumed, falsifying CF1's 'only exit is declassify' and the budget bound."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Affinity bounds uses-per-cap, not cap count or bits; static budget needs undecidable loop-cardinality analysis.",
+          "strongest_point": "One greppable issue() inside a loop/iterator mints unbounded caps releasing the whole secret collection, so the 'type-enforced budget' requires undecidable termination/counting analysis the type system never performs."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "map/zip hand bare plaintext to ambient-authority closures that exfiltrate via globals/IO with no Cap, voiding CF1 and Horn 1.",
+          "strongest_point": "Secret::map necessarily gives an arbitrary safe closure the cleartext T, and that closure can write it to a public Vec/file/channel \u2014 a functional release outside any declassify site, spending zero cap budget."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Affine cap bounds release-event count (where/when), not information amount; \u00a72's 'budget' conflates dimensions QIF and Sabelfeld\u2013Sands separate.",
+          "strongest_point": "One cap declassifying a map-composed Secret leaks unbounded bits about N secrets, so the cited 'total amount released bounded by budget' is event-counting mislabeled as quantity-bounding \u2014 exactly the conflation QIF exists to refute."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "genuine-flaw",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "genuine-flaw",
+          "attacker-expressiveness": "genuine-flaw",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Even with map/zip removed, the cap bounds release events/sites (where/when), not bits or cap-cardinality \u2014 record \u00a72/\u00a73 as an event-location bound, not an amount budget.",
+          "CF1's no-Deref/no-getter makes Secret an ecosystem island; all integration forces declassify + issue() audit points (deliberate cost vs. secrecy's expose_secret).",
+          "Mechanism is MAC/SecLib/Jif privilege + secrecy's CF1 made affine; novelty narrows to 'one-shot privilege', not a new domain coordinate."
+        ],
+        "headline": "Re-import rule fails: map/zip is an uncapped Secret\u2192T exit and the 'budget' counts events, not bits.",
+        "rationale": "map/zip must hand the bare plaintext to arbitrary safe closures that exfiltrate via captured state \u2014 cap-free, no declassify site \u2014 falsifying CF1 and Horn 1. Independently, affinity bounds uses-per-cap, not caps-minted or bits-per-cap, so the type-enforced amount budget does not exist. The seam does not close."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 1.7443,
+      "timestamp": "2026-06-29T18:58:55+00:00"
     }
   ],
   "settled": [],
   "incompatibilities": [],
   "blind_spot_flags": [],
-  "total_cost_usd": 40.042
+  "total_cost_usd": 41.7863
 }

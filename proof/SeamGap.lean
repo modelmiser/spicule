@@ -430,4 +430,32 @@ theorem secret_typed_discipline_factors :
   rw [seam_closes_iff_factors]
   exact ⟨id, fun _ => rfl⟩
 
+/-- Capability-gated-declassification shape — the *second* information-flow seam, and (unlike the secret
+    seam, which broke) a **closing** one. Read `Pr`/`Wt` by analogy in the IFC domain: the precondition is
+    *bounded/concentrated declassification* (release only at an audited site, ≤ the issued cap budget) and
+    the witness is an **affine declassification capability** (`Secret<T>` has no exit but `declassify(cap)`;
+    `Cap` is `!Copy`/`!Clone`, so release is type-structurally bounded). The precondition factors through
+    that witness — *where/when/how-often* a secret is released is enforced by the type, not convention — so
+    the seam CLOSES, indistinguishably from SPSC in the kernel (`Plabeled` is definitionally `V`).
+
+    But the cold panel (REPORT_SEAM_SPEC_labeled) ruled the real seam **SEAM-BREAKS** — the *second* IFC
+    horn-drop, unanimously. `map`/`zip` must hand the closure the bare plaintext (an uncapped `Secret→T`
+    exit; a captured-`&mut` closure exfiltrates it), and the cap "budget" counts *events* not *bits*
+    (`issue()` in a loop is unbounded; one cap leaks a megabyte). So `..._factors` (renamed from
+    `..._closes`) certifies *only* the trivial typed sub-fact, exactly as the secret seam's does. The
+    deepest finding it records: **a closing seam exists only when the floor matches the domain.** Rust's
+    affine floor is matched to memory safety (SPSC closes free, basis closed) and *mismatched* to
+    information flow — *no* IFC seam closes; the one thing the cap enforces (release *location*) projects
+    onto the memory-safety affine axis, and the genuinely-IFC coordinate (the *amount* — quantitative
+    leakage, Smith min-entropy) needs a quantitative/effect-tracking floor (Jif/FlowCaml/QIF) the kernel
+    and the Rust floor alike cannot express. Pure modeling-dictionary; the kernel sees none of it. -/
+def Plabeled (p : Prog) : Bool := V p
+
+/-- Trivial sub-fact only (see the docstring): the *typed* discipline factors. The real seam BREAKS in
+    the IFC sense — Rust's affine floor cannot bound information *amount*, only resource *uses*. -/
+theorem labeled_typed_discipline_factors :
+    ∃ d : Prog → Bool, SoundW Plabeled d ∧ UsableW Plabeled d ∧ ConcW V d := by
+  rw [seam_closes_iff_factors]
+  exact ⟨id, fun _ => rfl⟩
+
 end SeamGap

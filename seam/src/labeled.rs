@@ -29,20 +29,41 @@
 //! same `if b` requires `b: bool`, which requires `declassify(cap)`, which requires *holding a cap* — so
 //! the leak path is **gated and bounded by an affine capability**.
 //!
-//! ## The cost it pays (the §6 question) — a clean IFC-domain axis
+//! ## The cold panel's verdict (REPORT_SEAM_SPEC_labeled): the seam BREAKS — no closing IFC seam exists
+//! ## on Rust's floor, and the floor is the point.
 //!
-//! The price is **declassification discipline made type-structural**: a `Cap` must thread through the
-//! code to every exit, and the budget of caps bounds the program's total declassification. That is a
-//! *viral capability* — the **IFC-domain analog of the branded index's brand** (`'id`), but carrying a
-//! *security* obligation (declassification budget) instead of a *memory-safety* one (in-bounds proof).
-//! It is the IFC domain's own axis, surfaced by the secret seam and *paid* by this one — with **no
-//! memory-safety analog**. The §6 deliverable: does this **close** the IFC seam (foreclosing the
-//! unconstrained-declassification leak) by paying a *clean* IFC-domain axis, thereby confirming the IFC
-//! domain has its own cost-basis (a closing seam + a clean axis), parallel to memory safety? Honest
-//! limits to weigh: it enforces *bounded/concentrated* declassification (a real, standard IFC policy —
-//! "where & how-much", per Sabelfeld–Sands), **not** full non-interference (still undecidable); and, as
-//! with the secret seam, the AM models no time, so a constant-time obligation on the secret *computations*
-//! remains a separate, dischargeable concern.
+//! The gauntlet ruled **SEAM-BREAKS [horn 1]**, *unanimously* (5/5 genuine-flaw) — the **second** IFC
+//! seam to drop a horn, for the same structural reason as the first. So the hypothesis this module was
+//! built to test — "the IFC domain has a *closing* seam on Rust's floor" — is **false**, and *why* it is
+//! false is the deepest result of the project. Two independent breaks:
+//!
+//! 1. **`map`/`zip` is an uncapped `Secret<T> → T` exit.** To *compute* on a secret, `map(self, f:
+//!    FnOnce(T) -> U)` must hand the closure the **bare plaintext** `T`. A safe closure with captured
+//!    `&mut` state exfiltrates it as a side effect — `s.map(move |x| sink.push(x))` — releasing the
+//!    plaintext with **zero caps** and **no `declassify` site**, while dutifully returning `Secret<()>`.
+//!    CF1 ("the only exit is `declassify`") is false; the leak is the closure *parameter*, not the
+//!    result. **Unpatchable without an effect system Rust's floor disclaims:** the affine `Cap` *guards a
+//!    door while the wall beside it is open*. (Remove `map`/`zip` and the seam computes nothing useful.)
+//! 2. **The "budget" counts *events*, not *bits*.** Affinity bounds *uses-per-cap*, not caps-*minted*:
+//!    `for s in secrets { s.declassify(Cap::issue()) }` mints N caps and releases N secrets — `grep
+//!    issue()` returns 1, runtime release is unbounded (statically undecidable, Rice). And amount ≠ count
+//!    (one cap → a megabyte). So the "type-enforced amount budget" does not exist.
+//!
+//! ## Why the *axis* claim collapses — and the floor-vs-domain lesson
+//!
+//! The claim "declassification discipline is a clean IFC axis, the analog of the branded index's brand"
+//! does **not** survive: (a) it is **not viral like a brand** — a brand threads through every *use*, but
+//! here the plaintext is freely handed to *unbranded* ambient code (the `map` closure); (b) what the cap
+//! *does* enforce — the **location/event** of release (Sabelfeld–Sands' *where/when*) — **projects onto
+//! the memory-safety use-once-affine axis** (it is one-shot privilege, not a new coordinate); (c) the
+//! *genuinely* IFC coordinate is the **amount** (the *what* — **quantitative information flow**: Smith
+//! min-entropy / g-leakage), which exists *precisely because* event-counting cannot answer it — and an
+//! **affine type system cannot bound bits**. So the deepest, honest finding: **a closing seam exists only
+//! when the floor *matches* the domain.** Rust's affine/borrow floor is matched to **memory safety**
+//! (where SPSC closes *free* and the basis is closed) and **mismatched to information flow** (where *no*
+//! seam closes — both IFC seams break; the only enforceable cost is a memory-safety axis in disguise, and
+//! the real IFC coordinate, quantitative leakage, needs a *quantitative / effect-tracking* floor: Jif,
+//! FlowCaml, QIF). The Seam Trilemma is domain-general; *which seams close* depends on the floor-domain match.
 //!
 //! ### CF1 — a secret cannot be read without a capability (declassification is not free):
 //! ```compile_fail
