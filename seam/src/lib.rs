@@ -180,6 +180,16 @@ pub mod secret;
 /// memory-safety analog), confirming the domain has its own cost-basis. See `labeled`.
 pub mod labeled;
 
+/// Fifteenth seam (Phase N — a *third* domain): type-level lock ordering. The first primitive in the
+/// **liveness / progress** domain — its danger is **deadlock** (a cyclic lock-acquisition wait), which is
+/// neither UB nor an information leak; a deadlocked program is memory-safe and confidential, it just never
+/// progresses. The witness is a type-level lock *rank* plus an affine `Floor` capability: acquiring a lock
+/// requires its rank be strictly below everything held, so a lock-order inversion is unconstructible. It
+/// tests the **positive** half of the floor-domain match — whether a *closing* seam reappears once the
+/// floor (here, a type-level order) carries the new domain's precondition (an acyclic global order). See
+/// `ordered_locks`.
+pub mod ordered_locks;
+
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 use core::sync::atomic::{AtomicUsize, Ordering};
