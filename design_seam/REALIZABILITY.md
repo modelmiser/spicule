@@ -1,12 +1,12 @@
 # The realizability table — the Seam Trilemma is a 3-of-N projection
 
-*Phases D–O. The constructive question the slab opened, the branded index extended, the refined index
+*Phases D–P. The constructive question the slab opened, the branded index extended, the refined index
 closed, the shared-ownership seam pushed to seven, the take-and-replace seam to eight, and the
 drain-and-yield seam to nine: is the Seam Trilemma the whole story (3 horns), or a low-dimensional
 shadow of a larger tension? Answer: it is a **3-of-N projection with N ≥ 9** — where the recovered axes
 are known PL boundaries, not novel discoveries (see the meta-pattern below). Each constructive primitive
 lit up one more axis by being the **witness that two configurations the trilemma treated as identical
-actually differ** — and the method's discrimination is now demonstrated in **eight** modes, not just
+actually differ** — and the method's discrimination is now demonstrated in **nine** modes, not just
 accumulation: it **confirmed** axes (cleanly deflated to pre-existing), **sharpened** a horn without
 extending N (solver-freedom), **rejected** a confounded candidate (checker-tractability → not an axis),
 found one **real but structurally inseparable** (move-stability → a distinct danger with no isolable
@@ -26,7 +26,14 @@ floor is NON-MONOTONE**: it fixed the static seam's *coverage* gap (dynamic orde
 the predicted price (bare-metal #5, runtime-check #6, a prevention→detection modality), yet **granularity
 recurred one rung finer** — the held-set is keyed on the OS *thread* but async *tasks* are the unit of
 control, so work-stealing migration launders an undetected inversion. The *granularity* axis is a
-containment-scope **ladder** (token < thread < task < …) that no ambient Rust floor tops out.** (Phases L–O.)*
+containment-scope **ladder** (token < thread < task < …) that no ambient Rust floor tops out. And a
+seventeenth — a *must-run cleanup guard* — probed **breadth-wise** (a new *precondition*, "this finalizer
+MUST run", not a new domain or ladder rung): it **breaks** on a clean **none** grade, sharpening the
+match-unit from *domain* to *precondition* (the *same* liveness domain grades deadlock-freedom *partial*
+but must-run-cleanup *none*) and adding the **ninth** method mode — *wrong-structural-logic*: the floor is
+**affine** ("at most once") where the precondition needs **linear** ("exactly once"), so `mem::forget`
+skips the finalizer and *no decidable price* buys it back (Boats' scoped-task trilemma, linear horn
+rejected; the leakpocalypse) — distinct from a domain-mismatch.** (Phases L–P.)*
 
 > **A note on the "#5/#6/#7" shorthand (and a numbering collision).** `#6` (zero-cost) and `#7`
 > (AI-legible) are the literal seed-property numbers. The "**#5⟂#7 cell**" shorthand, coined for the
@@ -448,6 +455,38 @@ So a partial match is **not lifted to full by upgrading the floor**: the upgrade
 one (coverage fixed, granularity recurred), spends cost-basis axes doing it, and the granularity dimension
 turns out to be an *unbounded ladder* no ambient floor tops out. The match stays **partial**.
 
+#### The match-unit is the PRECONDITION, not the domain — a seventeenth primitive breaks on *wrong structural logic*
+
+The two liveness probes above both attacked *deadlock-freedom*. A seventeenth primitive
+(`seam/src/linear.rs`, a `MustRun<F: FnOnce()>` cleanup guard) stayed in the **liveness** domain but took a
+**different precondition** — *must-run-cleanup* ("this finalizer runs exactly once before the scope is
+abandoned") — built **breadth-wise** rather than climbing the ladder. It is the *inverse* of the tenth seam
+`drain`: `drain` **closed** by making a skipped `Drop` *harmless* (leak-**tolerance**); this needs a skipped
+`Drop` to be *impossible* (leak-**intolerance**). The cold panel ruled **SEAM-BREAKS [horn 1]** across **two
+independent rounds** (r23 + r24, breaking attackers included) — the **fifth** broken seam — and the break
+adds two things the deadlock probes could not:
+
+> **The match-unit is the *precondition*, not the *domain*.** The same liveness domain grades
+> deadlock-freedom *partial* (#15/#16) and must-run-cleanup a clean **none**. So the Phase-M
+> "domain-parameterized" result sharpens: *which seams close* is set per **precondition**, not per domain —
+> a single domain hosts preconditions of different grades. The "partial-via-`#[must_use]`-lint" texture was
+> **rejected**: `scopeguard` ships exactly that warning as a *cosmetic patch over a non-guarantee*, so the
+> lint is a non-type advisory (silenced by `let _ =`, blind to `mem::forget`), not a floor fragment.
+> Stipulating "`must_use` ∈ floor" only *manufactures* a false partial. **N is unchanged** — this is the
+> *enforcement* face of the ninth axis (leak-freedom), where `drain` was the *tolerance* face.
+>
+> **A NEW verdict mode: *wrong-structural-logic*, not domain-mismatch.** `mem::forget` is safe (its
+> unbounded `fn<T>(T)` consumes the guard by one legal **affine** move), so `Drop` never fires — the
+> leakpocalypse (RFC 1066; `thread::scoped` removal, RFC 1084). "Runs *exactly* once" is **linear**; the
+> floor is **affine** ("*at most* once"). Closing the gap needs either an *undecidable* finalizer-
+> reachability pass (`Rc`-cycle escape ≅ halting) or a *viral `Leak`/linear bound* — every sound
+> **decidable** enforcement collapses to the latter — so *no decidable boundary price* exists. The
+> obstruction is the floor being the wrong **structural logic** (affine vs linear), not the wrong *domain*
+> (the IFC sense); sharpened to **Boats' scoped-task trilemma**, of which Rust *deliberately rejected* the
+> linear horn. And the meta-lesson the two FAILED rounds carry: a seam **designed to break** cannot be
+> given a coherent "usable" spec — *the incoherence IS the break* (both rounds FAILED on spec-coherence, not
+> on the conceded `forget` skip), which is itself positive evidence for the verdict.
+
 ## The recursion: each primitive un-bundled one folded axis
 
 ```
@@ -501,6 +540,15 @@ registry│  UPGRADES the floor (runtime)  ⇒ BREAKS [horn1] (FAILED, r22). Flo
         │                              inversion (thread-blind). Granularity is a LADDER: token < thread < task <
         │                              … ; no ambient Rust floor tops out. = FreeBSD WITNESS/lockdep (learned graphs).
         ▼
+ linear │  PROBES a NEW PRECONDITION   ⇒ BREAKS [horn1] (FAILED, r23+r24). Must-run cleanup = LINEARITY,
+        │  (must-run cleanup guard)      breadth-wise (a precondition, not a new domain/rung). Affine floor =
+        │                              clean NONE (the #[must_use] "partial" REJECTED — scopeguard ships it
+        │                              cosmetic). Match-unit is the PRECONDITION not the domain (liveness:
+        │                              deadlock PARTIAL, must-run NONE). N unchanged (ENFORCEMENT face of axis
+        │                              9 leak-freedom; drain = TOLERANCE face). mem::forget skips Drop (RFC
+        │                              1066/1084). NEW MODE wrong-structural-logic: affine≠linear (Boats'
+        │                              scoped-task trilemma, linear horn rejected), not domain-mismatch.
+        ▼
 Realizability table         MEMORY-SAFETY domain (on a MATCHED affine floor): N ≥ 9 CLOSED axes (sound,
                             decidable, concentration, API-locality, #6, #7, bare-metal, unwind-safety,
                             leak-freedom) + INSEPARABLE (move-stability, validity) + 2 outside-the-axes
@@ -509,12 +557,15 @@ Realizability table         MEMORY-SAFETY domain (on a MATCHED affine floor): N 
                             IFC seams break. LIVENESS domain: on a static-order floor a PARTIAL match (the
                             static fragment closes, granularity + dynamic escape); UPGRADING to a runtime
                             registry floor is NON-MONOTONE — coverage lifts (paying #5 + #6 + modality) but
-                            granularity RECURS thread→task (a containment-scope LADDER no ambient floor tops).
-                            The Seam Trilemma is DOMAIN-GENERAL, the cost-basis PER-DOMAIN, and WHICH SEAMS
-                            CLOSE depends on the FLOOR-DOMAIN MATCH — which is GRADED (full / partial / none)
-                            and not monotonically liftable. Eight method modes:
+                            granularity RECURS thread→task (a containment-scope LADDER no ambient floor tops);
+                            and a DIFFERENT liveness precondition — must-run-cleanup — grades a clean NONE and
+                            BREAKS on wrong-structural-logic (affine≠linear), so the match-unit is the
+                            PRECONDITION, not the domain. The Seam Trilemma is DOMAIN-GENERAL, the cost-basis
+                            PER-DOMAIN, and WHICH SEAMS CLOSE depends on the FLOOR-DOMAIN MATCH — GRADED (full /
+                            partial / none), set per PRECONDITION not per domain, and not monotonically liftable.
+                            Nine method modes:
                             confirm / sharpen / reject / inseparable / projects-onto-basis / out-of-frame /
-                            floor-mismatch / partial-match.
+                            floor-mismatch / partial-match / wrong-structural-logic.
 ```
 
 Each constructive primitive is the **witness that two trilemma-identical configurations differ** —
@@ -622,7 +673,7 @@ The axes are not independent toggles you can set freely — **two trades and a d
   invisible in non-leak code), yet still real — a reminder that "deflatable" and "not an axis" are
   different verdicts (the rejected checker-tractability probe is the latter; leak-freedom the former).
 - The Lean kernel (`../proof/SeamGap.lean`) sees only whether a precondition factors through a
-  Boolean witness — so it certifies *closure* (`spsc`/`branded`/`refined`/`shared`/`typed_nat`/`take`/`drain`/`selfref`/`validity` (+ `secret`/`labeled`/`ordered_locks`/`lock_registry`, which certify only the trivial typed sub-fact — the two IFC seams break, and both liveness seams break: the static lock-ordering one partially-matches, the runtime registry shows the floor-upgrade is non-monotone)
+  Boolean witness — so it certifies *closure* (`spsc`/`branded`/`refined`/`shared`/`typed_nat`/`take`/`drain`/`selfref`/`validity` (+ `secret`/`labeled`/`ordered_locks`/`lock_registry`/`linear`, which certify only the trivial typed sub-fact — the two IFC seams break, and three liveness-domain seams break: the static lock-ordering one partially-matches, the runtime registry shows the floor-upgrade is non-monotone, and the must-run-cleanup one is a clean NONE breaking on wrong-structural-logic, affine≠linear)
   all close, like SPSC) but is blind to *which axis a closing seam spends* — or whether that "axis" is
   even separable (the self-ref cell closes in the kernel exactly like the rest; its inseparability is
   pure modeling-dictionary). Every column past

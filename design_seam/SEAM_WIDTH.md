@@ -97,24 +97,28 @@ That last outcome — a brand-new danger class adding nothing new — is what sh
 **closed**. See `REALIZABILITY.md` for the full face lattice (the confirmed axes, the rejected probe, the
 inseparable category, and the closed-basis capstone) and `SYNTHESIS.md` for the cross-primitive map.
 
-**A note on the four out-of-domain primitives — and the instrument's domain.** The constant-time secret
+**A note on the five out-of-domain primitives — and the instrument's domain.** The constant-time secret
 (`seam/src/secret.rs`), the capability-gated declassification (`seam/src/labeled.rs`), the type-level
-lock ordering (`seam/src/ordered_locks.rs`), and the runtime lock-order registry
-(`seam/src/lock_registry.rs`, feature `lockdep`) are deliberately *not* in the table above, because this
-instrument cannot measure them: the two information-flow primitives have **no `unsafe` keyword** (the "seam
-crossing" the metric counts) and their danger is an *information leak*; the two lock-ordering primitives'
-danger is a *deadlock* (a liveness hazard) — none is UB. That is the point. Seam-width — and the whole
-nine-axis basis — is a **memory-safety** instrument; these four belong to **other soundness domains**
-(information-flow / non-interference; liveness / progress), and **all four break** there: the secret seam
+lock ordering (`seam/src/ordered_locks.rs`), the runtime lock-order registry
+(`seam/src/lock_registry.rs`, feature `lockdep`), and the must-run cleanup guard (`seam/src/linear.rs`,
+`core`-only) are deliberately *not* in the table above, because this instrument cannot measure them: the
+two information-flow primitives have **no `unsafe` keyword** (the "seam crossing" the metric counts) and
+their danger is an *information leak*; the three liveness primitives' danger is a *deadlock* or a
+*skipped finalizer* (liveness/correctness hazards) — none is UB. That is the point. Seam-width — and the
+whole nine-axis basis — is a **memory-safety** instrument; these five belong to **other soundness domains**
+(information-flow / non-interference; liveness / progress), and **all five break** there: the secret seam
 (declassification is etiquette), the labeled seam (`map` hands the closure bare plaintext; the affine
 "budget" counts *uses*, not *bits*), the static lock-ordering seam (re-entrant `Floor::root` mints a second
 token lineage → a typable lock-order inversion; and the dynamic-acyclicity fragment escapes the static
-rank floor), and the runtime registry (the *floor-upgrade* probe: it fixes coverage but `HELD` is keyed on
+rank floor), the runtime registry (the *floor-upgrade* probe: it fixes coverage but `HELD` is keyed on
 the OS *thread* while async control is per-*task*, so work-stealing migration launders an undetected
-inversion). The deeper reason the metric can't see them is the deeper result: **a closing seam — and a
-measuring instrument — exists only when the *floor* matches the *domain*, and that match is GRADED — and
-upgrading the floor is NON-MONOTONE.** Rust's affine floor is **fully** matched to memory safety (where
-seam-width is well-defined and the basis is closed), **not** matched to information flow (no seam closes;
+inversion), and the linearity seam (a *safe* `mem::forget` skips the finalizer — affine "at most once"
+cannot compel "exactly once"). The deeper reason the metric can't see them is the deeper result: **a
+closing seam — and a measuring instrument — exists only when the *floor* matches the *domain*, and that
+match is GRADED — upgrading the floor is NON-MONOTONE — and the floor can even be the wrong *structural
+logic* (the linearity seam: affine vs linear) rather than merely an unmatched domain.** Rust's affine
+floor is **fully** matched to memory safety (where seam-width is well-defined and the basis is closed),
+**not** matched to information flow (no seam closes;
 the real coordinate, *quantitative leakage*, is unmeasurable by an affine/borrow type system), and only
 **partially** matched to liveness — and the registry shows that match cannot be lifted by simply picking a
 stronger floor. A *static* type-level-order floor carries the static distinct-rank single-stack fragment
@@ -130,3 +134,20 @@ domain needs its own floor and its own instruments — a quantitative/effect typ
 for information flow; a runtime, learned acquires-before graph (FreeBSD WITNESS, `lockdep`, Abseil — all of
 which abandoned static ranks) or a *task-local* discipline for liveness — for domains whose axes have no
 memory-safety analog.
+
+**A fifth primitive breaks — and it sharpens what the *match* is a match *of*.** The must-run cleanup
+guard (`seam/src/linear.rs`, a `MustRun<F: FnOnce()>` RAII finalizer — core-only, *in* the default
+`no_std` build) is the seventeenth seam and the **fifth to break**. It is *not* a new domain — its
+danger is **must-run-cleanup** (a liveness/correctness hazard — the finalizer never runs — not UB), the
+*same* liveness domain as the two lock seams (so "out-of-domain" above means *outside memory safety*, not
+a fourth domain). It earns no width row for the usual reason (it breaks:
+`mem::forget` is safe, so `Drop` is not mandatory — the leakpocalypse), and it refines the graded-match
+result two ways. **(i) The unit of the match is the *precondition*, not the *domain*:** within one liveness
+domain, deadlock-freedom grades *partial* (the lock seams) while must-run-cleanup grades a clean *none* —
+so "which domain" was too coarse; it is "which precondition." **(ii) A new verdict mode —
+*wrong-structural-logic*, not a graded domain-mismatch:** the affine floor (use *at most* once) is the wrong
+*structural logic* for a *linear* precondition (use *exactly* once); no decidable boundary price buys it
+back (every sound fix is either undecidable reachability or a viral `Leak`/linear bound — Boats' scoped-task
+trilemma, whose linear horn Rust rejected). It is the **enforcement** face of the ninth axis (leak-freedom)
+— `drain` (#10) is the **tolerance** face (a leaked guard is *harmless*), while `linear` needs a leak to be
+*impossible* and cannot get it — so **N is unchanged**.

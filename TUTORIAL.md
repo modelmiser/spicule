@@ -9,7 +9,7 @@ languages"; and (c) what newlang discovered and *why it matters*.
 **What newlang is.** Not a language. It is a research project that asked "what would the
 perfect systems language look like?", listed seven properties such a language should have,
 and then **proved — adversarially — that the seven cannot coexist**, mapped exactly where the
-wall is, and then **built sixteen real things that live right up against the wall (seven that close, plus nine probes — ending by showing the closed basis is *per soundness domain*, that which seams close is *graded* by the *floor-domain match* (full for memory safety, none for information flow, partial for liveness), and that *upgrading the floor is non-monotone* — the granularity gap is a ladder)** to show what
+wall is, and then **built seventeen real things that live right up against the wall (seven that close, plus ten probes — ending by showing the closed basis is *per soundness domain*, that which seams close is *graded* by the *floor-precondition match* (full for memory safety, none for information flow, partial then none for liveness), that *upgrading the floor is non-monotone* — the granularity gap is a ladder — and that a floor can be the *wrong structural logic* (affine vs linear) no upgrade fixes)** to show what
 you *can* do. The deliverables are an impossibility result, a theorem (the *Seam Trilemma*),
 a Lean proof, and a small Rust crate of worked examples.
 
@@ -29,8 +29,8 @@ point at real files in this repo (`seam/`, `proof/`, `design_seam/`).
 >    Eight more primitives (5–12) probed it one at a time, so the result is a **unification** of known
 >    axes under one question — *what does the safe witness cost?* — a question with **finitely many
 >    answers**. That honest deflation, and the *closure* of the basis, is the spine of the new material.
-> 2. **The method has *eight* verdict modes** — the fifth closes the basis, the last three leave the
->    domain. The probes past seven exercise all of them. (8) **rejected** — confounded. (9) **confirmed**
+> 2. **The method has *nine* verdict modes** — the fifth closes the basis; the last four step outside the
+>    memory-safety frame (the ninth: the floor is the wrong *structural logic*). The probes past seven exercise all of them. (8) **rejected** — confounded. (9) **confirmed**
 >    — *unwind-safety*. (10) **confirmed and ruled distinct** — *leak-freedom*. (11) **real but
 >    structurally inseparable** — *move-stability*. (12, a validity read) **projects entirely onto the
 >    basis** — *the cost-basis is closed*. (13, a constant-time secret) stepped **outside memory safety**:
@@ -48,18 +48,24 @@ point at real files in this repo (`seam/`, `proof/`, `design_seam/`).
 >    work-stealing migration launders an undetected inversion). So the deepest result: **which seams close
 >    is *graded* by the floor-domain match** — **full** (memory safety / affine floor), **none** (information
 >    flow / affine floor), **partial** (liveness — and *no* floor lifts it to full, because *granularity is
->    a containment-scope ladder*, token < thread < task, and each ambient floor reaches one rung). The Seam
->    Trilemma is *domain-general*, the cost-basis *per-domain*, the match *graded* along *granularity* and
->    *coverage*, and *upgrading the floor trades one gap for a finer one*. A discovery procedure that only
->    confirms is measuring nothing; this one rejected, confirmed, distinguished, recognised the inseparable,
->    certified closure, recognised a new domain, diagnosed a floor-domain mismatch, graded a partial match,
->    *and showed the grade cannot be bought up by upgrading the floor* — all **eight** verdict modes.
+>    a containment-scope ladder*, token < thread < task, and each ambient floor reaches one rung). And (17, a
+>    must-run cleanup guard) went *sideways* — same liveness domain, a *different precondition* ("this
+>    finalizer must run") — and **broke** in a *new mode*: a clean **none** (a safe `mem::forget` skips the
+>    destructor — the affine floor cannot compel a *linear* obligation), the **wrong structural logic** (no
+>    floor *upgrade* fixes it — every sound decidable fix needs linearity Rust rejected), which also sharpens
+>    the unit of the match from *domain* to *precondition*. The Seam Trilemma is *domain-general*, the
+>    cost-basis *per-domain*, the match *graded* along *granularity* and *coverage* and keyed to the
+>    *precondition*, *upgrading the floor trades one gap for a finer one*, and *a floor can be the wrong
+>    structural logic*. A discovery procedure that only confirms is measuring nothing; this one rejected,
+>    confirmed, distinguished, recognised the inseparable, certified closure, recognised a new domain,
+>    diagnosed a floor-domain mismatch, graded a partial match, showed the grade cannot be bought up by
+>    upgrading the floor, *and named a wrong-structural-logic floor* — all **nine** verdict modes.
 >
-> If you read the earlier version, the genuinely new content is **Primitives 5–16** (Part 9), the
+> If you read the earlier version, the genuinely new content is **Primitives 5–17** (Part 9), the
 > "un-bundlings" + the rejection + the inseparable ruling + the closed-basis capstone + the
 > domain-generalization + the floor-domain refinement + the **graded** (full/partial/none) match + the
-> **non-monotone floor-upgrade** (granularity is a ladder), and **meta-lessons 6–10** (Part 11).
-> Everything in Parts 1–8 is unchanged prerequisite material.
+> **non-monotone floor-upgrade** (granularity is a ladder) + the **wrong-structural-logic** mode (affine vs
+> linear), and **meta-lessons 6–10** (Part 11). Everything in Parts 1–8 is unchanged prerequisite material.
 
 > **One-paragraph spoiler.** A type system that is *decidable* (the compiler always halts with
 > yes/no and never asks you to write a proof) fundamentally cannot also be *expressive enough*
@@ -452,7 +458,7 @@ doesn't exist.
 
 ---
 
-# Part 9 — Build and break: sixteen real seams (the heart of it)
+# Part 9 — Build and break: seventeen real seams (the heart of it)
 
 Theory in hand, the project stopped arguing and *built*. Crucial design of the experiment:
 **build and break are different machines.** Construction is continuity, so a *stateful builder*
@@ -460,20 +466,23 @@ Theory in hand, the project stopped arguing and *built*. Crucial design of the e
 Demolition is coldness, so the cold harness is the **red team**, aimed *only* at the re-import
 rule. Each seam ships as a **text spec** (what the cold attackers attack) *and* a real,
 `rustc`-checked crate (`seam/`) whose consumer code is `#![forbid(unsafe_code)]` and whose UB-
-laundering attempts are `compile_fail` tests. Sixteen primitives: the first four chosen because their
+laundering attempts are `compile_fail` tests. Seventeen primitives: the first four chosen because their
 preconditions have four *different shapes*; the next three (5–7) because they reopened a deeper
-question — *how many axes is the trilemma actually a projection of?* — each recovering one; and **nine
-probes past seven** (8–16) — one *no* (rejected), two *yes* (unwind-safety at N ≥ 8, leak-freedom at N ≥ 9,
+question — *how many axes is the trilemma actually a projection of?* — each recovering one; and **ten
+probes past seven** (8–17) — one *no* (rejected), two *yes* (unwind-safety at N ≥ 8, leak-freedom at N ≥ 9,
 ruled *distinct*), one *"real but inseparable"* (move-stability, N stays 9), one that asked whether the
-axis-list was *finished* and got back *"yes — the basis is closed"* (validity), and **four that left memory
+axis-list was *finished* and got back *"yes — the basis is closed"* (validity), and **five that left memory
 safety entirely**: a constant-time secret (*"that is a **different domain** — closure is per-domain"*),
 a capability-gated declassification (*"and no seam closes in that domain on this floor — the **floor
 is mismatched** to it"*), a type-level lock ordering in a *third* domain, liveness (*"a seam half-closes
-here — the floor match is **partial**, not yes-or-no"*), and a *runtime* lock registry that **upgraded the
+here — the floor match is **partial**, not yes-or-no"*), a *runtime* lock registry that **upgraded the
 floor** to try to lift that partial match (*"the upgrade is **non-monotone** — it fixes one gap and the
-granularity gap recurs a rung finer; the grade can't be bought up"*). The verdicts together are the point:
-the last five *conclude* the arc, *generalize* it, *bound* the generalization to the floor, *grade* that
-bound, then show *the grade is a ladder no floor tops out*. The headline finding:
+granularity gap recurs a rung finer; the grade can't be bought up"*), and a must-run cleanup guard probing
+a *different precondition* in that liveness domain (*"a clean **none** — and the floor is the **wrong
+structural logic**, affine vs linear, no upgrade fixes"*). The verdicts together are the point: the last
+six *conclude* the arc, *generalize* it, *bound* the generalization to the floor, *grade* that bound, show
+*the grade is a ladder no floor tops out*, then show *the floor itself can be the wrong structural logic*.
+The headline finding:
 
 > **Whether a seam closes is a function of the precondition's shape** — specifically, *what the
 > dangerous conjunct is*: can the cheap checker carry it, can a runtime check carry it, is it an
@@ -1044,6 +1053,51 @@ carries one more rung of the precondition and reveals the next. *That* is where 
 not at a wall, not at a border, not on a tunable gradient, but on a **staircase** whose next step is always
 named and never last.
 
+### Primitive 17 — a must-run cleanup guard → a NEW verdict mode: *wrong structural logic* (`seam/src/linear.rs`)
+
+The staircase was one direction — *up*, climbing floors within one precondition. The seventeenth primitive
+went *sideways*: hold the floor fixed and change the **precondition**. Pick a new liveness obligation —
+*"this finalizer MUST run"* — and grade Rust's ambient **affine** floor against it. It is the exact
+*inverse* of the tenth seam: `drain` **closed** by making a skipped `Drop` *harmless* (leak-**tolerance**);
+this one needs a skipped `Drop` to be *impossible* (leak-**intolerance**) — the same ninth-axis danger from
+the opposite side. A `MustRun<F: FnOnce()>` arms a closure that runs on drop; the re-import promise is "bind
+it and it runs." (Core-only — back to the default `no_std` build, no feature gate.)
+
+It **broke** — the *fifth* seam to drop a horn, and the break is **compiler-settled**, not a panel judgment
+call: `core::mem::forget` is a *safe* function whose unbounded `fn<T>(T)` consumes the guard by one legal
+affine move, so `Drop` never fires and the finalizer runs **zero** times (`ManuallyDrop`/`Box::leak`/an
+`Rc`-cycle identically). This is the *leakpocalypse* (RFC 1066; the removal of `thread::scoped`, RFC 1084),
+made in 2015. "Runs *exactly* once" is a **linear** requirement; Rust's floor is **affine** — *at most*
+once — so it structurally cannot forbid the skip. The cold panel confirmed the result across **two
+independent rounds**, the breaking attackers included, and that confirmation is the new finding on four
+counts:
+
+> - **The grade is a clean NONE** at the type level. The tempting "partial via the `#[must_use]` lint" was
+>   *rejected*: the deployed `MustRun` (`scopeguard`) already ships that exact warning as a cosmetic patch
+>   over a non-guarantee, so the lint is a **non-type advisory** (silenced by `let _ =`, blind to `forget`),
+>   not a floor fragment. Stipulating "`must_use` ∈ floor" only *manufactures* a false partial.
+> - **The match unit is the PRECONDITION, not the DOMAIN.** The same liveness domain grades
+>   deadlock-freedom *partial* (#15/#16) and must-run-cleanup *none*. So Part 9's "domain-parameterized"
+>   result sharpens: it is *preconditions*, not whole domains, that the floor matches or misses.
+> - **N is unchanged.** This is the *enforcement* face of the ninth axis (leak-freedom); `drain` was the
+>   *tolerance* face. No new coordinate — a populated off-diagonal, not an extension.
+> - **A NEW verdict mode: *wrong structural logic*, not domain-mismatch.** Closing the gap while keeping
+>   `forget` safe needs either an *undecidable* finalizer-reachability pass (`Rc`-cycle escape ≅ halting) or
+>   a *viral `Leak`/linear bound* — every sound **decidable** enforcement collapses to the latter. So *no
+>   decidable boundary price* buys soundness back: the floor is the wrong **structural logic** (affine vs
+>   linear), distinct from the Phase-13 *wrong domain*. Sharpened by the prior-art attacker: it is not a
+>   binary affine→linear swap but Boats' **scoped-task trilemma**, of which Rust *deliberately rejected* the
+>   linear horn.
+
+And one meta-lesson the *process* taught, worth more than a clean pass: **a seam designed to break cannot be
+given a coherent "usable" spec — the incoherence IS the break.** Both rounds FAILED not on the break (which
+is the designed result) but on *spec coherence*: the commit-or-rollback idiom I used to motivate it needs a
+finalizer that must *not* run on success, contradicting the must-run precondition; and the cancel I added to
+fix that (`disarm`) hands back the *closure*, never the protected *value* — so it can't host
+commit-or-rollback after all. The residual incoherence is not noise; it is positive evidence for the
+verdict. A guard that cannot compel its finalizer cannot be honestly dressed as a closing interface, and the
+gauntlet keeps finding the seam wherever you paper over it.
+
 ### The taxonomy (the whole point, in one table)
 
 | Primitive | What the missing conjunct *is* | Fate | Pays with |
@@ -1064,6 +1118,7 @@ named and never last.
 | Capability-gated declassify | release of a secret must be *bounded* (where/when/how-much) | **breaks (IFC sense)** | **FLOOR MISMATCH** — `map` hands a closure bare plaintext (needs an effect system); the affine cap counts *uses*, not *bits* (needs QIF). No IFC seam closes on Rust's floor; affinity bounds *resource uses*, not *information amount* |
 | Type-level lock ordering | held lock set must be a strictly-decreasing global chain (deadlock — **not UB**) | **breaks (liveness sense)** | **PARTIAL FLOOR-MATCH** — re-entrant `root` mints a 2nd token lineage → typable inversion (wrong *granularity*: per-token vs per-thread); and the dynamic/same-rank fragment escapes the static floor (wrong *coverage*). A *third* domain; the match is **graded** (full/partial/none), not binary. BLR'02-minus-dynamic; name it *lock-order-inversion freedom* |
 | Runtime lock registry | same — but on an *upgraded* (runtime, thread-local) floor | **breaks (liveness sense)** | **NON-MONOTONE FLOOR-UPGRADE** — fixes *coverage* (runtime ranks → dynamic orderings) and pays #5 (can't be `no_std`) + #6 (per-acquire check) + a prevention→detection modality; but *granularity recurs* — held-set is thread-keyed, async control is task-keyed, so work-stealing migration launders an undetected inversion. Granularity is a **ladder** (token<thread<task); no ambient floor tops it. WITNESS/lockdep precedent |
+| Must-run cleanup guard | a finalizer that must run *exactly* once (a *liveness/correctness* obligation — **not UB**) | **breaks (liveness sense)** | **WRONG STRUCTURAL LOGIC** (new verdict mode) — `mem::forget` is safe, so the affine floor (*at most* once) cannot compel a *linear* (*exactly* once) finalizer; the leakpocalypse. Grade is a clean **none** (the `#[must_use]` lint is a cosmetic advisory, not a floor fragment — `scopeguard`). The match unit is the *precondition*, not the domain (deadlock-freedom is *partial*, this is *none*, same liveness domain). N unchanged — the *enforcement* face of axis 9 (`drain` was *tolerance*). No decidable price closes it; sharpened to Boats' scoped-task trilemma (Rust rejected the linear horn) |
 
 The decontamination signal (Part 6) held across all twelve **memory-safety** primitives: the obstruction
 *vanished* (SPSC), *moved and stayed decidable* (MMIO), *moved onto a runtime witness* (slab), *moved onto
@@ -1122,14 +1177,16 @@ adjudicated by the cold panel in prose, not the kernel: the kernel certifies tha
 `typed_nat`/`take`/`drain`/`selfref`/`validity` *close*, and says nothing about the fact that one spends a
 confounded non-axis, two spend clean distinct axes, one spends a real-but-inseparable danger, and one
 spends a coordinate *already on the map* — the last of which is how you know the basis is closed). The
-last four, the out-of-memory-safety primitives, are the sharpest illustration: their Lean instances are
+last five, the out-of-memory-safety primitives, are the sharpest illustration: their Lean instances are
 named `secret_typed_discipline_factors`, `labeled_typed_discipline_factors`,
-`ordered_locks_typed_discipline_factors`, and `lock_registry_typed_discipline_factors`, *not* `..._closes`,
-because the kernel models neither time nor non-interference nor quantitative leakage nor liveness/progress —
-each certifies only that the *typed* discipline factors, while the cold panel ruled all four real seams
+`ordered_locks_typed_discipline_factors`, `lock_registry_typed_discipline_factors`, and
+`linear_typed_discipline_factors`, *not* `..._closes`, because the kernel models neither time nor
+non-interference nor quantitative leakage nor liveness/progress nor linearity —
+each certifies only that the *typed* discipline factors, while the cold panel ruled all five real seams
 **break** in a domain the kernel cannot see at all (the secret out of frame, the labeled on a mismatched
-floor, the lock ordering on a *partially* matched one, and the runtime registry on a *non-monotonically*
-upgraded one — the thread-vs-task granularity recursion the kernel's Boolean witness cannot model).
+floor, the lock ordering on a *partially* matched one, the runtime registry on a *non-monotonically*
+upgraded one — the thread-vs-task granularity recursion the kernel's Boolean witness cannot model — and the
+must-run guard on a floor of the *wrong structural logic*, affine where linear is needed).
 
 **The honest bound — and why it matters as a lesson.** A cold adversarial review of the proof
 returned the right verdict: the *checked* math is a real characterization, but the *faithfulness*
@@ -1168,7 +1225,7 @@ You can forget every primitive and keep these.
    the professional move is to (a) put it in one place (concentration), (b) make the obligation
    at it as visible as possible, and (c) choose *consciously* whether the boundary costs you
    soundness, decidability, concentration, runtime, API surface, a solver in your toolchain, or
-   exception-safety, leak-freedom. The sixteen-primitive taxonomy is a decision procedure for that choice.
+   exception-safety, leak-freedom. The seventeen-primitive taxonomy is a decision procedure for that choice.
 
 4. **Adversarial separation of build and break.** Construction wants continuity; demolition wants
    a cold, context-free skeptic. Keeping them as separate machines — and *calibrating* your
@@ -1300,6 +1357,18 @@ witness, and the honest move is to drop the claim.
     it, name the floor the next country needs — *grade how much of it your current floor reaches, and warn
     that the floor above merely relocates the gap.*
 
+    **And a sideways refinement — the floor can be wrong in a way *no* better floor fixes.** A seventeenth
+    primitive held the floor fixed and changed the *precondition*: "this finalizer must run." Rust's floor
+    is **affine** (use *at most* once); "runs *exactly* once" is **linear** — so a safe `mem::forget` skips
+    the destructor and the obligation drops outright (the leakpocalypse). This broke too, but in a *new
+    mode*: not a graded partial, not a wrong domain, but the **wrong structural logic** — every sound
+    *decidable* fix collapses to a viral `Leak`/linear bound, so no floor *upgrade* helps (linearity was a
+    horn Rust's scoped-task trilemma deliberately rejected). Two lessons fall out. The floor-domain match is
+    really a floor-**precondition** match: the *same* liveness domain grades deadlock-freedom *partial* and
+    must-run-cleanup *none*. And — the deepest process lesson of the whole project — **a seam designed to
+    break cannot be given a coherent "usable" spec; the incoherence *is* the break**, surfacing wherever you
+    paper over it, which is exactly what a cold adversary is *for*.
+
 ---
 
 # Part 12 — Do it yourself: exercises and a reading path
@@ -1311,30 +1380,36 @@ witness, and the honest move is to drop the claim.
 - `lean proof/SeamGap.lean` — read the characterization; change a definition and watch it break.
 - Skim `design_seam/REPORT_SEAM_SPEC_*.md` — the cold attackers' actual verdicts, in their words.
 
-**Build a seventeenth primitive — climb one more rung, or grade a fourth domain.** The memory-safety basis
-is closed; a within-memory-safety probe will *project*, not extend. The frontier Primitives 13–16 opened is
-**a different soundness domain — and how far up the floor-ladder you can climb before the gap reappears.**
-Primitive 13 showed information flow is a *distinct* domain; Primitive 14, that *no IFC seam closes on
-Rust's affine floor*; Primitive 15, that liveness **half-closes** on a static type-level order (a *partial*
-match — granularity *and* coverage); Primitive 16, that *upgrading* the floor to a runtime thread-local
-registry is **non-monotone** — it fixes coverage but granularity *recurs* a rung finer (thread → task),
-because granularity is a containment-scope **ladder**. So the move has two directions and a warning. (i)
-**Climb the ladder:** build the seventeenth on the *next floor up* — a **task-local** held-set (`tokio`'s
-`task_local!`), or a dynamically-**learned acquires-before graph** (real `lockdep`/WITNESS) — and predict
-that it closes the task rung *and* exposes the one above it (a sub-task / `select!` branch?), or moves fully
-into detection-modality. (ii) **Grade a fourth domain:** a **timing/cache side-channel** (quantitative/
-effect floor — Jif, FlowCaml, QIF), a **real-time / WCET** miss (WCET-annotated floor), a
-**distributed-consistency** anomaly (session types — Honda et al.). Write the spec + a checked toy, run the
-*same* harness (`python3 -m orchestrator.seam_phase --spec ... --gauntlets 1 --prior-art-web`). Predict six
-things, because the four out-of-domain probes got them all: (a) the Rust Abstract Machine sees *nothing*;
-(b) the Seam Trilemma *recurs* — pick two — with the domain's own bite; (c) the domain has its *own* axes;
-(d) **a seam closes only if your floor matches the domain**; (e) **the match is graded** along *granularity*
-and *coverage*; and (f) **upgrading the floor is non-monotone** — measure whether your "better" floor
-*closes* the gap or merely *relocates* it a rung finer (and at what #5/#6/modality cost). The deliverable is
-**"the next domain's basis, the floor that closes it *and how completely*, where the next gap reappears, and
-confirmation the method transfers."** That is what newlang's last four primitives showed is possible — and
-what they leave for you. (See `design_seam/REALIZABILITY.md` for the memory-safety lattice, the closed-basis
-capstone, the per-domain generalization, the graded floor-domain match, and the non-monotone floor-upgrade.)
+**Build an eighteenth primitive — grade a fourth domain, or probe another structural logic.** The
+memory-safety basis is closed; a within-memory-safety probe will *project*, not extend. Primitives 13–17
+opened two live frontiers. Primitive 13 showed information flow is a *distinct* domain; 14, that *no IFC
+seam closes on Rust's affine floor*; 15, that liveness **half-closes** on a static type-level order (a
+*partial* match); 16, that *upgrading* that floor to a runtime registry is **non-monotone** (it fixes
+coverage but granularity *recurs* a rung finer — a containment-scope **ladder**); and 17, breadth-wise, that
+a *different precondition* in the same liveness domain (must-run cleanup) gets a *different grade* — a clean
+**none** — under a **new verdict mode**, the *wrong structural logic* (affine vs linear), which **no floor
+upgrade fixes** (every sound decidable fix collapses to a viral `Leak`/linear bound). So the eighteenth has
+two honest directions and a warning. (i) **Grade a FOURTH domain:** a **timing/cache side-channel**
+(quantitative/effect floor — Jif, FlowCaml, QIF), a **real-time / WCET** deadline miss (WCET-annotated
+floor), or a **distributed-consistency** anomaly (session types — Honda et al.) — a precondition with no
+memory-safety analog. (ii) **Probe another STRUCTURAL LOGIC** (linear was the first *wrong-structural-logic*
+verdict): a **relevant**-type precondition — *must-use-at-least-once with an error channel*, i.e. fallible
+must-run, the exact gap Primitive 17's infallible scope exposed — or an **ordered / session-typed** protocol
+where the floor's substructural logic is again the mismatch. Write the spec + a checked toy, run the *same*
+harness (`python3 -m orchestrator.seam_phase --spec ... --gauntlets 1 --prior-art-web`). Predict, because
+the five out-of-domain/precondition probes got them all: (a) the Rust Abstract Machine sees *nothing*; (b)
+the Seam Trilemma *recurs* with the domain's own bite; (c) the domain has its *own* axes; (d) **a seam
+closes only if your floor matches the precondition**; (e) **the match is graded** (full/partial/none), and
+the unit is the *precondition*, not the whole domain; (f) **upgrading the floor is non-monotone** *and* may
+be the **wrong structural logic** — measure whether a better floor *closes* the gap, merely *relocates* it,
+or *cannot* close it at any decidable price. And one warning Primitive 17 earned: **a seam designed to break
+may keep FAILING the spec on coherence — that is the break expressing itself, not a fixable defect** (don't
+chase a clean pass for a primitive that breaks; record the verdict and the residual incoherence as evidence).
+The deliverable is **"the next domain/logic's basis, the floor that closes it *and how completely*, where the
+next gap reappears or why none can, and confirmation the method transfers."** (See
+`design_seam/REALIZABILITY.md` for the memory-safety lattice, the closed-basis capstone, the per-domain
+generalization, the graded floor-domain match, the non-monotone floor-upgrade, and the wrong-structural-logic
+mode.)
 
 **Reading path, in dependency order:**
 1. *The Rust Book*, ownership/borrowing chapters — the affine system in practice.
@@ -1359,7 +1434,7 @@ capstone, the per-domain generalization, the graded floor-domain match, and the 
    shared ownership trades *unbounded dynamic allocation* against *caller-provided bounded storage*.
 8. **Verus** and **Creusot** docs — what "Rust but `unsafe` is proof" actually looks like when
    someone ships it (the productive horn from Part 8).
-9. This repo's `WRITEUP.md` (the full result), `design_seam/SYNTHESIS.md` (the sixteen-primitive map),
+9. This repo's `WRITEUP.md` (the full result), `design_seam/SYNTHESIS.md` (the seventeen-primitive map),
    `design_seam/REALIZABILITY.md` (the face lattice / 3-of-N proof), and `THE-SAME-WALL.md` (the
    cross-field boundary/veil discipline).
 

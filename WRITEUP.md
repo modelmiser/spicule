@@ -370,7 +370,7 @@ the second alone. A 0/N adversarial result is only as good as your ability to ru
 "the proposer was just weak," and the cleanest way to do that is to *hand the proposer
 the known-good sub-component and watch the failure move, not disappear.*
 
-## 10. The constructive phase — build and break sixteen real seams
+## 10. The constructive phase — build and break seventeen real seams
 
 The trilemma is a map, so the next step was to stop arguing in the abstract and **build**.
 A different harness shape: the negative half used cold instances to *propose* (and they
@@ -522,8 +522,34 @@ not lifted to full by upgrading the floor: the upgrade trades one gap for a fine
 axes (#5, #6) plus a modality downgrade doing it** — so the graded floor-match and the closed cost-basis are
 *coupled*, and the granularity dimension is an unbounded ladder no ambient floor tops out. Prior art forces
 it: FreeBSD **WITNESS** / **lockdep** / **Abseil** all abandoned static ranks for dynamically-*learned*
-acquires-before graphs (hand-assigned global ranks do not compose). The constructive arc concludes here.
-Full face lattice: `design_seam/REALIZABILITY.md`.
+acquires-before graphs (hand-assigned global ranks do not compose). The depth-wise arc concludes here.
+
+**A breadth-wise coda — the floor can be the wrong *structural logic*, not just the wrong domain.** A
+*seventeenth* primitive (`linear.rs`) takes not a new domain or a new ladder rung but a new **precondition**:
+*"this finalizer MUST run."* A `MustRun<F: FnOnce()>` RAII guard re-exports it as "bind it and it runs" — and
+it **breaks** (the *fifth* seam to drop a horn), compiler-settled and confirmed by the cold panel across *two
+independent rounds*: `mem::forget` is safe (an unbounded `fn<T>(T)` consuming the guard by one legal affine
+move), so `Drop` never fires and the finalizer runs **zero** times (the leakpocalypse, RFC 1066/1084). "Run
+*exactly* once" is a **linear** requirement; Rust's floor is **affine** ("at most once"). Three rulings
+sharpen the result. **(1) Grade: a clean NONE at the type level** — the tempting "partial via `#[must_use]`
+lint" was *rejected*, because `scopeguard` ships that exact warning as a cosmetic patch over a non-guarantee
+(the lint is silenced by `let _ =`, blind to `forget`); it is a non-type advisory, not a floor fragment. **(2)
+The match-unit is the *precondition*, not the *domain*** — the same liveness domain grades deadlock-freedom
+*partial* (#15/#16) and must-run-cleanup *none*, refining the domain-parameterized result one level finer.
+**(3) A new verdict mode: wrong-structural-logic / out-of-frame**, distinct from the graded-match — every
+sound *decidable* fix collapses to a viral `Leak`/linear bound (the alternative, heap-reachability, is
+undecidable ≅ halting), so *no decidable boundary price* buys soundness back; the floor is the wrong
+substructural logic (affine vs linear), not the wrong domain. Prior art forces it and sharpens it: this is
+Boats' **scoped-task trilemma**, of which Rust *deliberately rejected* the linear horn — not a binary swap. It
+costs **N nothing**: it is the *enforcement* face of the ninth axis (leak-freedom), where `drain` (#10) was
+the *tolerance* face (drain closed by making a skipped `Drop` harmless; this breaks needing it forbidden). And
+the deepest lesson is in *how* it broke: **both gauntlet rounds FAILED on the spec's coherence, never on the
+break** — r23 on a precondition-vs-commit/rollback contradiction, r24 *relocating* rather than removing it (a
+`disarm` that hands back the closure, not the value the commit path needs; "infallible" cleanups like
+`remove_file`/lock-release that the canonical examples actually need). A seam *designed to break* cannot be
+dressed as a coherent usable interface — **the incoherence *is* the break**, resurfacing wherever it is papered
+over — so the residual defects are positive evidence for the verdict, not noise. Full face lattice:
+`design_seam/REALIZABILITY.md`.
 
 **Decontamination, across primitives.** The seamful2 theorem predicted that a failing seam's
 obstruction *relocates* to the re-import boundary rather than vanishing. SPSC: it **vanished**
@@ -553,7 +579,7 @@ was the whole verdict — including the one mirage (the fuel knob), the two genu
 the one *real-but-inseparable* destination (immovability), and the one that landed *on coordinates already
 on the map* (validity) — the last of which is what closes the basis.
 
-**The adversary earned its keep — fifteen times.** On MMIO it named the axiom's category correctly
+**The adversary earned its keep — sixteen times.** On MMIO it named the axiom's category correctly
 (a TCB boundary, not a horn) and surfaced a horn-3 cost the builder had under-weighted. On the
 intrusive list it proved something *worse* than the builder predicted: branding does not restore
 soundness at all (a brand is an *access* capability, not a *storage* lifetime), correcting a real
@@ -614,6 +640,11 @@ And on the **runtime lock-order registry** it did the subtlest liveness thing: i
 (`HELD` is thread-keyed, but tasks are the control unit, so work-stealing migration launders an undetected
 inversion) and grounding it in prior art (WITNESS/lockdep/Abseil abandoned static ranks for learned graphs),
 so "granularity" is exposed as a containment-scope *ladder* (token < thread < task) no ambient floor tops out.
+And on the **must-run cleanup guard** it did the ninth thing: it confirmed a designed break but **rejected the
+builder's grade and named a new verdict mode** — the affine floor earns a *clean none* (not the proposed
+partial-via-lint, foreclosed by `scopeguard`), the obstruction is **wrong-structural-logic** (affine vs linear,
+no decidable price), and — most tellingly — it **FAILED the spec on coherence in both rounds without ever
+disputing the break**, demonstrating that a seam designed to break cannot be coherently dressed as usable.
 Spec↔impl divergences, sharpened overclaims, novelty-deflations, one axis-rejection, one relabel,
 one distinctness-ruling, an inseparable-category finding (twice), the closed-basis certification, a
 domain-generalization, a floor-domain-mismatch diagnosis (two horn-drops in the IFC domain), and a
@@ -622,16 +653,17 @@ fits, then a runtime floor that fits *differently* but not *more*, so upgrading 
 non-monotone and "granularity" a ladder) — exactly what build/break separation exists to surface. A
 discovery procedure that can say "no", "the right name", "why it doesn't merge", "real but unmeasurable",
 "real but adds nothing — the basis is closed", "this is a *different domain* entirely", "this floor is the
-wrong floor for that domain", and "this floor *partly* fits that domain — and a better floor trades the gap,
-it doesn't close it" is measuring something real; this one did all eight.
+wrong floor for that domain", "this floor *partly* fits that domain — and a better floor trades the gap,
+it doesn't close it", and "this floor is the wrong *structural logic* for that precondition — no floor in the
+family fits, because the fix changes affine to linear" is measuring something real; this one did all nine.
 
 **Mechanization.** `proof/SeamGap.lean` was upgraded from the one-direction triviality its own
 cold review had flagged to a genuine characterization — `seam_closes_iff_factors`: a seam
 closes **iff** its precondition factors through the safe witness — with the regimes as
 machine-checked instances (`spsc_seam_closes`, `intrusive_seam_does_not_close`, the slab's
 `slab_runtime_closes_but_static_does_not`: the same precondition closes through a *runtime*
-witness but not the *static* one, and `branded_seam_closes`/`refined_seam_closes`/`shared_seam_closes`/`typed_nat_seam_closes`/`take_seam_closes`/`drain_seam_closes`/`selfref_seam_closes`/`validity_seam_closes`/`secret_typed_discipline_factors`/`labeled_typed_discipline_factors`/`ordered_locks_typed_discipline_factors`/`lock_registry_typed_discipline_factors`:
-all close like SPSC in the kernel — the recovered axes, the four broken seams' domain gaps, the graded floor-match, and the non-monotone floor-upgrade alike invisible to it), `propext` only. Honest bound unchanged: the
+witness but not the *static* one, and `branded_seam_closes`/`refined_seam_closes`/`shared_seam_closes`/`typed_nat_seam_closes`/`take_seam_closes`/`drain_seam_closes`/`selfref_seam_closes`/`validity_seam_closes`/`secret_typed_discipline_factors`/`labeled_typed_discipline_factors`/`ordered_locks_typed_discipline_factors`/`lock_registry_typed_discipline_factors`/`linear_typed_discipline_factors`:
+all close like SPSC in the kernel — the recovered axes, the five broken seams' domain gaps, the graded floor-match, the non-monotone floor-upgrade, and the structural-logic (affine-vs-linear) break alike invisible to it), `propext` only. Honest bound unchanged: the
 *math* is now a real characterization, but the faithfulness of "precondition" and "witness" to
 actual Rust primitives — *which axis a closing seam spends* (zero-cost, API-locality, legibility,
 solver-freedom, bare-metal, unwind-safety, leak-freedom), and whether that "axis" is even *separable*
