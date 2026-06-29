@@ -226,6 +226,18 @@ pub mod lock_registry;
 /// that this is the *enforcement* face of axis 9, not a new axis). See `linear`.
 pub mod linear;
 
+/// Eighteenth seam (Phase Q — the *composite-precondition* probe): a session-typed channel. A `Chan<P>`
+/// affine handle whose type parameter is the *remaining protocol* (`Tx`/`Rx`/`End` markers); each operation
+/// consumes the handle and returns the successor state. Built as the crucible for the two prior liveness
+/// findings — #15 (`ordered_locks`: affine typestate carries static **order**) and #17 (`linear`: the affine
+/// floor cannot compel **completion**/linearity) — to ask whether the floor matches a *composite*
+/// precondition **component-wise**. The hypothesis the spec poses: protocol **safety** (no out-of-order op)
+/// *closes* via typestate — an out-of-turn call is a type error, and there is no `root` to re-enter (the
+/// granularity hole that sank #15 has no analog) — while protocol **completion** *breaks* on the same #17
+/// linearity gap (a mid-protocol `Chan` is `mem::forget`-able in safe code, abandoning the session). If so it
+/// is the first primitive whose sub-component cleanly closes while the whole breaks. See `session`.
+pub mod session;
+
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 use core::sync::atomic::{AtomicUsize, Ordering};

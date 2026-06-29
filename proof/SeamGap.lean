@@ -551,4 +551,33 @@ theorem linear_typed_discipline_factors :
   rw [seam_closes_iff_factors]
   exact ⟨id, fun _ => rfl⟩
 
+/-- Session-typed-channel shape — the *composite-precondition* probe (a `Chan<P>` affine typestate handle).
+    Built as the crucible for #15 (typestate carries static order) and #17 (the floor cannot compel
+    completion). Read `Pr`/`Wt` by analogy: the precondition is *protocol fidelity*, which **decomposes** into
+    a SAFETY half (no out-of-order operation) and a COMPLETION half (the protocol reaches `End`). In the
+    kernel the typed discipline factors (`Psession` is definitionally `V`), as always.
+
+    The cold panel (REPORT_SEAM_SPEC_session) grades the affine floor against this composite **component-wise**:
+    the SAFETY component is carried by affine typestate — `send`/`recv`/`close` exist only at the matching
+    state, so an out-of-order step is a *type error*, and unlike #15 there is no `root` to re-enter (the
+    granularity hole has no analog on a single affine `Chan`) — so that fragment is a sound, usable,
+    concentrated *closing* sub-seam. But the COMPLETION component **breaks** on the #17 linearity gap: a
+    mid-protocol `Chan` is `mem::forget`/`ManuallyDrop`/leak-able in safe code, so the session need not reach
+    `End` (a dual peer waits forever). The composite seam therefore BREAKS — `..._factors` (not `..._closes`)
+    certifies only the trivial typed sub-fact; the kernel sees neither the safety/completion split nor the
+    abandonment. The open rulings the spec poses: is component-wise grading the new contribution (a precondition
+    *decomposes*, matched component-by-component — sharpening Phase P's precondition-as-unit), is session/
+    protocol fidelity a *fourth domain* or the *composite* where a safety property and a liveness property meet,
+    and is the completion break the same wrong-structural-logic mode as #17 or merely "#15 + #17 stapled". -/
+def Psession (p : Prog) : Bool := V p
+
+/-- Trivial sub-fact only (see the docstring): the *typed* discipline factors. The composite seam BREAKS — its
+    SAFETY component (protocol order) closes via affine typestate, but its COMPLETION component (the protocol
+    reaches `End`) breaks on the #17 linearity gap (`mem::forget` abandons a mid-protocol session in safe
+    code), so protocol fidelity is matched only *component-wise* — a partial, decomposed match, not a closure. -/
+theorem session_typed_discipline_factors :
+    ∃ d : Prog → Bool, SoundW Psession d ∧ UsableW Psession d ∧ ConcW V d := by
+  rw [seam_closes_iff_factors]
+  exact ⟨id, fun _ => rfl⟩
+
 end SeamGap
