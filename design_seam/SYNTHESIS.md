@@ -6,8 +6,8 @@ distilled the **Seam Trilemma**: a seam cannot simultaneously have (1) sound re-
 phase asked the next question: *take the trilemma as a map and actually build a seam.* The
 stateful builder authored each seam spec + a real `rustc`-checked implementation; the cold
 adversarial harness (5 attackers + judge + an independent horn-classifier) red-teamed the
-**re-import rule only**, never the author. Fifteen primitives, chosen so their preconditions have
-fifteen different *shapes* — and so that each later one becomes the witness un-bundling an axis the
+**re-import rule only**, never the author. Sixteen primitives, chosen so their preconditions have
+sixteen different *shapes* — and so that each later one becomes the witness un-bundling an axis the
 trilemma had folded (zero-cost, API-locality, AI-legibility, solver-freedom, bare-metal, unwind-safety,
 leak-freedom). The discriminating moments exercise **eight** adjudication modes: a type-level-proof
 index pitched as *checker-tractability* was **rejected** (off-diagonal confounded with expressiveness);
@@ -21,11 +21,16 @@ closure is **per domain** *and floor-relative* — a constant-time secret showed
 soundness domain*, and a capability-gated declassification showed **no IFC seam closes on Rust's affine
 floor** (it bounds resource *uses*, not information *bits*); and a fifteenth — type-level lock ordering, in
 a *third* domain (**liveness/progress**) — tested the *positive* half of the floor-domain match and
-**broke**, grading the match from binary to **full / partial / none**. **The cost-basis is closed (per
-domain), and *which seams close* is GRADED by the floor-domain match** — memory safety a **full** match
-(basis closed), information flow **no** match (both seams break), liveness a **partial** match (the static
-lock-order fragment carries, the dynamic fragment escapes) — the constructive arc's conclusion and its
-three generalizations.
+**broke**, grading the match from binary to **full / partial / none**; and a sixteenth — a *runtime* lock
+registry, the same liveness danger on an **upgraded** floor — asked whether upgrading the floor *lifts* the
+match, and **broke** too, showing the upgrade is **non-monotone**: it fixed the dynamic-coverage gap but
+**granularity recurred one rung finer** (the held-set is keyed on the OS *thread*, but async *tasks* are
+the control unit), so the "granularity" axis is a **containment-scope ladder** — token < thread < task —
+no ambient Rust floor tops out. **The cost-basis is closed (per domain), *which seams close* is GRADED by
+the floor-domain match, and that grade is *not monotonically liftable*** — memory safety a **full** match
+(basis closed), information flow **no** match (both seams break), liveness a **partial** match that an
+upgraded floor relocates rather than fills (the dynamic fragment carries, granularity recurs) — the
+constructive arc's conclusion and its generalizations.
 
 ## The headline result
 
@@ -53,6 +58,7 @@ a runtime-checkable fact, or genuinely unrepairable?*
 | **Constant-time secret** (different DOMAIN) | SEAM-BREAKS [horn 1, IFC sense] (1 cold panel) | breaks — a horn drops, *in the information-flow domain* | no `unsafe`; the danger is timing | *Branching on a secret leaks it via timing — **not UB**.* The first probe outside memory safety. `Secret<N>` forecloses branching *on* the secret, but `ct_eq(a,b).expose_bool()` then `if b` leaks a relationship — **declassification is etiquette, not type-structure**; closing it needs whole-program **undecidable** IFC. **The intrusive list's horn-drop, re-run in a new domain — the Seam Trilemma recurs, sharper.** Panel ruling: information-flow is **out of frame**, a *different domain* with its **own basis** (declassification discipline, …). **Closure is per domain; the framework is domain-parameterized.** |
 | **Capability-gated declassify** (IFC domain) | SEAM-BREAKS [horn 1] — **5/5 unanimous** (1 cold panel) | breaks — *no closing IFC seam on Rust's floor* | an affine `Cap`, but the wall is open | *Probes whether the IFC domain has a **closing** seam.* It does not: `map(self, f)` hands the closure the **bare plaintext** (an uncapped exit a captured-`&mut` closure exfiltrates — **no effect system**), and the affine "budget" counts **uses, not bits** (a loop mints N caps; one cap → a megabyte). What it enforces — release *location* — **projects onto the affine memory-safety axis**; the real IFC coordinate (*amount* — **quantitative info-flow**, Smith min-entropy) an affine floor can't bound. **THE FINDING: a closing seam exists only when the FLOOR matches the DOMAIN.** Rust's affine floor: matched to memory safety, *mismatched* to IFC (needs Jif/FlowCaml/QIF). |
 | **Type-level lock ordering** (third DOMAIN: liveness) | SEAM-BREAKS [horn 1] — FAILED, 3/5 broke it (1 cold panel, r21) | breaks — *partial* floor-match in a third domain | a viral `Floor<F>`, but the floor is open | *Acquiring a lock out of a global rank order deadlocks — **neither UB nor a leak**.* Type-level rank `L` + affine `Floor<F>`, `with` bounded `L: Below<F>`. Built to test the *positive* half of the floor-domain match; **broke two ways**, both "the floor under-carries the precondition." **(1) Granularity (fatal):** `Floor::root` is re-entrant, so two sibling lineages let safe code type a low-then-high *inversion* (verified compiles+runs) — per-token discipline vs a per-thread-global precondition; Rust's floor has *no ambient per-thread one-shot resource*. **(2) Coverage:** even patched, the dynamic-acyclicity fragment (runtime-ordered/same-rank locks — bank-transfer `min/max`, hand-over-hand coupling, IRQ ordering) escapes the *static* floor, exactly as IFC's quantitative coordinate escaped the affine one. **THE FINDING: the floor-domain match is GRADED (full/partial/none)** — liveness on a static-order floor is a **partial** match. Name = *lock-order-inversion freedom*, not "deadlock-freedom"; precedent forces it (Boyapati–Lee–Rinard OOPSLA'02 *minus* their dynamic extension; Kobayashi natural-number levels; soundness = Havender 1968). |
+| **Runtime lock registry** (liveness; floor-UPGRADE) | SEAM-BREAKS [horn 1] — FAILED (1 cold panel, r22) | breaks — the floor-upgrade is **non-monotone** | a per-acquire runtime check; needs OS thread-local (not `no_std`) | *Same liveness danger as #15, on an **upgraded floor**: a `thread_local!` held-set of **runtime** ranks, checked per acquire (lockdep-in-miniature).* Built to ask whether *upgrading the floor lifts the match*. It fixed #15's **coverage** gap (runtime-chosen-fixed ranks close — bank-transfer `min/max`, hand-over-hand) and paid the predicted price — **#5 bare-metal** (needs OS thread-local → *cannot be `no_std`*, gated behind feature `lockdep` so the cost shows in the build graph), **#6 zero-cost** (a per-acquire check — the *slab's* place in a new domain), and a **prevention→detection modality** (the inversion compiles, is trapped only on *executed* paths; soundness path-coverage-dependent). **But granularity RECURRED one rung finer:** `HELD` is keyed on the OS *thread*, while the unit of control in async is the *task* — work-stealing migration resumes a rank-holding task on a fresh thread with an empty `HELD`, laundering an **undetected inversion** (verified: the registry is thread-blind); a single-threaded executor *false-panics* on independent tasks, and `!Send` closes neither direction fully. **THE FINDING: the floor-upgrade is non-monotone — the "granularity" axis is a containment-scope LADDER (token < thread < task), and no ambient Rust floor tops out** (there is no task-local; async is a library). Prior art forecloses the design: FreeBSD **WITNESS** / lockdep / Abseil all abandoned static ranks for dynamically-*learned* acquires-before graphs. |
 
 ### The deeper result: the Seam Trilemma is a 3-of-N projection (N ≥ 9)
 
@@ -221,6 +227,26 @@ channel / join cycles remain; and the claim that Rust's *affine* floor enables c
 order-carrying floor predates affinity by two decades in two non-affine settings, and affinity buys only
 token non-duplication, which the re-entrant `root` shows it does not even buy.)
 
+**…and the grade is not monotonically liftable — a sixteenth primitive proves it.** The obvious repair to
+#15 is to *upgrade the floor*: a **runtime lock registry** (`lock_registry.rs`, lockdep-in-miniature) — a
+`thread_local!` held-set of **runtime** ranks checked on each acquire. It directly targets #15's two gaps,
+and the cold panel ruled **SEAM-BREAKS [horn 1], FAILED** (r22), the *fourth* broken seam — because the
+upgrade is **non-monotone**. It *did* fix **coverage** (runtime-chosen-fixed ranks close — bank-transfer,
+hand-over-hand) and *did* pay the predicted price (**#5 bare-metal** — needs OS thread-local, *cannot be
+`no_std`*, hence feature-gated; **#6** a per-acquire runtime check; a **prevention→detection modality** —
+the inversion compiles and is trapped only on *executed* paths, soundness now path-coverage-dependent). But
+**granularity recurred one rung finer**: `HELD` is keyed on the OS *thread*, while the unit of control in
+async is the *task*; a work-stealing migration resumes a rank-holding task on a fresh thread with an empty
+`HELD`, laundering an **undetected inversion** (verified: the registry is thread-blind), and a
+single-threaded executor *false-panics* on independent tasks (`!Send` closes neither direction). So the
+**granularity axis is a containment-scope LADDER — token < thread < task** — and each ambient Rust floor
+reaches exactly one rung (affine token #15, thread-local #16); there is no ambient *task-local*. **A
+partial match is not lifted to full by upgrading the floor — the upgrade trades one gap for a finer one and
+spends cost-basis axes (#5, #6) plus a modality downgrade doing it**, coupling the graded match to the
+closed cost-basis. Prior art forecloses the static-rank design entirely: FreeBSD **WITNESS** / lockdep /
+Abseil all abandoned static ranks for dynamically-*learned* acquires-before graphs (an even higher floor,
+living wholly in the detection modality).
+
 The taxonomy is now a map of *what the missing conjunct is* **and which axis (or category) closing it spends**:
 - **Fully floor-expressible** → seam closes free, every axis ✓ (SPSC).
 - **Runtime-checkable** → closes by spending **zero-cost/#6** (slab; `RefCell`).
@@ -335,7 +361,7 @@ last one closing the basis.
 
 ## What the harness added that the builder missed
 
-The adversarial process earned its keep fourteen times:
+The adversarial process earned its keep sixteen times:
 
 1. **MMIO:** the builder framed M1/M4 as possibly "a different shape than the trilemma." The
    harness sharpened it to the exact right category — a TCB `assume` boundary, standard in
@@ -451,11 +477,25 @@ The adversarial process earned its keep fourteen times:
     partial-match ruling (Boyapati–Lee–Rinard OOPSLA'02 *minus* their dynamic extension; Kobayashi's
     natural-number levels; Havender 1968). The keep: name it **lock-order-inversion freedom**, not
     "deadlock-freedom"; the affine-floor framing is overstated (the order predates affinity 20y).
+15. **Runtime lock registry (the floor-upgrade is non-monotone; granularity is a ladder):** the obvious
+    repair to #14 is to *upgrade the floor* — a `thread_local!` registry of **runtime** ranks (lockdep-in-
+    miniature) — to lift the partial match. The panel **broke it [horn 1], FAILED** (r22), the *fourth*
+    broken seam, because the upgrade is **non-monotone**. It fixed **coverage** (runtime-chosen-fixed ranks
+    close — bank-transfer, hand-over-hand) and paid the predicted price (**#5 bare-metal** — needs OS
+    thread-local, *cannot be `no_std`*; **#6** a per-acquire check; a **prevention→detection modality** —
+    soundness path-coverage-dependent). But **granularity recurred one rung finer**: `HELD` is keyed on the
+    OS *thread*, while async *tasks* are the control unit — work-stealing migration launders an undetected
+    inversion (verified: thread-blind), and a single-threaded executor false-panics (`!Send` closes
+    neither). So the **granularity axis is a containment-scope LADDER — token < thread < task** — no ambient
+    Rust floor tops out (there is no task-local). The keep: **a partial match is not lifted to full by
+    upgrading the floor** — the upgrade trades one gap for a finer one and spends cost-basis axes (#5, #6)
+    plus a modality downgrade, coupling the graded match to the closed cost-basis. Prior art forecloses
+    static ranks entirely (FreeBSD WITNESS / lockdep / Abseil → learned acquires-before graphs).
 
 ## Artifacts
 
-- Specs (attacked as text): `SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat,take,drain,selfref,validity,secret,labeled,ordered_locks}.md`
-- Cold verdicts: `REPORT_SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat,take,drain,selfref,validity,secret,labeled,ordered_locks}.md` (+ raw transcripts in `runs_seam/`)
+- Specs (attacked as text): `SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat,take,drain,selfref,validity,secret,labeled,ordered_locks,lock_registry}.md`
+- Cold verdicts: `REPORT_SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat,take,drain,selfref,validity,secret,labeled,ordered_locks,lock_registry}.md` (+ raw transcripts in `runs_seam/`)
 - Real Rust (rustc-checked, `#![no_std]`): `../seam/` — `src/lib.rs` (SPSC), `src/mmio.rs`,
   `src/intrusive.rs`, `src/slab.rs`, `src/branded.rs`, `src/refined.rs`, `src/shared.rs` (the lone
   `alloc` user), `src/typed_nat.rs` (eighth-axis probe 1 — sound, no new axis), `src/take.rs`
@@ -464,13 +504,17 @@ The adversarial process earned its keep fourteen times:
   capstone — a new danger projects onto the basis), `src/secret.rs` + `src/labeled.rs` (the two IFC-domain
   seams — *both break*; closure is per-domain, and no IFC seam closes on Rust's affine floor),
   `src/ordered_locks.rs` (the third domain — liveness; *breaks*, grading the floor-domain match
-  full/partial/none); consumer code is `#![forbid(unsafe_code)]`; laundering paths are `compile_fail`
-  doctests (54 `tests/` integration tests + 27 doctests = 81 total).
+  full/partial/none), `src/lock_registry.rs` (the floor-UPGRADE probe — feature `lockdep`, needs `std`;
+  *breaks*, the upgrade is non-monotone — granularity recurs token→thread→task); consumer code is
+  `#![forbid(unsafe_code)]`; laundering paths are `compile_fail`
+  doctests (54 `tests/` integration tests + 27 doctests = 81 total in the default `no_std` build; with
+  `--features lockdep` the runtime registry adds its tests for **88 total**).
 - Seam-width instrument: `SEAM_WIDTH.md`; full face lattice: `REALIZABILITY.md`
 - Mechanization: `../proof/SeamGap.lean` — `seam_closes_iff_factors` + the
   `spsc`/`intrusive`/`slab`/`branded`/`refined`/`shared`/`typed_nat`/`take`/`drain`/`selfref`/`validity` instances,
-  plus `secret_typed_discipline_factors`, `labeled_typed_discipline_factors`, and
-  `ordered_locks_typed_discipline_factors` (the two IFC seams' + the liveness seam's trivial sub-facts — all three break) (propext-only).
+  plus `secret_typed_discipline_factors`, `labeled_typed_discipline_factors`,
+  `ordered_locks_typed_discipline_factors`, and `lock_registry_typed_discipline_factors` (the two IFC seams'
+  + the two liveness seams' trivial sub-facts — all four break) (propext-only).
 
 ## The one-sentence upgrade to the trilemma
 
@@ -500,7 +544,13 @@ not information *bits*; the IFC coordinate needs a quantitative/effect floor —
 third domain — type-level lock ordering (**liveness**) — showed that match is **graded, not binary**: it
 breaks two ways (a per-token-vs-per-thread *granularity* gap, and a *static-vs-dynamic* coverage gap, the
 dynamic-acyclicity coordinate escaping the static floor as IFC's quantitative one escaped the affine
-floor), so liveness on a static-order floor is a **partial** match. So the final shape of the result:
-**the Seam Trilemma is a domain-general tension; each soundness domain has its own cost-basis; and a floor
-closes a domain's seams only to the degree it carries that domain's precondition — a graded match, full
-(memory safety) / partial (liveness) / none (information flow).**
+floor), so liveness on a static-order floor is a **partial** match; and a sixteenth — a *runtime* lock
+registry on an **upgraded** floor — showed that grade is **not monotonically liftable**: upgrading the
+floor fixed coverage but **granularity recurred one rung finer** (thread-keyed vs task-keyed control), so
+the granularity axis is a **containment-scope ladder** (token < thread < task) no ambient floor tops out,
+and the lift was *bought* with cost-basis axes (#5, #6) plus a prevention→detection modality. So the final
+shape of the result: **the Seam Trilemma is a domain-general tension; each soundness domain has its own
+cost-basis; a floor closes a domain's seams only to the degree it carries that domain's precondition — a
+graded match, full (memory safety) / partial (liveness) / none (information flow) — and that grade cannot
+be freely lifted: upgrading the floor trades one gap for a finer one and spends the closed cost-basis to do
+it.**

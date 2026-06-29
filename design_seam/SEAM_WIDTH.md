@@ -97,25 +97,36 @@ That last outcome — a brand-new danger class adding nothing new — is what sh
 **closed**. See `REALIZABILITY.md` for the full face lattice (the confirmed axes, the rejected probe, the
 inseparable category, and the closed-basis capstone) and `SYNTHESIS.md` for the cross-primitive map.
 
-**A note on the three out-of-domain primitives — and the instrument's domain.** The constant-time secret
-(`seam/src/secret.rs`), the capability-gated declassification (`seam/src/labeled.rs`), and the type-level
-lock ordering (`seam/src/ordered_locks.rs`) are deliberately *not* in the table above, because this
+**A note on the four out-of-domain primitives — and the instrument's domain.** The constant-time secret
+(`seam/src/secret.rs`), the capability-gated declassification (`seam/src/labeled.rs`), the type-level
+lock ordering (`seam/src/ordered_locks.rs`), and the runtime lock-order registry
+(`seam/src/lock_registry.rs`, feature `lockdep`) are deliberately *not* in the table above, because this
 instrument cannot measure them: the two information-flow primitives have **no `unsafe` keyword** (the "seam
-crossing" the metric counts) and their danger is an *information leak*; the lock-ordering primitive's
-danger is a *deadlock* (a liveness hazard) — neither is UB. That is the point. Seam-width — and the whole
-nine-axis basis — is a **memory-safety** instrument; these three belong to **other soundness domains**
-(information-flow / non-interference; liveness / progress), and **all three break** there: the secret seam
+crossing" the metric counts) and their danger is an *information leak*; the two lock-ordering primitives'
+danger is a *deadlock* (a liveness hazard) — none is UB. That is the point. Seam-width — and the whole
+nine-axis basis — is a **memory-safety** instrument; these four belong to **other soundness domains**
+(information-flow / non-interference; liveness / progress), and **all four break** there: the secret seam
 (declassification is etiquette), the labeled seam (`map` hands the closure bare plaintext; the affine
-"budget" counts *uses*, not *bits*), and the lock-ordering seam (re-entrant `Floor::root` mints a second
+"budget" counts *uses*, not *bits*), the static lock-ordering seam (re-entrant `Floor::root` mints a second
 token lineage → a typable lock-order inversion; and the dynamic-acyclicity fragment escapes the static
-rank floor). The deeper reason the metric can't see them is the deeper result: **a closing seam — and a
-measuring instrument — exists only when the *floor* matches the *domain*, and that match is GRADED.**
-Rust's affine floor is **fully** matched to memory safety (where seam-width is well-defined and the basis
-is closed), **not** matched to information flow (no seam closes; the real coordinate, *quantitative
-leakage*, is unmeasurable by an affine/borrow type system), and a static type-level-*order* floor is only
-**partially** matched to liveness (it carries the static distinct-rank single-stack fragment, but the
-*dynamic* acyclicity coordinate — runtime-ordered/same-rank locks, what `lockdep` checks at runtime —
-escapes it, and even the static fragment leaks because affinity is per-*value* where the precondition is
-per-*thread*). Each domain needs its own floor and its own instruments — a quantitative/effect type system
-(Jif, FlowCaml, QIF) for information flow; a runtime or dependently-ordered discipline (BLR's dynamic
-tree-orders, Kobayashi's time tags) for liveness — for domains whose axes have no memory-safety analog.
+rank floor), and the runtime registry (the *floor-upgrade* probe: it fixes coverage but `HELD` is keyed on
+the OS *thread* while async control is per-*task*, so work-stealing migration launders an undetected
+inversion). The deeper reason the metric can't see them is the deeper result: **a closing seam — and a
+measuring instrument — exists only when the *floor* matches the *domain*, and that match is GRADED — and
+upgrading the floor is NON-MONOTONE.** Rust's affine floor is **fully** matched to memory safety (where
+seam-width is well-defined and the basis is closed), **not** matched to information flow (no seam closes;
+the real coordinate, *quantitative leakage*, is unmeasurable by an affine/borrow type system), and only
+**partially** matched to liveness — and the registry shows that match cannot be lifted by simply picking a
+stronger floor. A *static* type-level-order floor carries the static distinct-rank single-stack fragment
+but leaks the *dynamic* acyclicity coordinate (runtime-ordered/same-rank locks, what `lockdep` checks at
+runtime) and leaks on *granularity* (per-*value* affinity where the precondition is per-*thread*).
+*Upgrading* to a runtime `thread_local!` registry buys back the dynamic coordinate — at the cost of
+**bare-metal #5** (it needs OS thread-local, so it **cannot be `no_std`**: the `lockdep` feature gate makes
+that cost *structural and visible in the build graph*, not measurable by seam-width either), a per-acquire
+runtime check (**#6**), and a *prevention→detection* modality shift — yet **granularity recurs one rung
+finer** (the held-set is per-*thread*, but tasks are the control unit). The "granularity" coordinate is a
+containment-scope **ladder** — token < thread < task < … — and no ambient Rust floor tops it out. Each
+domain needs its own floor and its own instruments — a quantitative/effect type system (Jif, FlowCaml, QIF)
+for information flow; a runtime, learned acquires-before graph (FreeBSD WITNESS, `lockdep`, Abseil — all of
+which abandoned static ranks) or a *task-local* discipline for liveness — for domains whose axes have no
+memory-safety analog.
