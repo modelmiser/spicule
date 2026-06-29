@@ -171,6 +171,15 @@ pub mod validity;
 /// only *within memory safety* — i.e. whether IFC is a different domain with its own basis. See `secret`.
 pub mod secret;
 
+/// Fourteenth seam (Phase M — a *closing* information-flow seam): capability-gated declassification. The
+/// second IFC-domain primitive. Where the secret seam (`secret`) **broke** because declassification was
+/// etiquette, this one makes it **type-structural**: a `Secret<T>` can be read only by spending an affine
+/// `Cap` minted at the trust boundary, so *where/when/how-often* a secret is declassified is bounded and
+/// concentrated by the type system — the IFC analog of "concentrated, checked `unsafe`". It tests whether
+/// the IFC domain has a **closing** seam (paying *declassification discipline* — a clean IFC axis with no
+/// memory-safety analog), confirming the domain has its own cost-basis. See `labeled`.
+pub mod labeled;
+
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 use core::sync::atomic::{AtomicUsize, Ordering};
