@@ -1,23 +1,27 @@
 # The realizability table — the Seam Trilemma is a 3-of-N projection
 
-*Phases D–M. The constructive question the slab opened, the branded index extended, the refined index
+*Phases D–N. The constructive question the slab opened, the branded index extended, the refined index
 closed, the shared-ownership seam pushed to seven, the take-and-replace seam to eight, and the
 drain-and-yield seam to nine: is the Seam Trilemma the whole story (3 horns), or a low-dimensional
 shadow of a larger tension? Answer: it is a **3-of-N projection with N ≥ 9** — where the recovered axes
 are known PL boundaries, not novel discoveries (see the meta-pattern below). Each constructive primitive
 lit up one more axis by being the **witness that two configurations the trilemma treated as identical
-actually differ** — and the method's discrimination is now demonstrated in **five** modes, not just
+actually differ** — and the method's discrimination is now demonstrated in **eight** modes, not just
 accumulation: it **confirmed** axes (cleanly deflated to pre-existing), **sharpened** a horn without
 extending N (solver-freedom), **rejected** a confounded candidate (checker-tractability → not an axis),
 found one **real but structurally inseparable** (move-stability → a distinct danger with no isolable
 cost), and — the capstone — found a new danger class that **projects entirely onto the existing basis**
 (validity → no tenth axis), which together with the recurrence of inseparability (validity is a second
 inseparable danger) is the evidence that **the cost-basis is CLOSED** (see "The cost-basis is closed",
-below). N stays 9; the closed basis is the conclusion of the constructive arc — **and two further primitives
+below). N stays 9; the closed basis is the conclusion of the constructive arc — **and three further primitives
 generalized it: a constant-time secret showed closure is *per domain* (information-flow is a *different*
-soundness domain with its own basis), and a capability-gated declassification showed that *which seams
-close* depends on the *floor-domain match* — Rust's affine floor closes memory-safety seams but *no*
-information-flow seam, because affinity bounds resource *uses*, not information *bits*.** (Phases L–M.)*
+soundness domain with its own basis); a capability-gated declassification showed that *which seams close*
+depends on the *floor-domain match* (Rust's affine floor closes memory-safety seams but *no*
+information-flow seam, because affinity bounds resource *uses*, not information *bits*); and a type-level
+lock ordering, probing a *third* domain (liveness/deadlock), showed the floor-domain match is *graded —
+full / partial / none*: it lands *partway*, the static lock-order fragment closing while the dynamic and
+per-thread fragments escape, so the method now discriminates in **eight** modes (adding *partial-match*).**
+(Phases L–N.)*
 
 > **A note on the "#5/#6/#7" shorthand (and a numbering collision).** `#6` (zero-cost) and `#7`
 > (AI-legible) are the literal seed-property numbers. The "**#5⟂#7 cell**" shorthand, coined for the
@@ -372,6 +376,40 @@ QIF). So the deepest form of the result is layered:
 Memory safety is mapped here (basis closed, on a matched floor). Information flow is sketched — a real,
 distinct domain whose seams *all break on Rust's floor*, pointing at the floor it would need instead.
 
+#### The match is GRADED — a third domain (liveness) lands *partway*
+
+The IFC probes gave the *negative* half of the floor-domain match (no seam closes). A fifteenth primitive
+(`seam/src/ordered_locks.rs`, type-level lock ordering) tested the **positive** half in a **third
+domain — liveness / progress**, whose danger is **deadlock** (neither UB nor a leak: a deadlocked program
+is memory-safe and confidential). The witness is a type-level lock *rank* `L` plus an affine `Floor<F>`
+token, with `with` bounded `L: Below<F>` — so a lock-order inversion *should* be unconstructible, the
+floor (a type-level order) seemingly carrying the precondition (an acyclic global order). The cold panel
+ruled **SEAM-BREAKS [horn 1]**, and the break is the richer result: it shows the floor-domain match is
+**not binary but graded**, because a floor can *under-carry* a domain's precondition along **two
+independent axes**:
+
+> **Granularity.** `Floor::root` is a re-entrant safe call, so two sibling roots mint two independent
+> `Floor<TopRank>` lineages and safe code types a low-then-high inversion (it compiles). The discipline is
+> *per-token*; the precondition is *per-thread-global*. Rust's floor has **no ambient per-thread one-shot
+> resource** — so even the *static* fragment does not close without bolting on a thread-local consumed
+> capability the language does not provide.
+>
+> **Coverage (static vs dynamic).** Even granting that fix, the canonical deadlock-free idioms —
+> bank-transfer `min(i,j)` ordering, hand-over-hand list/tree coupling, address-ordered bucket locks,
+> IRQ/cross-stack ordering — are **inexpressible** (same static rank + irreflexive `Below` + compile-time
+> order). The **dynamic-acyclicity** coordinate (what `lockdep` checks at runtime) **escapes the static
+> floor**, *exactly as IFC's quantitative coordinate escaped the affine floor*. Prior art forces this:
+> it is **Boyapati–Lee–Rinard OOPSLA'02 minus their dynamic tree-order extension**, and **Kobayashi's
+> natural-number levels** — both abandoned pure static levels for precisely this reason.
+
+So the floor-domain match has **three grades**: **full** (memory safety on the affine floor — basis
+closed), **partial** (liveness on the static-type-order floor — the static distinct-rank single-stack
+fragment carried, the granularity + dynamic fragments escaped), **none** (information flow on the affine
+floor — both seams break). What closes here is **lock-order-*inversion* freedom**, never "deadlock-freedom"
+(condvar / channel / join cycles remain). And the affine floor gets *no* special credit: the order-carrying
+floor predates Rust's affinity by two decades in two non-affine settings (BLR/Java, Kobayashi/π-calculus);
+affinity buys only token non-duplication — and, per the granularity break, not even that.
+
 ## The recursion: each primitive un-bundled one folded axis
 
 ```
@@ -410,15 +448,25 @@ validity│  PROBES bit-level validity    ⇒ PROJECTS ONTO THE BASIS (a NEW dan
         │  (capability-gated declassify)  effect system); the "budget" counts events not BITS (affinity bounds
         │                              uses, not amount). NO closing IFC seam on Rust's floor. THE FLOOR is
         │                              matched to memory-safety, MISMATCHED to info-flow (needs Jif/QIF).
+ordlocks│  PROBES the POSITIVE half   ⇒ BREAKS [horn1] (FAILED, 3/5). A THIRD domain (liveness/deadlock).
+        │  (type-level lock ordering)    Two under-carryings: GRANULARITY (re-entrant Floor::root → 2 lineages
+        │                              → typable inversion; per-token ≠ per-thread) + COVERAGE (dynamic
+        │                              acyclicity — runtime/same-rank locks — escapes the static floor, like
+        │                              IFC's amount escaped the affine one). The floor-match is GRADED: full /
+        │                              partial / none. = BLR'02 minus dynamic ext.; Kobayashi nat-levels.
         ▼
 Realizability table         MEMORY-SAFETY domain (on a MATCHED affine floor): N ≥ 9 CLOSED axes (sound,
                             decidable, concentration, API-locality, #6, #7, bare-metal, unwind-safety,
                             leak-freedom) + INSEPARABLE (move-stability, validity) + 2 outside-the-axes
                             (MMIO TCB; intrusive horn-drop). INFORMATION-FLOW domain (on a MISMATCHED floor):
                             its own basis (declassification, quantitative leakage) but NO closing seam — both
-                            IFC seams break. The Seam Trilemma is DOMAIN-GENERAL, the cost-basis PER-DOMAIN,
-                            and WHICH SEAMS CLOSE depends on the FLOOR-DOMAIN MATCH. Seven method modes: confirm
-                            / sharpen / reject / inseparable / projects-onto-basis / out-of-frame / floor-mismatch.
+                            IFC seams break. LIVENESS domain (on a PARTIALLY-matched static-order floor):
+                            lock-order-inversion freedom closes for the static distinct-rank fragment, but the
+                            granularity + dynamic fragments escape — a PARTIAL match. The Seam Trilemma is
+                            DOMAIN-GENERAL, the cost-basis PER-DOMAIN, and WHICH SEAMS CLOSE depends on the
+                            FLOOR-DOMAIN MATCH — which is GRADED (full / partial / none). Eight method modes:
+                            confirm / sharpen / reject / inseparable / projects-onto-basis / out-of-frame /
+                            floor-mismatch / partial-match.
 ```
 
 Each constructive primitive is the **witness that two trilemma-identical configurations differ** —
@@ -498,11 +546,16 @@ The axes are not independent toggles you can set freely — **two trades and a d
   probed** — "more may exist" remains true (it is a lower bound), but the *evidence* of a new danger
   projecting cleanly onto the basis, and inseparability recurring, is what closure looks like. The four
   shapes a *within-domain* probe can take are all attested: a clean axis, a confound, an inseparable, or a
-  plain projection onto the basis — **plus a fifth, found by the secret seam: *out of frame*, a different
-  soundness domain.** The closure is therefore **per memory-safety domain**; information-flow has its own
-  basis (declassification discipline, …) and its own — sharper — trilemma. The deepest bound is not "N ≥ 9
-  closed" but "**each soundness domain has its own closed-ish basis, and the seam tension is the same
-  shape in every one**" (memory safety mapped, information flow sketched).
+  plain projection onto the basis — **plus three cross-domain shapes: *out of frame* (the secret seam — a
+  different soundness domain), *floor-mismatch* (the labeled seam — a domain whose seams none close on this
+  floor), and *partial-match* (the lock-ordering seam — a domain that closes *partway*).** The closure is
+  therefore **per memory-safety domain**; information-flow has its own basis (declassification discipline,
+  …) and its own — sharper — trilemma, with *no* seam closing on Rust's floor; liveness has its own basis
+  (lock-order-inversion freedom, dynamic acyclicity) with a *partial* closure. The deepest bound is not
+  "N ≥ 9 closed" but "**each soundness domain has its own basis, the seam tension is the same shape in
+  every one, and *which seams close* is set by the floor-domain match — which is graded full / partial /
+  none**" (memory safety mapped on a matched floor, information flow sketched on a mismatched one, liveness
+  sketched on a partially-matched one).
 - The #5⟂#7 dissociation **is witnessed** (refined index = brand-free + legible; slab = brand-free +
   illegible). Bare-metal ⟂ #6 **is witnessed** (slab = bare-metal + runtime-cost; Shared = global-heap
   + runtime-cost). Unwind-safety ⟂ all seven **is witnessed** (take-and-replace vs SPSC: the cleanest
@@ -521,7 +574,7 @@ The axes are not independent toggles you can set freely — **two trades and a d
   invisible in non-leak code), yet still real — a reminder that "deflatable" and "not an axis" are
   different verdicts (the rejected checker-tractability probe is the latter; leak-freedom the former).
 - The Lean kernel (`../proof/SeamGap.lean`) sees only whether a precondition factors through a
-  Boolean witness — so it certifies *closure* (`spsc`/`branded`/`refined`/`shared`/`typed_nat`/`take`/`drain`/`selfref`/`validity` (+ `secret`/`labeled`, which certify only the two IFC seams' trivial typed sub-facts — both IFC seams break)
+  Boolean witness — so it certifies *closure* (`spsc`/`branded`/`refined`/`shared`/`typed_nat`/`take`/`drain`/`selfref`/`validity` (+ `secret`/`labeled`/`ordered_locks`, which certify only the trivial typed sub-fact — the two IFC seams break, and the lock-ordering seam breaks/partially-matches)
   all close, like SPSC) but is blind to *which axis a closing seam spends* — or whether that "axis" is
   even separable (the self-ref cell closes in the kernel exactly like the rest; its inseparability is
   pure modeling-dictionary). Every column past

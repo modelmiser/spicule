@@ -6,22 +6,26 @@ distilled the **Seam Trilemma**: a seam cannot simultaneously have (1) sound re-
 phase asked the next question: *take the trilemma as a map and actually build a seam.* The
 stateful builder authored each seam spec + a real `rustc`-checked implementation; the cold
 adversarial harness (5 attackers + judge + an independent horn-classifier) red-teamed the
-**re-import rule only**, never the author. Fourteen primitives, chosen so their preconditions have
-fourteen different *shapes* — and so that each later one becomes the witness un-bundling an axis the
+**re-import rule only**, never the author. Fifteen primitives, chosen so their preconditions have
+fifteen different *shapes* — and so that each later one becomes the witness un-bundling an axis the
 trilemma had folded (zero-cost, API-locality, AI-legibility, solver-freedom, bare-metal, unwind-safety,
-leak-freedom). The discriminating moments exercise **six** adjudication modes: a type-level-proof
+leak-freedom). The discriminating moments exercise **eight** adjudication modes: a type-level-proof
 index pitched as *checker-tractability* was **rejected** (off-diagonal confounded with expressiveness);
 take-and-replace pitched as *unwind-safety* was **confirmed** (N ≥ 8, clean); drain-and-yield pitched as
 *leak-freedom* was **confirmed** (N ≥ 9, distinct from unwind-safety); a self-referential cell pitched as
 *move-stability* was ruled **real but structurally inseparable** (a distinct danger with no isolable
 cost, N stays 9); a validity-checked bytes→enum read — the capstone — asked whether the **cost-basis is
 closed** and got back, unanimously, **yes** (a genuinely new danger class projects entirely onto the
-basis, no tenth axis); and two information-flow probes stepped **outside memory safety** to find that the
+basis, no tenth axis); two information-flow probes stepped **outside memory safety** to find that the
 closure is **per domain** *and floor-relative* — a constant-time secret showed info-flow is a *different
 soundness domain*, and a capability-gated declassification showed **no IFC seam closes on Rust's affine
-floor** (it bounds resource *uses*, not information *bits*). **The cost-basis is closed (per domain), and
-*which seams close* depends on the floor-domain match** — the constructive arc's conclusion and its two
-generalizations.
+floor** (it bounds resource *uses*, not information *bits*); and a fifteenth — type-level lock ordering, in
+a *third* domain (**liveness/progress**) — tested the *positive* half of the floor-domain match and
+**broke**, grading the match from binary to **full / partial / none**. **The cost-basis is closed (per
+domain), and *which seams close* is GRADED by the floor-domain match** — memory safety a **full** match
+(basis closed), information flow **no** match (both seams break), liveness a **partial** match (the static
+lock-order fragment carries, the dynamic fragment escapes) — the constructive arc's conclusion and its
+three generalizations.
 
 ## The headline result
 
@@ -48,6 +52,7 @@ a runtime-checkable fact, or genuinely unrepairable?*
 | **Validity** (bytes→enum) | SEAM-HOLDS / TRADEOFF (3 cold panels: 2 found spec bugs) | sound; all 3 horns hold; **CLOSED-BASIS test** | O(1) per read; a viral sealed ctor for the view | *A **validity invariant** — a `#[repr(u8)]` enum byte that must be a valid discriminant, UB even without a deref.* A genuinely new danger class, built to ask: does it add an axis? Sound via `transmute`-after-**set-membership** (the move from a *range* check — unsound for non-contiguous discriminants — was forced by gauntlet 1). **Unanimous ruling: NO tenth axis — it projects onto the basis.** Its own cost is **(3) inseparable** (2nd example): per-read → #6, the zero-copy `&[u8]→&[Tag]` view → API-locality. **The cost-basis is closed.** Non-novel (`num_enum`/`bytemuck`/`zerocopy`). |
 | **Constant-time secret** (different DOMAIN) | SEAM-BREAKS [horn 1, IFC sense] (1 cold panel) | breaks — a horn drops, *in the information-flow domain* | no `unsafe`; the danger is timing | *Branching on a secret leaks it via timing — **not UB**.* The first probe outside memory safety. `Secret<N>` forecloses branching *on* the secret, but `ct_eq(a,b).expose_bool()` then `if b` leaks a relationship — **declassification is etiquette, not type-structure**; closing it needs whole-program **undecidable** IFC. **The intrusive list's horn-drop, re-run in a new domain — the Seam Trilemma recurs, sharper.** Panel ruling: information-flow is **out of frame**, a *different domain* with its **own basis** (declassification discipline, …). **Closure is per domain; the framework is domain-parameterized.** |
 | **Capability-gated declassify** (IFC domain) | SEAM-BREAKS [horn 1] — **5/5 unanimous** (1 cold panel) | breaks — *no closing IFC seam on Rust's floor* | an affine `Cap`, but the wall is open | *Probes whether the IFC domain has a **closing** seam.* It does not: `map(self, f)` hands the closure the **bare plaintext** (an uncapped exit a captured-`&mut` closure exfiltrates — **no effect system**), and the affine "budget" counts **uses, not bits** (a loop mints N caps; one cap → a megabyte). What it enforces — release *location* — **projects onto the affine memory-safety axis**; the real IFC coordinate (*amount* — **quantitative info-flow**, Smith min-entropy) an affine floor can't bound. **THE FINDING: a closing seam exists only when the FLOOR matches the DOMAIN.** Rust's affine floor: matched to memory safety, *mismatched* to IFC (needs Jif/FlowCaml/QIF). |
+| **Type-level lock ordering** (third DOMAIN: liveness) | SEAM-BREAKS [horn 1] — FAILED, 3/5 broke it (1 cold panel, r21) | breaks — *partial* floor-match in a third domain | a viral `Floor<F>`, but the floor is open | *Acquiring a lock out of a global rank order deadlocks — **neither UB nor a leak**.* Type-level rank `L` + affine `Floor<F>`, `with` bounded `L: Below<F>`. Built to test the *positive* half of the floor-domain match; **broke two ways**, both "the floor under-carries the precondition." **(1) Granularity (fatal):** `Floor::root` is re-entrant, so two sibling lineages let safe code type a low-then-high *inversion* (verified compiles+runs) — per-token discipline vs a per-thread-global precondition; Rust's floor has *no ambient per-thread one-shot resource*. **(2) Coverage:** even patched, the dynamic-acyclicity fragment (runtime-ordered/same-rank locks — bank-transfer `min/max`, hand-over-hand coupling, IRQ ordering) escapes the *static* floor, exactly as IFC's quantitative coordinate escaped the affine one. **THE FINDING: the floor-domain match is GRADED (full/partial/none)** — liveness on a static-order floor is a **partial** match. Name = *lock-order-inversion freedom*, not "deadlock-freedom"; precedent forces it (Boyapati–Lee–Rinard OOPSLA'02 *minus* their dynamic extension; Kobayashi natural-number levels; soundness = Havender 1968). |
 
 ### The deeper result: the Seam Trilemma is a 3-of-N projection (N ≥ 9)
 
@@ -192,6 +197,30 @@ seams close* depends on the floor-domain match.** Memory safety mapped (on a mat
 flow sketched (every seam breaks on Rust's floor — pointing at the quantitative/effect floor it needs:
 Jif, FlowCaml, QIF). The build-and-break method transfers — and *diagnoses the floor mismatch* itself.
 
+**The match is GRADED, not binary — a third domain shows the middle value.** A *fifteenth* primitive —
+**type-level lock ordering** (`ordered_locks.rs`) — stepped into a *third* domain, **liveness/progress**
+(deadlock is neither UB nor a leak), to test the *positive* half of the floor-domain match: does a closing
+seam reappear once the floor (a type-level rank order) carries the new domain's precondition (an acyclic
+global order)? The cold panel ruled **SEAM-BREAKS [horn 1], FAILED** (3/5 attackers, one fatal) — and the
+break is the richer result, because it grades the match. It fails along *two* independent dimensions, both
+"the floor under-carries the precondition": **(1) granularity** — `Floor::root` is re-entrant, so two
+sibling lineages let safe code type a low-then-high *inversion* (verified: it compiles and runs); the
+discipline is *per-token* while the precondition is *per-thread-global*, and Rust's floor has no ambient
+per-thread one-shot resource — so even the static fragment does not close; **(2) coverage** — even patched,
+the *dynamic*-acyclicity fragment (runtime-ordered / same-rank locks — bank-transfer `min/max`,
+hand-over-hand coupling, IRQ ordering) escapes the *static* type-level-order floor, exactly as IFC's
+quantitative coordinate escaped the affine one. Prior art forces the ruling: this is **Boyapati–Lee–Rinard
+OOPSLA'02 minus their dynamic tree-order extension**, and **Kobayashi's natural-number levels** — both
+abandoned pure static levels for the same wall (soundness itself = Havender 1968). So the floor-domain
+match is **GRADED**: **full** (memory safety on the affine floor — basis closed), **partial** (liveness on
+the static-order floor — static fragment carried, per-thread + dynamic fragments escape), **none**
+(information flow on the affine floor — every seam breaks). A floor can fail to carry a domain along (at
+least) two axes — *granularity* and *static-vs-dynamic* — and the third domain fails on both. (Corrections
+the panel forced: the right name is **lock-order-inversion freedom**, not "deadlock-freedom" — condvar /
+channel / join cycles remain; and the claim that Rust's *affine* floor enables closure is overstated — the
+order-carrying floor predates affinity by two decades in two non-affine settings, and affinity buys only
+token non-duplication, which the re-entrant `root` shows it does not even buy.)
+
 The taxonomy is now a map of *what the missing conjunct is* **and which axis (or category) closing it spends**:
 - **Fully floor-expressible** → seam closes free, every axis ✓ (SPSC).
 - **Runtime-checkable** → closes by spending **zero-cost/#6** (slab; `RefCell`).
@@ -306,7 +335,7 @@ last one closing the basis.
 
 ## What the harness added that the builder missed
 
-The adversarial process earned its keep thirteen times:
+The adversarial process earned its keep fourteen times:
 
 1. **MMIO:** the builder framed M1/M4 as possibly "a different shape than the trilemma." The
    harness sharpened it to the exact right category — a TCB `assume` boundary, standard in
@@ -410,24 +439,38 @@ The adversarial process earned its keep thirteen times:
     **cannot** bound. So both IFC seams break, for one reason — **Rust's floor carries none of the IFC
     precondition.** The keep that *finished the generalization*: a closing seam exists only when the
     **floor matches the domain**; the affine floor closes memory-safety seams and *no* IFC seam.
+14. **Type-level lock ordering (the floor-domain match is GRADED):** the builder probed the *positive*
+    half — does a closing seam reappear in a *third* domain (**liveness**) once the floor (a type-level
+    rank order) carries its precondition? The panel **broke it [horn 1], FAILED** (3/5), and the break
+    grades the match into **full / partial / none**. Two failure dimensions, both "the floor under-carries
+    the precondition": **granularity** — re-entrant `Floor::root` mints a second lineage, so safe code
+    types a low-then-high inversion (verified compiles+runs); the discipline is per-token, the precondition
+    per-thread-global, and Rust has no ambient per-thread one-shot resource (even the *static* fragment
+    fails) — and **coverage** — the *dynamic*-acyclicity fragment (runtime/same-rank locks) escapes the
+    *static* floor, as IFC's quantitative coordinate escaped the affine one. Prior art forces the
+    partial-match ruling (Boyapati–Lee–Rinard OOPSLA'02 *minus* their dynamic extension; Kobayashi's
+    natural-number levels; Havender 1968). The keep: name it **lock-order-inversion freedom**, not
+    "deadlock-freedom"; the affine-floor framing is overstated (the order predates affinity 20y).
 
 ## Artifacts
 
-- Specs (attacked as text): `SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat,take,drain,selfref,validity,secret,labeled}.md`
-- Cold verdicts: `REPORT_SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat,take,drain,selfref,validity,secret,labeled}.md` (+ raw transcripts in `runs_seam/`)
+- Specs (attacked as text): `SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat,take,drain,selfref,validity,secret,labeled,ordered_locks}.md`
+- Cold verdicts: `REPORT_SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat,take,drain,selfref,validity,secret,labeled,ordered_locks}.md` (+ raw transcripts in `runs_seam/`)
 - Real Rust (rustc-checked, `#![no_std]`): `../seam/` — `src/lib.rs` (SPSC), `src/mmio.rs`,
   `src/intrusive.rs`, `src/slab.rs`, `src/branded.rs`, `src/refined.rs`, `src/shared.rs` (the lone
   `alloc` user), `src/typed_nat.rs` (eighth-axis probe 1 — sound, no new axis), `src/take.rs`
   (eighth-axis probe 2 — the confirmed unwind-safety axis), `src/drain.rs` (the confirmed leak-freedom
   axis), `src/selfref.rs` (move-stability — real but inseparable), `src/validity.rs` (the closed-basis
   capstone — a new danger projects onto the basis), `src/secret.rs` + `src/labeled.rs` (the two IFC-domain
-  seams — *both break*; closure is per-domain, and no IFC seam closes on Rust's affine floor); consumer
-  code is `#![forbid(unsafe_code)]`; laundering paths are `compile_fail` doctests (50 `tests/` integration
-  tests + 23 `compile_fail` doctests = 73 total).
+  seams — *both break*; closure is per-domain, and no IFC seam closes on Rust's affine floor),
+  `src/ordered_locks.rs` (the third domain — liveness; *breaks*, grading the floor-domain match
+  full/partial/none); consumer code is `#![forbid(unsafe_code)]`; laundering paths are `compile_fail`
+  doctests (54 `tests/` integration tests + 27 doctests = 81 total).
 - Seam-width instrument: `SEAM_WIDTH.md`; full face lattice: `REALIZABILITY.md`
 - Mechanization: `../proof/SeamGap.lean` — `seam_closes_iff_factors` + the
   `spsc`/`intrusive`/`slab`/`branded`/`refined`/`shared`/`typed_nat`/`take`/`drain`/`selfref`/`validity` instances,
-  plus `secret_typed_discipline_factors` and `labeled_typed_discipline_factors` (the two IFC seams' trivial sub-facts — both real IFC seams break) (propext-only).
+  plus `secret_typed_discipline_factors`, `labeled_typed_discipline_factors`, and
+  `ordered_locks_typed_discipline_factors` (the two IFC seams' + the liveness seam's trivial sub-facts — all three break) (propext-only).
 
 ## The one-sentence upgrade to the trilemma
 
@@ -445,7 +488,7 @@ plus the original sound/decidable/concentration), an **inseparable category** (m
 and **two outside-the-axes** (the MMIO TCB axiom, the intrusive horn-drop) — each surfacing only when a
 primitive becomes the witness that two previously-identical configurations differ (and one candidate,
 checker-tractability, was **rejected** as confounded; the basis shown **closed** when a brand-new danger
-class projected cleanly onto it — the method discriminates in six modes). Honest coda: those axes are
+class projected cleanly onto it — the method discriminates in eight modes). Honest coda: those axes are
 each a *pre-existing* named PL boundary; the result is their unification under one "what does the witness
 cost?" rubric — a question with **finitely many answers** — not their discovery. **And two more
 generalizations**: that closed object is the **memory-safety** domain's; a constant-time secret showed
@@ -453,6 +496,11 @@ information-flow is a *different* domain with its *own* basis, so the Seam Trile
 **domain-parameterized** — the same shape, a different basis, in every soundness domain; and a
 capability-gated declassification showed that *which seams close* depends on the **floor-domain match** —
 Rust's affine floor closes memory-safety seams but *no* information-flow seam (it bounds resource *uses*,
-not information *bits*; the IFC coordinate needs a quantitative/effect floor — Jif, FlowCaml, QIF). So the
-final shape of the result: **the Seam Trilemma is a domain-general tension; each soundness domain has its
-own cost-basis; and a floor closes a domain's seams only when it carries that domain's precondition.**
+not information *bits*; the IFC coordinate needs a quantitative/effect floor — Jif, FlowCaml, QIF); and a
+third domain — type-level lock ordering (**liveness**) — showed that match is **graded, not binary**: it
+breaks two ways (a per-token-vs-per-thread *granularity* gap, and a *static-vs-dynamic* coverage gap, the
+dynamic-acyclicity coordinate escaping the static floor as IFC's quantitative one escaped the affine
+floor), so liveness on a static-order floor is a **partial** match. So the final shape of the result:
+**the Seam Trilemma is a domain-general tension; each soundness domain has its own cost-basis; and a floor
+closes a domain's seams only to the degree it carries that domain's precondition — a graded match, full
+(memory safety) / partial (liveness) / none (information flow).**

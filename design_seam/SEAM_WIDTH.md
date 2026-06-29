@@ -97,17 +97,25 @@ That last outcome — a brand-new danger class adding nothing new — is what sh
 **closed**. See `REALIZABILITY.md` for the full face lattice (the confirmed axes, the rejected probe, the
 inseparable category, and the closed-basis capstone) and `SYNTHESIS.md` for the cross-primitive map.
 
-**A note on the two information-flow primitives — and the instrument's domain.** The constant-time secret
-(`seam/src/secret.rs`) and the capability-gated declassification (`seam/src/labeled.rs`) are deliberately
-*not* in the table above, because this instrument cannot measure them: they have **no `unsafe` keyword**
-(the "seam crossing" the metric counts), and their danger is an *information leak*, not UB. That is the
-point. Seam-width — and the whole nine-axis basis — is a **memory-safety** instrument; these two belong to
-a **different soundness domain** (information-flow / non-interference), and **both break** there: the
-secret seam (declassification is etiquette) and the labeled seam (`map` hands the closure bare plaintext;
-the affine "budget" counts *uses*, not *bits*). The deeper reason the metric can't see them is the deeper
-result: **a closing seam — and a measuring instrument — exists only when the *floor* matches the
-*domain*.** Rust's affine floor is matched to memory safety (where seam-width is well-defined and the
-basis is closed) and *mismatched* to information flow (where no seam closes and the real coordinate,
-*quantitative leakage*, is unmeasurable by an affine/borrow type system). Information flow would need its
-own floor and its own instruments — a quantitative/effect type system (Jif, FlowCaml, QIF) — for a domain
-whose axes have no memory-safety analog.
+**A note on the three out-of-domain primitives — and the instrument's domain.** The constant-time secret
+(`seam/src/secret.rs`), the capability-gated declassification (`seam/src/labeled.rs`), and the type-level
+lock ordering (`seam/src/ordered_locks.rs`) are deliberately *not* in the table above, because this
+instrument cannot measure them: the two information-flow primitives have **no `unsafe` keyword** (the "seam
+crossing" the metric counts) and their danger is an *information leak*; the lock-ordering primitive's
+danger is a *deadlock* (a liveness hazard) — neither is UB. That is the point. Seam-width — and the whole
+nine-axis basis — is a **memory-safety** instrument; these three belong to **other soundness domains**
+(information-flow / non-interference; liveness / progress), and **all three break** there: the secret seam
+(declassification is etiquette), the labeled seam (`map` hands the closure bare plaintext; the affine
+"budget" counts *uses*, not *bits*), and the lock-ordering seam (re-entrant `Floor::root` mints a second
+token lineage → a typable lock-order inversion; and the dynamic-acyclicity fragment escapes the static
+rank floor). The deeper reason the metric can't see them is the deeper result: **a closing seam — and a
+measuring instrument — exists only when the *floor* matches the *domain*, and that match is GRADED.**
+Rust's affine floor is **fully** matched to memory safety (where seam-width is well-defined and the basis
+is closed), **not** matched to information flow (no seam closes; the real coordinate, *quantitative
+leakage*, is unmeasurable by an affine/borrow type system), and a static type-level-*order* floor is only
+**partially** matched to liveness (it carries the static distinct-rank single-stack fragment, but the
+*dynamic* acyclicity coordinate — runtime-ordered/same-rank locks, what `lockdep` checks at runtime —
+escapes it, and even the static fragment leaks because affinity is per-*value* where the precondition is
+per-*thread*). Each domain needs its own floor and its own instruments — a quantitative/effect type system
+(Jif, FlowCaml, QIF) for information flow; a runtime or dependently-ordered discipline (BLR's dynamic
+tree-orders, Kobayashi's time tags) for liveness — for domains whose axes have no memory-safety analog.
