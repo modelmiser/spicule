@@ -1398,10 +1398,137 @@
       "outcome": "FAILED",
       "cost_usd": 2.4405,
       "timestamp": "2026-06-29T20:40:08+00:00"
+    },
+    {
+      "round": 23,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_linear.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 must-run cleanup guard (re-import rule under attack)\n\nThis is a **design proposal** for a seventeenth *seam*, built **breadth-wise**: not a new domain and not a\nnew rung of the granularity ladder, but a new **precondition** \u2014 *\"this finalizer MUST run\"* \u2014 to be\n**graded** against Rust's ambient **affine** floor. It is the *inverse* of the tenth seam\n(`SEAM_SPEC_drain.md`): `drain` **closed** by making a skipped `Drop` *harmless* (leak-**tolerance**); this\nseam needs a skipped `Drop` to be *impossible* (leak-**intolerance**) \u2014 the same ninth-axis danger\n(leak-freedom) from the opposite side.\n\nYou are attacking a **text specification** backed by real `rustc`-checked code (`seam/src/linear.rs`, the\ndefault `no_std` build \u2014 `core`-only).\n\n---\n\n## 0. The floor (stipulated, not under attack)\n\nRust's borrow checker as shipped: ownership is **affine** (a value may be used *at most* once \u2014 you may\ndrop, move, or `mem::forget` it without using it). Destructors run via `Drop` on a normal or unwinding scope\nexit, **except** where suppressed by a *safe* operation: `core::mem::forget`, `ManuallyDrop`, `Box::leak`,\nor a reference cycle. The `#[must_use]` lint and `#![deny(unused_mus",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Re-import rule overclaims type-level guarantee; must-run precondition contradicts the commit-or-rollback idiom it motivates.",
+          "strongest_point": "The defuse the commit idiom requires and the forget named as the attack are the same safe operation, so \u00a72's must-run-on-every-path precondition is incoherent with \u00a71's conditional use cases."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "mem::forget/ManuallyDrop are safe and type-check, skipping the finalizer; \u00a74's 'prevented by the type' is false.",
+          "strongest_point": "A one-line safe program \u2014 let g = MustRun::new(c); mem::forget(g); \u2014 compiles warning-free yet runs the cleanup zero times, refuting the type-level guarantee."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Re-import's type-level promise needs an undecidable finalizer-reachability pass; only fix is changing structural logic.",
+          "strongest_point": "Enforcing must-run while keeping forget safe requires undecidable Rc-cycle escape analysis; the only decidable alternative abandons the affine floor for a linear one."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "FnOnce()->() Drop design cannot express fallible must-run cleanup; 'ran' conflated with 'invariant restored', breaking \u00a72 and Horn 3.",
+          "strongest_point": "The dominant must-run cleanups (close, commit, fsync) are fallible, but Drop on the ?/panic paths has no error channel, so a finalizer that runs-and-fails reports success while the invariant is violated \u2014 forcing escape to hand-written finally."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "minor",
+          "summary": "Settled prior art (leakpocalypse, scopeguard, must_move) forecloses the 'partial-via-lint = new texture' claim; must_use is advisory, not floor.",
+          "strongest_point": "scopeguard already ships your exact guard plus the must_use-on-statement-drop warning as a known cosmetic patch over a non-guarantee, so 'partial via escalatable lint' is not a novel texture and the type-level grade is a clean none."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "genuine-flaw",
+          "attacker-soundness": "argued-past",
+          "attacker-implementation": "tradeoff",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Verdict mode is wrong-structural-logic / out-of-frame (affine vs linear), not graded-match: the must-run gap is not closeable by any decidable pass on the affine floor (Rc-cycle escape analysis is undecidable; the only type-level fix changes the structural logic).",
+          "Grade is a clean none-at-the-type-level with a cosmetic advisory lint; 'partial-via-escalatable-lint' is NOT a new grading texture (foreclosed by scopeguard's shipped must_use-on-statement-drop warning). The lint fragment is thinner than \u00a73/\u00a76 imply: no propagation through containers/fields, blind to forget/ManuallyDrop.",
+          "The FnOnce()->() + Drop design cannot express fallible must-run cleanup (close/commit/fsync): the finalizer runs but its failure is undeliverable on ?/panic paths, so 'ran' is conflated with 'invariant restored' in \u00a72.",
+          "Factual fix: \u00a75 miscatalogs `let _ = MustRun::new(...)` as a skip vector; it actually runs Drop immediately (wrong time, not a skip)."
+        ],
+        "headline": "Re-import precondition (\u00a72) contradicts the commit-or-rollback idiom (\u00a71); only defuse is the named attack.",
+        "rationale": "Soundness/impl/prior-art confirm the pre-conceded none-at-type grade and refine verdict-mode/texture (recordable, not fatal). Ergonomics lands a genuine, unanswered flaw: \u00a72's run-on-every-discard-path precondition is incompatible with the conditional rollback \u00a71 motivates, and the API offers no defuse but mem::forget \u2014 the named soundness hole. Proposer must revise."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.0061,
+      "timestamp": "2026-06-29T21:11:49+00:00"
+    },
+    {
+      "round": 24,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_linear.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 must-run cleanup guard (re-import rule under attack) \u2014 r24 (revised after r23)\n\nThis is a **design proposal** for a seventeenth *seam*, built **breadth-wise**: not a new domain and not a\nnew rung of the granularity ladder, but a new **precondition** \u2014 *\"this finalizer MUST run\"* \u2014 to be\n**graded** against Rust's ambient **affine** floor. It is the *inverse* of the tenth seam\n(`SEAM_SPEC_drain.md`): `drain` **closed** by making a skipped `Drop` *harmless* (leak-**tolerance**); this\nseam needs a skipped `Drop` to be *impossible* (leak-**intolerance**) \u2014 the same ninth-axis danger\n(leak-freedom) from the opposite side.\n\nYou are attacking a **text specification** backed by real `rustc`-checked code (`seam/src/linear.rs`, the\ndefault `no_std` build \u2014 `core`-only).\n\n**Revision note (r24).** The first round (r23) FAILED on a genuine spec incoherence the ergonomics attacker\ncaught \u2014 not on the break (which is the designed result): \u00a71/\u00a72 motivated the primitive with\n*commit-or-rollback* (a **conditional** finalizer that must NOT run on the happy path) while \u00a72's\nprecondition demanded the finalizer run on **every** discard path, and the only cancel was `mem::forget`\n(the named ",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "disarm returns the closure not the guarded value; bare FnOnce() primitive can't host commit-or-rollback that disarm exists for",
+          "strongest_point": "For the conditional idiom disarm was added to serve, the FnOnce()-only primitive traps the resource inside the closure and disarm hands back F instead of the value \u2014 strictly worse than the scopeguard guard(v,f)/into_inner API the proposal claims to be, so the r23 ergonomic incoherence is relocated, not resolved."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Must-run invariant not type-enforced (forget/leak/disarm all accepted, zero-run); affine\u2260linear. Plus a non-conceded let-_ lint contradiction.",
+          "strongest_point": "mem::forget : fn<T>(T) accepts MustRun<F> by move with no bounds, so the closure never runs \u2014 the affine floor provably cannot compel a destructor, and \u00a75 falsely claims `let _ =` is lint-caught when \u00a70 says it silences must_use."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Primitive compiles trivially; enforcement undecidability is correctly located, not smuggled into a decidable claim.",
+          "strongest_point": "Every sound, decidable enforcement of must-run collapses into a viral Leak/linear bound (route b), confirming there is no decidable boundary price inside the affine floor \u2014 exactly the out-of-frame verdict claimed."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Infallible scope excludes the headline examples (temp-file delete, close/fsync); fallible finalizer failure on unwind silently reproduces the very skip the seam forbids.",
+          "strongest_point": "For its own marquee use cases a fallible finalizer that runs-but-fails is observationally identical to the forbidden skip, voiding the run-on-unwind guarantee the seam advertises as its strength."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Decisive precedent (leakpocalypse/RFC1066/1084, scoped-task trilemma) correctly named; pre-conceded break is itself the historical result, no unanswered prior-art defect.",
+          "strongest_point": "Every load-bearing citation checks out \u2014 RFC 1066's own rationale is the proposal's exact break, and Boats' scoped-task trilemma confirms the 'linear-not-affine, clean-none' verdict \u2014 so prior art vindicates rather than undermines it."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "genuine-flaw",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "argued-past",
+          "attacker-expressiveness": "genuine-flaw",
+          "attacker-prior-art": "argued-past"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Confirmed grading verdicts carry forward: clean-NONE grade, SEAM-BREAKS, axis-9 enforcement face with N unchanged, precondition-as-match-unit, and wrong-structural-logic/out-of-frame mode.",
+          "Infallible-finalizer scope: FnOnce()->() has no error channel, so run-but-fail on ?/unwind cannot report \u2014 a real expressiveness cost.",
+          "Prior-art sharpening: obstruction is the scoped-task trilemma, not a binary affine-vs-linear swap (deliberately rejected linear horn)."
+        ],
+        "headline": "Grading verdicts confirmed, but re-import rule fails on three r23-class coherence defects.",
+        "rationale": "Break is designed and the \u00a76 grades survive panel-wide. But disarm can't host the conditional idiom it serves, \u00a75's let-_ lint claim contradicts \u00a70/\u00a73, and \u00a71's fallible examples violate \u00a75's infallible scope \u2014 the same incoherence class that failed r23."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 1.9078,
+      "timestamp": "2026-06-29T21:21:16+00:00"
     }
   ],
   "settled": [],
   "incompatibilities": [],
   "blind_spot_flags": [],
-  "total_cost_usd": 44.2268
+  "total_cost_usd": 48.1407
 }

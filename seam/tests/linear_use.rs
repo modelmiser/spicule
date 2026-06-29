@@ -54,6 +54,19 @@ fn run_now_is_the_recovered_but_unforced_discipline() {
 }
 
 #[test]
+fn disarm_is_the_sanctioned_ownership_handoff_cancel_not_the_attack() {
+    // The case `disarm` actually serves (NOT commit-or-rollback — the r24 panel showed it returns the
+    // closure, not the protected value): usually run the finalizer on drop, but in this branch the
+    // resource was handed elsewhere, so cancel it — explicitly and greppably, *not* by `mem::forget`.
+    let released = Cell::new(false);
+    let release_on_drop = MustRun::new(|| released.set(true));
+    // ... we handed the resource off, so cancel the release:
+    let cancelled = release_on_drop.disarm();
+    assert!(cancelled.is_some(), "disarm hands back the un-run cleanup closure");
+    assert!(!released.get(), "the finalizer did NOT run — an explicit, visible cancel (unlike forget)");
+}
+
+#[test]
 fn the_break_mem_forget_skips_the_must_run_cleanup() {
     // `mem::forget` is SAFE — this file forbids `unsafe` and still compiles. It consumes the guard and
     // leaks it, so `Drop` never runs and the "must-run" cleanup is skipped. Affine ownership cannot make
