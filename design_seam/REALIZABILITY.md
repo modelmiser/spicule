@@ -1,6 +1,6 @@
 # The realizability table — the Seam Trilemma is a 3-of-N projection
 
-*Phases D–K. The constructive question the slab opened, the branded index extended, the refined index
+*Phases D–L. The constructive question the slab opened, the branded index extended, the refined index
 closed, the shared-ownership seam pushed to seven, the take-and-replace seam to eight, and the
 drain-and-yield seam to nine: is the Seam Trilemma the whole story (3 horns), or a low-dimensional
 shadow of a larger tension? Answer: it is a **3-of-N projection with N ≥ 9** — where the recovered axes
@@ -13,7 +13,10 @@ found one **real but structurally inseparable** (move-stability → a distinct d
 cost), and — the capstone — found a new danger class that **projects entirely onto the existing basis**
 (validity → no tenth axis), which together with the recurrence of inseparability (validity is a second
 inseparable danger) is the evidence that **the cost-basis is CLOSED** (see "The cost-basis is closed",
-below). N stays 9; the closed basis is the conclusion of the constructive arc.*
+below). N stays 9; the closed basis is the conclusion of the constructive arc — **and a thirteenth
+primitive (a constant-time secret) showed that closure is *per domain*: information-flow is a *different*
+soundness domain with its own basis, so the Seam Trilemma and the cost-basis are domain-parameterized.**
+(Phase L.)*
 
 > **A note on the "#5/#6/#7" shorthand (and a numbering collision).** `#6` (zero-cost) and `#7`
 > (AI-legible) are the literal seed-property numbers. The "**#5⟂#7 cell**" shorthand, coined for the
@@ -308,10 +311,38 @@ So the constructive arc concludes: the Seam Trilemma is a **3-of-N projection of
 **nine clean axes** (sound, decidable, concentration, API-locality, zero-cost, AI-legibility,
 bare-metal, unwind-safety, leak-freedom), **plus an inseparable category** (move-stability, validity) of
 real dangers with no clean coordinate, **plus the two outside-the-axes categories** (the MMIO TCB axiom;
-the intrusive list's genuine horn-drop). Every danger probed since lands in one of these. The honest
-bound stays a *lower* bound (a future danger could still surprise), but the evidence — a brand-new
-danger class projecting cleanly onto the basis, and inseparability recurring rather than appearing once
-— is what closure looks like.
+the intrusive list's genuine horn-drop). Every memory-safety danger probed since lands in one of these.
+The honest bound stays a *lower* bound (a future danger could still surprise), but the evidence — a
+brand-new danger class projecting cleanly onto the basis, and inseparability recurring rather than
+appearing once — is what closure looks like.
+
+### …but closed PER DOMAIN — the information-flow probe (the arc's generalization)
+
+The closure is for **memory safety** (can safe code reach UB?). One further primitive tested whether it
+is *absolute*: a **constant-time secret** (`seam/src/secret.rs`), re-importing a danger that is **not UB**
+— an information-flow / **timing** side-channel (branching on a secret leaks it). The cold panel's ruling
+**generalizes the whole result**:
+
+> **Information-flow is *out of frame* — a different soundness domain, with its own basis. The closed
+> cost-basis is closed *per domain*.** The Seam Trilemma and the cost-basis are **domain-parameterized**:
+> memory safety is one domain; information flow is another, and the build-and-break *method* transfers to
+> it (its very first IFC seam reproduced the trilemma and surfaced a new axis), but the *coordinates* are
+> the new domain's, not these nine.
+
+Two confirmations make it concrete. (1) The secret seam **BREAKS [horn 1] in the IFC sense** — the exact
+analog of the intrusive list's memory-safety horn-drop: `ct_eq(a,b).expose_bool()` then `if b` leaks a
+secret relationship through control flow, *declassification is etiquette not type-structure*, and closing
+it needs whole-program **undecidable** IFC — so a *concentrated, decidable* seam cannot soundly enforce
+non-interference (Horn 2 passes only because the strong property is never checked, a syntactic proxy).
+**The trilemma recurs, sharper.** (2) The IFC domain's basis has genuinely *new* axes with **no
+memory-safety analog** — **declassification discipline** (which / where / how-often a secret-derived bit
+may re-enter control flow), plus termination and concurrency channels. (Honest correction the panel
+forced: an earlier draft called the trust-the-codegen assumption "MMIO-shaped / irreducible"; it is in
+fact **dischargeable** — CompCert-CT / Jasmin / FaCT formally preserve constant-time — a *contingent*
+artifact of stock `rustc`/LLVM, a different category than MMIO's permanent axiom.) So the deepest form of
+the result is not "the basis is closed" but **"each soundness domain has its own basis, and the seam
+tension is the same shape in every one"** — memory safety mapped here, information flow sketched, the
+method ready for the next domain.
 
 ## The recursion: each primitive un-bundled one folded axis
 
@@ -343,12 +374,18 @@ typednat│  PROBES checker-tractability ⇒ REJECTED (off-diagonal confounded b
         │                              immovability. N stays 9. NEW VERDICT CATEGORY)
 validity│  PROBES bit-level validity    ⇒ PROJECTS ONTO THE BASIS (a NEW danger class, NO tenth axis —
         │                              unanimous) + 2nd INSEPARABLE (per-read→#6, zero-copy view→API-locality).
-        │                              THE COST-BASIS IS CLOSED. The constructive arc's conclusion.
+        │                              THE COST-BASIS IS CLOSED (for memory safety). Arc's conclusion.
+ secret │  PROBES a DIFFERENT DOMAIN    ⇒ info-flow is OUT-OF-FRAME (not UB; timing). BREAKS [horn1] in
+        │  (constant-time / non-interf.)  the IFC sense (declassification = etiquette; needs undecidable
+        │                              whole-program IFC). The TRILEMMA RECURS, sharper. Closure is PER DOMAIN;
+        │                              IFC's own basis (declassification discipline, termination/concurrency).
         ▼
-Realizability table         N ≥ 9 CLOSED axes (sound, decidable, concentration, API-locality, #6, #7,
-                            bare-metal, unwind-safety, leak-freedom) + an INSEPARABLE category (move-
-                            stability, validity) + 2 outside-the-axes (MMIO TCB axiom; intrusive horn-drop).
-                            The method's FIVE modes: confirm / sharpen / reject / inseparable / projects-onto-basis.
+Realizability table         MEMORY-SAFETY domain: N ≥ 9 CLOSED axes (sound, decidable, concentration,
+                            API-locality, #6, #7, bare-metal, unwind-safety, leak-freedom) + INSEPARABLE
+                            (move-stability, validity) + 2 outside-the-axes (MMIO TCB; intrusive horn-drop).
+                            INFORMATION-FLOW domain: a SEPARATE basis (declassification, …). The Seam Trilemma
+                            and the cost-basis are DOMAIN-PARAMETERIZED. Six method modes: confirm / sharpen /
+                            reject / inseparable / projects-onto-basis / out-of-frame-different-domain.
 ```
 
 Each constructive primitive is the **witness that two trilemma-identical configurations differ** —
@@ -427,8 +464,12 @@ The axes are not independent toggles you can set freely — **two trades and a d
   members) + 2 outside-the-axes (TCB axiom, horn-drop), and the basis is *closed* under the dangers
   probed** — "more may exist" remains true (it is a lower bound), but the *evidence* of a new danger
   projecting cleanly onto the basis, and inseparability recurring, is what closure looks like. The four
-  shapes a future probe can take are now all attested: a clean axis, a confound, an inseparable, or a
-  plain projection onto the basis.
+  shapes a *within-domain* probe can take are all attested: a clean axis, a confound, an inseparable, or a
+  plain projection onto the basis — **plus a fifth, found by the secret seam: *out of frame*, a different
+  soundness domain.** The closure is therefore **per memory-safety domain**; information-flow has its own
+  basis (declassification discipline, …) and its own — sharper — trilemma. The deepest bound is not "N ≥ 9
+  closed" but "**each soundness domain has its own closed-ish basis, and the seam tension is the same
+  shape in every one**" (memory safety mapped, information flow sketched).
 - The #5⟂#7 dissociation **is witnessed** (refined index = brand-free + legible; slab = brand-free +
   illegible). Bare-metal ⟂ #6 **is witnessed** (slab = bare-metal + runtime-cost; Shared = global-heap
   + runtime-cost). Unwind-safety ⟂ all seven **is witnessed** (take-and-replace vs SPSC: the cleanest
@@ -447,7 +488,7 @@ The axes are not independent toggles you can set freely — **two trades and a d
   invisible in non-leak code), yet still real — a reminder that "deflatable" and "not an axis" are
   different verdicts (the rejected checker-tractability probe is the latter; leak-freedom the former).
 - The Lean kernel (`../proof/SeamGap.lean`) sees only whether a precondition factors through a
-  Boolean witness — so it certifies *closure* (`spsc`/`branded`/`refined`/`shared`/`typed_nat`/`take`/`drain`/`selfref`/`validity`
+  Boolean witness — so it certifies *closure* (`spsc`/`branded`/`refined`/`shared`/`typed_nat`/`take`/`drain`/`selfref`/`validity` (+ `secret`, which certifies only the IFC seam's trivial typed sub-fact — the real seam breaks)
   all close, like SPSC) but is blind to *which axis a closing seam spends* — or whether that "axis" is
   even separable (the self-ref cell closes in the kernel exactly like the rest; its inseparability is
   pure modeling-dictionary). Every column past
