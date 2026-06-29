@@ -1334,10 +1334,74 @@
       "outcome": "FAILED",
       "cost_usd": 0.0,
       "timestamp": "2026-06-29T19:36:06+00:00"
+    },
+    {
+      "round": 22,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_lock_registry.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 runtime lock-order registry (re-import rule under attack)\n\nThis is a **design proposal** for a sixteenth *seam*, and the **second in the liveness/progress domain**.\nThe fifteenth (`SEAM_SPEC_ordered_locks.md`, a *static* type-level lock order) **broke** [horn 1, liveness\nsense], and the break **graded** the floor-domain match: it failed on **granularity** (re-entrant\n`Floor::root` mints a second per-token lineage, but the precondition is per-thread-global) and **coverage**\n(the *dynamic* fragment \u2014 runtime-ordered / same-rank locks \u2014 escapes a *static* floor). This seam tests the\nfalsifiable question the graded thesis implies: **does *upgrading the floor* lift the match \u2014 partial \u2192\nfull \u2014 and at what price?** Same domain, same danger (deadlock by lock-order inversion); a different,\nstronger floor: a **runtime** registry.\n\nYou are attacking a **text specification** backed by real `rustc`-checked code\n(`seam/src/lock_registry.rs`, built with `--features lockdep`).\n\n---\n\n## 0. The floor (stipulated, not under attack)\n\nRust's borrow checker as shipped, **plus OS thread-local storage** (`std::thread_local!`) and `std` (the\nseam links `std`; it is *not* `no_std` \u2014 that is i",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Thread-local held-set mis-models async tasks: false-positive panics on single-thread executors, false-negatives plus corruption under work-stealing migration.",
+          "strongest_point": "On a single-threaded executor, one task holding a higher-ranked lock across .await makes an unrelated task's single lock acquire panic \u2014 the registry rejects a sound ordering, nondeterministically, which \u00a75 defines as a false verdict / break."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Check faithfully implements \u00a72; all corruption vectors err toward false-reject, never an undetected inversion.",
+          "strongest_point": "Every in-scope corruption (mem::forget, panic-gap, out-of-order release, even wrong ranks) over-constrains HELD and yields a spurious panic \u2014 the false-accept needed for an undetected deadlock is structurally unreachable, since rank removal and spinlock release are coupled and HELD stays strictly increasing and distinct."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Runtime library implies no compile pass; O(held) check is real; undecidability merely relocated to human rank assignment, scoped out.",
+          "strongest_point": "The undecidable acyclicity proof didn't vanish \u2014 it moved from compiler to human as the no-panic obligation, so cyclic-structure lock coupling admits no valid rank assignment and is forced into mandatory panics, leaving coverage genuinely open."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Fixed per-lock ranks express runtime-chosen but not runtime-varying order; deadlock-free rotating-leader/rebalancing disciplines false-panic and must escape.",
+          "strongest_point": "A constant u64 rank cannot encode a consistent-but-mutating instantaneous order (rotating coordinator, position-ordered rebalancing tree), so deadlock-free code false-panics and can only run by abandoning OrderedMutex for the raw spinlock."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Reinvents FreeBSD WITNESS/lock-leveling with static ranks the cited tools (lockdep/Abseil) abandoned for learned graphs; lacks mandatory false-positive escape hatch.",
+          "strongest_point": "A strict-increasing-rank check over-rejects standard safe idioms like trylock-backoff (the canonical bank-transfer solution), so coverage does NOT fully close and \u00a75's 'reject a sound ordering' failure is realized \u2014 exactly the false-positive history that forced lockdep's _nested/trylock/lockdep_off annotation ecosystem the proposal omits."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "genuine-flaw",
+          "attacker-soundness": "argued-past",
+          "attacker-implementation": "tradeoff",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Coverage is partial: only runtime-chosen-but-FIXED rank orders close; runtime-VARYING orders (rotating leader, rebalancing B-tree latch-coupling) and non-monotone-but-safe disciplines (trylock-backoff) are inexpressible and over-rejected, forcing escape to the raw spinlock.",
+          "Horn 3 concentration is overstated: rank assignment is a per-instance obligation distributed to every construction site, not concentrated in the registry (lockdep/WITNESS evidence).",
+          "The chosen static-rank variant was abandoned by its own cited prior art (WITNESS/lockdep/Abseil) for learned acquires-before graphs; the single-thread held-set is strictly less complete \u2014 it cannot catch cross-thread non-interleaving A->B/B->A inversions a graph checker catches.",
+          "The undecidable acyclicity obligation inherited from #15 did not vanish; it relocated to the human's no-panic rank assignment and was scoped out (cyclic/general-graph coupling admits no valid ranks)."
+        ],
+        "headline": "Thread-local held-set mismodels async tasks: false-verdict + undetected-inversion under migration; coverage only partially lifts.",
+        "rationale": "Ergonomics shows the re-import guarantee fails its own \u00a72 in async: a single-threaded executor false-panics on sound code, and work-stealing migration yields an undetected inversion plus stale HELD \u2014 a Horn 1 break undisclosed by \u00a76. Other attacks are real coverage/cost tradeoffs, not kills."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.4405,
+      "timestamp": "2026-06-29T20:40:08+00:00"
     }
   ],
   "settled": [],
   "incompatibilities": [],
   "blind_spot_flags": [],
-  "total_cost_usd": 41.7863
+  "total_cost_usd": 44.2268
 }

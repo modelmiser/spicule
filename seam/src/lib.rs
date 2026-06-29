@@ -202,12 +202,14 @@ pub mod ordered_locks;
 /// Sixteenth seam (Phase O — the *floor-upgrade* probe; feature `lockdep`): a **runtime** lock-order
 /// registry (lockdep-in-miniature). Same liveness domain and same danger as `ordered_locks`, but on an
 /// *upgraded floor*: a `thread_local!` held-stack of **runtime** ranks, checked on each acquire. This
-/// fixes the static seam's two gaps — **granularity** (thread-local ⇒ genuinely per-thread, the
-/// nested-`root` hole closes structurally) and **coverage** (runtime ranks express *dynamic* orderings —
-/// bank-transfer `min/max`, hand-over-hand). It tests whether *upgrading the floor lifts the match*
-/// (partial → full), and at what price: a runtime check (#6), OS thread-local (bare-metal #5 — why it is
-/// feature-gated and not `no_std`), and a **modality shift** from static *prevention* to runtime
-/// *detection* (an inversion is trapped only on paths that execute). See `lock_registry`.
+/// targets the static seam's two gaps — **coverage** (runtime ranks express *dynamic* orderings —
+/// bank-transfer `min/max`, hand-over-hand) and **granularity** (thread-local ⇒ per-thread). It tested
+/// whether *upgrading the floor lifts the match* — and **broke** (the fourth seam to drop a horn): the
+/// upgrade is **non-monotone**. Coverage lifted and it paid the predicted price (#5 bare-metal, #6 runtime
+/// check, prevention→detection modality), but **granularity recurred one rung finer** — the held-set is
+/// keyed on the OS *thread*, but async *tasks* are the control unit, so work-stealing migration launders an
+/// undetected inversion. "Granularity" is a containment-scope **ladder** (token < thread < task) no ambient
+/// Rust floor tops out. See `lock_registry`.
 #[cfg(feature = "lockdep")]
 pub mod lock_registry;
 

@@ -487,4 +487,32 @@ theorem ordered_locks_typed_discipline_factors :
   rw [seam_closes_iff_factors]
   exact ⟨id, fun _ => rfl⟩
 
+/-- Runtime-lock-registry shape — the *floor-upgrade* probe (feature `lockdep`), the *second* liveness seam
+    and the *fourth* seam to break. Same domain and danger as `Pordlocks`, but the floor is upgraded from a
+    static type-level order to a **runtime** registry: a `thread_local!` held-set of runtime ranks, checked
+    on each acquire. In the kernel the discipline factors (`Pregistry` is definitionally `V`), as always.
+
+    The cold panel (REPORT_SEAM_SPEC_lock_registry, r22) ruled **SEAM-BREAKS [horn 1]**, and the break shows
+    the floor-upgrade is **non-monotone**. It fixed #15's *coverage* gap (runtime-chosen-fixed ranks close —
+    bank-transfer, hand-over-hand) and paid the predicted price (#5 bare-metal — it cannot be `no_std`; #6 a
+    per-acquire runtime check; a prevention→detection modality, soundness now path-coverage-dependent). But
+    **granularity recurred one rung finer**: `HELD` is keyed on the OS *thread*, while the unit of control
+    in async is the *task*. Work-stealing migration resumes a task (holding a rank) on a fresh thread with an
+    empty `HELD`, so a lower rank is accepted with no panic — an executed, undetected inversion (verified by
+    a two-thread reproduction; the registry is thread-blind). So the **granularity** axis is a
+    containment-scope **ladder** — token < thread < task < … — and each ambient Rust floor reaches one rung
+    (affine token #15, thread-local #16); there is no ambient *task-local*. Prior art forecloses the design:
+    FreeBSD WITNESS / lockdep / Abseil all abandoned static ranks for dynamically-learned acquires-before
+    graphs. `..._factors` (not `..._closes`) certifies only the trivial typed sub-fact; the kernel sees none
+    of the liveness, the thread/task granularity mismatch, the coverage limit, or the modality. -/
+def Pregistry (p : Prog) : Bool := V p
+
+/-- Trivial sub-fact only (see the docstring): the *typed* discipline factors. The real seam BREAKS — the
+    floor-upgrade is non-monotone: it fixed coverage but granularity recurred (thread-keyed vs task-keyed
+    control), so the liveness floor-match stays *partial* and the granularity gap is an unbounded ladder. -/
+theorem lock_registry_typed_discipline_factors :
+    ∃ d : Prog → Bool, SoundW Pregistry d ∧ UsableW Pregistry d ∧ ConcW V d := by
+  rw [seam_closes_iff_factors]
+  exact ⟨id, fun _ => rfl⟩
+
 end SeamGap

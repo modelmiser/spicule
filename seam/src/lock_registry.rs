@@ -1,4 +1,4 @@
-//! # Sixteenth seam — a runtime lock-order registry (lockdep-in-miniature): the FLOOR-UPGRADE probe.
+//! # Sixteenth seam — a runtime lock-order registry (lockdep-in-miniature): the FLOOR-UPGRADE probe (BREAKS).
 //!
 //! *(Project ordinal: the sixteenth primitive, and the **second** in the liveness/progress domain. The
 //! fifteenth — `ordered_locks`, a *static* type-level order — **broke**, and the break **graded** the
@@ -42,13 +42,64 @@
 //!    carries: it finds only orderings some test actually exercised). This is not a memory-safety axis at
 //!    all; it is a *guarantee modality*, and it is the real cost of reaching the dynamic fragment.
 //!
-//! So the honest hypothesis: upgrading the floor lifts **coverage** and **granularity** (the seam may now
-//! *close*, dynamically, like the slab) — but it pays #5 + #6 + a prevention→detection modality shift.
-//! **The graded floor-match and the closed cost-basis are coupled:** you do not get a fuller match for
-//! free by "picking a better floor"; you buy it with axes the basis already enumerated, in a weaker
-//! modality. *(Builder's prediction, non-load-bearing — the cold panel rules whether dynamic-detection
-//! "closes" the liveness seam or is a distinct, weaker modality that makes the match "full-but-dynamic"
-//! rather than "full-and-static," and whether the thread-local registry is genuinely sound.)*
+//! ## The cold panel's verdict (REPORT_SEAM_SPEC_lock_registry, r22): the seam BREAKS — the floor-upgrade
+//! ## is NON-MONOTONE; granularity RECURS one rung finer.
+//!
+//! The hypothesis — "upgrading the floor lifts the match toward full" — is **false**, and *how* it fails
+//! is the result. The gauntlet ruled **SEAM-BREAKS [horn 1]** (FAILED), the **fourth** seam to drop a
+//! horn. The floor-upgrade did lift **coverage** (runtime-*chosen-but-fixed* ranks close — bank-transfer
+//! and hand-over-hand work, confirmed) and it *did* spend the predicted price (#5 bare-metal, #6 runtime
+//! check, prevention→detection modality). **But it did not fix granularity — it *relocated* it one rung
+//! finer, and broke.**
+//!
+//! The held-set is keyed on the **OS thread**, but the unit of sequential control in the dominant `std`
+//! model is the **async task**, which the language has no primitive for. Two breaks follow (the work-
+//! stealing one is fatal; both verified, see below and the 2-thread reproduction in the test notes):
+//! 1. **Undetected inversion under work-stealing (horn 1).** A guard held across `.await` migrates to a
+//!    new thread whose `HELD` is empty, so a *lower* rank is accepted with **no panic** — an executed,
+//!    untrapped, non-increasing co-hold (and `HELD` on the old thread keeps a stale rank forever). The
+//!    registry is **thread-blind**: a rank held on thread A is invisible to thread B (empirically
+//!    confirmed — rank 3 acquires freely while rank 5 is held on another thread).
+//! 2. **False panic on a single-threaded executor.** Task A holds rank 5 across `.await`; the executor
+//!    polls unrelated Task B, which acquires rank 3 — a *trivially monotone* sequence — yet the registry
+//!    panics, because it conflated two logical threads of control sharing one OS thread. `!Send` on the
+//!    guard blocks (1) but leaves (2); you cannot close both directions.
+//!
+//! **So the "granularity" axis of the floor-domain match is a CONTAINMENT-SCOPE LADDER** — *token <
+//! thread < task < …* — and each ambient Rust floor reaches exactly one rung: the affine token (#15, too
+//! fine), thread-local (#16, matches per-thread but too coarse for tasks). Rust has **no task-local**
+//! primitive (async is a library), so no ambient floor carries the per-control-unit precondition.
+//! **Upgrading the floor is therefore non-monotone:** #16 fixed #15's *coverage* gap but its granularity
+//! fix only walked one rung up the ladder and exposed the next. The match stays **partial**.
+//!
+//! Two further costs the panel recorded (real, subordinate to the break): **coverage is still only partial**
+//! — runtime-*varying* orders (rotating leader, rebalancing B-tree latch-coupling) cannot be a fixed
+//! `u64` and over-reject to the raw spinlock; and **prior art forecloses the design** — this is FreeBSD
+//! **WITNESS** / lockdep lock-leveling, and WITNESS/lockdep/Abseil all **abandoned static ranks** for
+//! dynamically-*learned* acquires-before graphs, because hand-assigned global ranks do not compose (the
+//! single-thread held-set is also strictly less complete — it cannot catch cross-thread A→B / B→A
+//! non-interleaving inversions a graph checker catches). The production answer is an even higher floor (a
+//! learned runtime graph + cycle detection) — which fixes coverage but lives *entirely* in the detection
+//! modality (path-coverage-limited soundness).
+//!
+//! So the deepened finding: **a partial floor-match is not lifted to full by upgrading the floor.** The
+//! upgrade trades one gap for a finer one (coverage fixed, granularity recurs token→thread→task) and
+//! spends cost-basis axes (#5, #6) plus a modality downgrade doing it. The graded match and the closed
+//! cost-basis are coupled, *and* the granularity dimension is itself an unbounded ladder no ambient floor
+//! tops out.
+//!
+//! ### The lifted *coverage* — this COMPILES and runs (the dynamic ordering the STATIC #15 could not type):
+//! ```
+//! # use seam_spsc::lock_registry::OrderedMutex;
+//! let accounts = [OrderedMutex::new(100u64, 0), OrderedMutex::new(50, 1), OrderedMutex::new(0, 2)];
+//! // Transfer 30 from account 0 to account 2: lock min(0,2)=0 first, then max=2 — strictly increasing.
+//! let (lo, hi) = (0usize, 2usize);            // a RUNTIME-chosen order
+//! let mut a = accounts[lo].lock();            // rank 0
+//! let mut b = accounts[hi].lock();            // rank 2 > 0 — OK, two same-kind locks co-held in order
+//! *a -= 30; *b += 30;
+//! assert_eq!((*a, *b), (70, 30));
+//! ```
+//! (Coverage lifts — but the async granularity break above means the seam still does not *close*.)
 //!
 //! ```
 //! # // The dynamic ordering the STATIC fifteenth seam could not express — bank transfer by index order.

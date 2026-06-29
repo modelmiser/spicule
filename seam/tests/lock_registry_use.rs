@@ -64,6 +64,36 @@ fn a_lock_order_inversion_is_DETECTED_at_runtime() {
 }
 
 #[test]
+fn the_soundness_hole_the_registry_is_thread_blind() {
+    // The break the cold panel found (r22, horn 1): `HELD` is keyed on the OS THREAD, but the unit of
+    // control in async is the TASK. A guard held across `.await` migrates to a new thread whose `HELD` is
+    // empty, so a lower rank is accepted with NO panic — an undetected inversion. We reproduce the core
+    // blindness deterministically with two threads standing in for one migrated task: a rank held on
+    // thread T1 is INVISIBLE to the main thread, so it acquires a lower rank without a panic.
+    use std::sync::mpsc::channel;
+    use std::sync::Arc;
+    let m5 = Arc::new(OrderedMutex::new(0u32, 5));
+    let m3 = Arc::new(OrderedMutex::new(0u32, 3));
+    let (held_tx, held_rx) = channel();
+    let (release_tx, release_rx) = channel();
+    let m5c = m5.clone();
+    let t1 = std::thread::spawn(move || {
+        let _g5 = m5c.lock(); // HELD_T1 = {5}
+        held_tx.send(()).unwrap();
+        release_rx.recv().unwrap(); // keep rank 5 held
+    });
+    held_rx.recv().unwrap();
+    // "Same task, migrated to the main thread": acquire rank 3 while rank 5 is held elsewhere. The
+    // registry does NOT panic — it cannot see T1's held rank. If these holds were one task, this is an
+    // undetected lock-order inversion (rank 3 under rank 5). That is the work-stealing soundness hole.
+    let g3 = m3.lock(); // NO PANIC — thread-blind
+    drop(g3);
+    release_tx.send(()).unwrap();
+    t1.join().unwrap();
+    // The test passes by NOT panicking — which is precisely the bug: the inversion went undetected.
+}
+
+#[test]
 fn the_registry_resets_per_scope_so_reordering_across_scopes_is_fine() {
     // After all guards drop, the thread's held-stack is empty, so a later, independent critical section may
     // start at any rank — the per-thread registry tracks the *current* held set, not history.
