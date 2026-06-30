@@ -370,6 +370,25 @@ pub mod binary_session;
 /// break); N stays 9; Lean `delegation_handoff_core_closes`. See `delegation`.
 pub mod delegation;
 
+/// Twenty-fifth seam (Phase X — MULTIPARTY session, n-party progress): the global-coherence step #23 conceded
+/// and #24 named. #23's deflation #1 granted that "*global deadlock-freedom is out of reach of binary session
+/// types — it needs multiparty/Kobayashi typing*"; #24 named **progress/deadlock-freedom** as a coordinate
+/// distinct from completion and leak-freedom. This seam builds the multiparty thing from #23's binary edges —
+/// deliberately, since the argument is that **multiparty progress is not reducible to the binary duality of the
+/// edges it is built from**. A `RecvThenSend` role typestate enforces recv-before-send; [`multiparty::relay`]
+/// mints a coherent `A→B→C` (a source role exists → it completes) and [`multiparty::ring`] mints an incoherent
+/// `A→B→C→A` (every role recv-first → no source → no terminating schedule). Both come from the identical
+/// per-edge floor; only the global topology differs, and the floor cannot see it: **`ring()` type-checks a
+/// globally-deadlocked system**. HYPOTHESIS (gauntlet-adjudicated): no new domain (liveness), coordinate
+/// (progress, from #24), or mode (N=9); the increment is on the **concentration leg (horn 3)** — a *global*
+/// property like deadlock-freedom cannot be concentrated in a per-call re-import rule, only **whole-protocol**,
+/// in a trusted projection of a coherent *global type* to per-role *local types* (Honda–Yoshida–Carbone POPL
+/// 2008; Coppo–Dezani–Yoshida–Padovani MSCS 2016; the `mpstthree` crate, Lagaillardie–Neykova–Yoshida
+/// COORDINATION 2020 — deadlock-free *by construction of the generated endpoints*). Per-role order + linearity
+/// CLOSE as in #23; global progress is a floor-mismatch for the re-import SHAPE, memory-safe throughout (a
+/// deadlock is not UB; leakpocalypse) so not a soundness break. Expected: SEAM-COSTS [horn 3]. See `multiparty`.
+pub mod multiparty;
+
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 use core::sync::atomic::{AtomicUsize, Ordering};

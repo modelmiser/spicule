@@ -808,4 +808,39 @@ theorem delegation_handoff_core_closes :
   rw [seam_closes_iff_factors]
   exact ⟨id, fun _ => rfl⟩
 
+/-- Multiparty session (n-party progress) shape — the *global-coherence* probe (`relay`/`ring` assembled from
+    #23's binary edges; a `RecvThenSend` role enforces recv-before-send). Read `Pr`/`Wt` by analogy: the kernel
+    models only the component the seam CLOSES — the *role-local order* + *linearity* core (`Pmulti` is
+    definitionally `V`): each role's ops are available only in role-local order (affine typestate), exactly as
+    #18/#23. It CLOSES; soundness is intact (no UB — a deadlocked multiparty system is memory-safe, leakpocalypse
+    — decidable per-role `HasDual`, Θ(depth)).
+
+    What the kernel does NOT see is the deliverable's subject: **global progress / deadlock-freedom**, the
+    coordinate #24 named, now at n-party scale. The witness `ring()` — three perfectly-dual binary edges wired
+    into a source-less cycle — *type-checks a system with no terminating schedule*: every role is `RecvThenSend`,
+    so no role can send before it receives and no role can receive before someone sends. The per-edge floor
+    accepts the globally-deadlocked topology because deadlock-freedom is a property of the *whole composition*
+    (here: the existence of a source role), which no per-edge or per-role re-import rule can range over. The
+    recognized resolution concentrates global progress **whole-protocol**, in a trusted projection of a coherent
+    *global type* to per-role *local types* (Honda–Yoshida–Carbone POPL 2008; Coppo–Dezani–Yoshida–Padovani MSCS
+    2016; the `mpstthree` crate, Lagaillardie–Neykova–Yoshida 2020 — deadlock-free *by construction of the
+    generated endpoints*), NOT in a per-call rule. So multiparty sharpens the **concentration leg (horn 3)**: the
+    seam's location is property-scoped — local properties concentrate per-call (and CLOSE, as here); global
+    progress concentrates only whole-protocol (a *generative* seam). No new domain (liveness), coordinate
+    (progress, from #24), or mode (N stays 9); memory-safe throughout, so the FAILED tally is unchanged. Like
+    every column past concentration, the horn-3 cost and the whole-protocol relocation are modeling-dictionary;
+    the kernel sees only that the role-local order + linearity witness suffices. -/
+def Pmulti (p : Prog) : Bool := V p
+
+/-- The sound core CLOSES (SEAM-COSTS [horn 3]): the *role-local order* + *linearity* core closes via affine
+    typestate, exactly as #18/#23 — `relay` and `ring` are built from the identical per-edge floor, and that
+    floor's per-role discipline is sound and decidable. The uncarried component — **global progress /
+    deadlock-freedom** — lives in the prose: it is a property of the whole composition (a source must exist),
+    which the per-edge floor cannot range over (`ring()` type-checks a deadlock), so it can only be concentrated
+    whole-protocol, in a trusted global-type projection. That relocation is invisible to the kernel. -/
+theorem multiparty_role_order_core_closes :
+    ∃ d : Prog → Bool, SoundW Pmulti d ∧ UsableW Pmulti d ∧ ConcW V d := by
+  rw [seam_closes_iff_factors]
+  exact ⟨id, fun _ => rfl⟩
+
 end SeamGap
