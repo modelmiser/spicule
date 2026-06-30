@@ -449,14 +449,21 @@ pub mod projected;
 /// choice) receives a label and branches; `Chan::offer` returns a [`choice::Branch`]`<L, R>` sum the consumer
 /// must `match`. `Select<L, R>` (internal choice) sends a label; `select_left`/`select_right` commit to a branch.
 /// `HasDual` threads choice: `Offer<L, R> ↔ Select<L::Dual, R::Dual>` (the selector's options are exactly the
-/// offerer's branches). Two safety facts, both carried by the floor's SUM TYPES: (1) handle every label (the
-/// `Branch` enum + exhaustive `match`); (2) label–continuation correlation (each variant carries the correctly-
-/// typed continuation — can't take one label and continue as the other). HYPOTHESIS (gauntlet-adjudicated):
-/// SEAM-COSTS [horn 3], **no new coordinate** — choice deflates onto sum types; order + branch-safety close, but
-/// completion does NOT (a peer can `mem::forget` after selecting / inside a branch, the #17/#18/#23/#27
-/// completion residue — choice carries branch-*safety*, not branch-*completion*). Deflates onto folklore (Honda
-/// 1993's `&`/`⊕`; `session_types`' `offer!`/`choose!`). Lean `choice_branch_safety_closes` (a `..._closes`).
-/// See `choice`.
+/// offerer's branches). VERDICT (cold panel, r35): SEAM-COSTS [horn3-concentration], gauntlet **FAILED** on the §6
+/// deliverable — the **REJECTION mode, 5th firing** (after #8/#24/#25/#27, all sound + rejected). Sound (no UB),
+/// the cost is **horn 3**; my §4 over-claimed concentration as TOTAL again (the recurring trap, 5th). Four panel
+/// corrections: (1) branch-safety is **two-legged** (label–continuation correlation + branch-set duality), not
+/// three — the false guarantee is **#2 "handle every label"**: exhaustiveness gives *scrutinee coverage, not
+/// run-to-`End`*, so a safe `match { Left(c) => .., _ => {} }` **drops** the other branch (order is the generic
+/// typestate leg, not branch-specific); (2) it deflates onto **binary `Either`**, NOT n-ary *named* sum types
+/// (labeled n-ary choice needs nesting that drops names, or `offer!`/`choose!` macros); (3) Horn 2 is
+/// **Θ(type-size)**, not Θ(depth) (2^depth leaves, but interned linear-in-source); (4) completion is **amplified**
+/// per-branch and **peer-choice-reachable**, not "unchanged by branching." Core thesis survives, sharpened: **no
+/// new coordinate**; completion stays the #17/#18/#23/#27 residue, now fed by two safe paths (`mem::forget` AND
+/// the dropped branch). N = 9, broken-seam tally stays 8, liveness stays the third domain. Prior art CONFIRMS
+/// (Honda 1993's `&`/`⊕`; the `session_types`/JML 2015 affine-vs-linear gap IS this residue). Lean
+/// `choice_branch_typing_closes` (renamed from `..._branch_safety_closes`: branch *typing* closes, not
+/// *completion*). See `choice`.
 pub mod choice;
 
 use core::cell::UnsafeCell;

@@ -22,13 +22,16 @@
 //! *exactly* the offerer's two branches, dualized. So one side cannot offer a branch set the other side cannot
 //! select, nor select an option the other side does not offer.
 //!
-//! ## The two safety facts choice needs — both carried by the floor's sum types
+//! ## The branch-safety facts — the floor carries branch *typing*, NOT branch *completion* (r35 correction)
 //!
-//! 1. **Handle every offered label.** [`Chan::offer`] yields a [`Branch`] enum; Rust's **exhaustive `match`**
-//!    forces the consumer to handle *both* `Left` and `Right` — you cannot silently ignore a branch.
-//! 2. **Label–continuation correlation.** Each [`Branch`] variant carries the *correctly-typed* continuation
+//! 1. **Label–continuation correlation.** Each [`Branch`] variant carries the *correctly-typed* continuation
 //!    (`Chan<L>` in `Left`, `Chan<R>` in `Right`), so you cannot take the left label and continue as protocol
-//!    `R`. The sum type ties the tag to the session state.
+//!    `R`. The sum type ties the tag to the session state. (Carried — concentrates in the types.)
+//! 2. **Handle every label — OVERSTATED (the §6 break).** [`Chan::offer`] yields a [`Branch`] enum and an
+//!    exhaustive `match` must *cover* both variants — but coverage is **scrutinee coverage, not run-to-`End`**:
+//!    `match offer() { Ok(Branch::Left(c)) => .., _ => {} }` type-checks, holds no `unsafe`, and **drops**
+//!    `Chan<R>`, starving that branch. "Handle-all" is therefore **not** a guarantee separate from completion —
+//!    it collapses into the #17/#18/#23/#27 completion residue. (NOT carried — stays on the consumer.)
 //!
 //! ### Duality is carried — the selector's options are exactly the offerer's branches:
 //! ```compile_fail
@@ -40,19 +43,42 @@
 //!
 //! ### Offer + select run; abandoning a branch mid-protocol starves the peer — see `tests/choice_use.rs`.
 //!
-//! ## HYPOTHESIS (pre-gauntlet — the §6 deliverable is what the cold panel adjudicates)
+//! ## VERDICT (cold panel, REPORT_SEAM_SPEC_choice.md, r35): SEAM-COSTS [horn3-concentration], gauntlet FAILED
 //!
-//! Choice adds **no new coordinate** — it is the `&`/`⊕` connective, and the floor's **sum types + exhaustive
-//! `match`** carry both safety facts (handle-all; label–continuation correlation), while `HasDual` threads the
-//! branch set. Expected verdict: **SEAM-COSTS [horn 3]** — order + choice-safety **close** via sum types and
-//! method availability; but **completion does NOT close** — choice carries *which* branch is taken safely, it
-//! does **not** force the chosen branch to run to `End`. A peer can still `mem::forget` after selecting (or
-//! inside a branch), starving its dual: the same #17/#18/#23/#27 **completion residue**, unchanged by branching.
-//! (I state this explicitly to avoid the arc's recurring trap — choice carries branch-*safety*, not branch-
-//! *completion*.) So the contribution is **locating** choice on the lattice: the branching connective deflates
-//! onto the floor's sum types, adds no axis, and leaves the completion residue exactly where it was. Deflates
-//! onto deep folklore (Honda 1993's `&`/`⊕`; the `session_types` crate's `offer!`/`choose!`). Lean
-//! `choice_branch_safety_closes` (a `..._closes` — the order + branch-safety core closes).
+//! Horn-classifier: **SEAM-COSTS [horn3-concentration]** — *"Sound and decidable, but 'handle-all' isn't
+//! type-enforced — it collapses into the caller's completion residue."* Judge: **FAILED** on the §6 deliverable —
+//! *"`_ => drop(continuation)` is exhaustive, unsafe-free, yet starves a branch — so #2 ('must handle both') is
+//! overstated and collapses."* This is the method's **REJECTION mode, firing the 5th time** (after `typed_nat`
+//! #8, `delegation` #24, `multiparty` #25, `projected` #27 — all sound, all deliverable-rejected).
+//!
+//! What survives, and the four corrections the panel imposed:
+//! - **Soundness intact** (no UB — the worst case is a starved/leaked memory-safe session); horns 1 and 2 hold,
+//!   the cost is **horn 3**. The break is the §4 over-claim of concentration as TOTAL — the arc's recurring trap,
+//!   a 5th time.
+//! - **(1) Branch-safety is TWO legs, not three.** The §4 rule listed four guarantees; the false one is **#2
+//!   "handle every label"** — exhaustiveness gives *scrutinee coverage, not run-to-`End`*, so a safe wildcard
+//!   `match offer() { Ok(Branch::Left(c)) => .., _ => {} }` drops `Chan<R>` and starves that branch. What is left
+//!   is **two-legged branch-safety** (label–continuation correlation + branch-set duality); **order** is the
+//!   *generic* typestate guarantee carried since #18, not branch-specific. "Handle-all" has no content separate
+//!   from the conceded completion residue.
+//! - **(2) The deflation is onto binary `Either` + exhaustiveness, NOT n-ary *named* sum types.** Recovering real
+//!   labeled n-ary choice needs positional nesting that **drops label names**, or macro scaffolding (`offer!`/
+//!   `choose!`, exactly what the `session_types` crate needed). "Deflates onto the floor's sum types" holds for
+//!   *binary* choice only.
+//! - **(3) Horn 2 is Θ(type-size), not Θ(depth).** A balanced `Offer` tree has 2^depth leaves; interning + the
+//!   no-recursion restriction keep the projection pass linear-in-source (so it costs nothing), but the metric
+//!   label was wrong.
+//! - **(4) Completion is AMPLIFIED, not "unchanged by branching".** The obligation multiplies **per-branch** and
+//!   becomes **peer-choice-reachable** — the dual's `select` decides which completion obligation fires, so the
+//!   residue is now *adversary-triggered*, not merely self-abandonment.
+//!
+//! Core thesis holds, sharpened: **no new coordinate** (the branching connective opens no new ground); completion
+//! stays the #17/#18/#23/#27 residue, now fed by **two** safe paths (`mem::forget` AND the dropped wildcard
+//! branch). No new domain (liveness), coordinate (progress, from #24), or mode (N = 9); broken-seam tally stays
+//! **8** (sound — a deliverable rejection, not a horn-1 break). Prior art CONFIRMS (Honda 1993's `&`/`⊕`; the
+//! `session_types`/Jespersen–Munksgaard–Larsen 2015 affine-vs-linear gap is literally this completion residue).
+//! Lean `choice_branch_typing_closes` (renamed from `..._branch_safety_closes`: only branch *typing* closes —
+//! the two legs + generic order — not branch *completion*).
 
 use alloc::rc::Rc;
 use core::cell::RefCell;

@@ -10,7 +10,7 @@
 
 #![forbid(unsafe_code)]
 
-use seam_spsc::choice::{session, Branch, End, Offer, Rx, Select, Tx};
+use seam_spsc::choice::{session, Branch, End, Offer, Rx};
 
 // The server OFFERS { Left: receive an i32 then end ; Right: end }. The client SELECTS. Both branches run to
 // completion, each side at its dual protocol.

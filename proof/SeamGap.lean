@@ -940,32 +940,43 @@ theorem projected_schedulability_closes :
   exact ⟨id, fun _ => rfl⟩
 
 /-- Choice (offer/select, `&`/`⊕`) shape — the *branching* connective, the last unprobed core session-type
-    feature. Read `Pr`/`Wt` by analogy: the kernel models the component the seam CLOSES — the *order +
-    branch-safety* core (`Pchoice` is definitionally `V`): `offer` returns a `Branch<L, R>` sum the consumer must
-    exhaustively `match` (handle every label — carried by the floor's sum types), and each variant carries the
-    correctly-typed continuation (label–continuation correlation — can't take one label and continue as the
-    other); `HasDual` threads choice so the selector's options are exactly the offerer's branches. It CLOSES;
+    feature. Read `Pr`/`Wt` by analogy: the kernel models the component the seam CLOSES — the *order + branch-
+    typing* core (`Pchoice` is definitionally `V`): each `Branch<L, R>` variant carries the correctly-typed
+    continuation (label–continuation correlation — can't take one label and continue as the other), and `HasDual`
+    threads choice so the selector's options are exactly the offerer's branches (branch-set duality). It CLOSES;
     soundness is intact (no UB — the worst case is a starved/leaked memory-safe session).
 
-    The cold panel (REPORT_SEAM_SPEC_choice, r35) ruled [VERDICT — to be filled on adjudication]. The
-    pre-registered reading: choice adds **no new coordinate** — the branching connective deflates onto Rust's sum
-    types + exhaustive `match`; order + branch-safety close, but **completion does NOT** — choice carries *which*
-    branch is taken safely, not that the chosen branch runs to `End`. A peer can `mem::forget` after selecting (or
-    inside a branch), starving its dual: the same #17/#18/#23/#27 completion residue, unchanged by branching
-    (choice carries branch-*safety*, not branch-*completion*). No new domain (liveness), coordinate (progress,
-    from #24), or mode (N stays 9). Deflates onto deep folklore (Honda 1993's `&`/`⊕`; the `session_types`
-    crate's `offer!`/`choose!`). Like every column past concentration, the horn-3 completion cost is
-    modeling-dictionary; the kernel sees only that the order + branch-safety witness suffices. -/
+    The cold panel (REPORT_SEAM_SPEC_choice, r35) ruled **SEAM-COSTS [horn3-concentration]** (horn-classifier),
+    and the JUDGE ruled **FAILED on the §6 DELIVERABLE** — the method's **REJECTION mode, 5th firing** (after
+    `typed_nat` #8, `delegation` #24, `multiparty` #25, `projected` #27; all sound + rejected). My §4 over-claimed
+    concentration as TOTAL again — the arc's recurring trap, a 5th time — and the panel imposed FOUR corrections:
+    (1) the §4 rule's four guarantees reduce to **two-legged branch-safety** (label–continuation correlation +
+    branch-set duality); the false one is **#2 "handle every label"** — Rust exhaustiveness gives *scrutinee
+    coverage, not run-to-`End`*, so a safe `match offer() { Ok(Branch::Left(c)) => .., _ => {} }` type-checks, no
+    `unsafe`, and **drops** `Chan<R>`, starving that branch (order is the generic typestate leg since #18, not
+    branch-specific). (2) The deflation is onto **binary `Either`**, NOT n-ary *named* sum types — labeled n-ary
+    choice needs nesting that drops label names, or `offer!`/`choose!` macros. (3) Horn 2 is **Θ(type-size)**, not
+    Θ(depth) (a balanced `Offer` tree has 2^depth leaves; interning keeps it linear-in-source, so costless but
+    mislabeled). (4) Completion is **amplified** per-branch and **peer-choice-reachable** (the dual's `select`
+    triggers it), not "unchanged by branching." The core thesis survives, sharpened: choice adds **no new
+    coordinate** (the branching connective opens no new ground); **completion stays the residue** — now fed by
+    **two** safe paths (`mem::forget` AND the dropped wildcard branch), the #17/#18/#23/#27 gap. No new domain
+    (liveness), coordinate (progress, from #24), or mode (N stays 9); the seam is sound, so the broken-seam tally
+    stays 8. Prior art CONFIRMS (Honda 1993's `&`/`⊕`; the `session_types`/Jespersen–Munksgaard–Larsen 2015
+    affine-vs-linear gap IS this completion residue). Like every column past concentration, the horn-3 completion
+    cost is modeling-dictionary; the kernel sees only that the order + branch-typing witness suffices. -/
 def Pchoice (p : Prog) : Bool := V p
 
-/-- The sound core CLOSES (SEAM-COSTS [horn 3]): the *order + branch-safety* core closes via the floor's sum
-    types — `offer`'s `Branch<L, R>` forces an exhaustive `match` (handle every label) and each variant pins the
-    correctly-typed continuation (label–continuation correlation), with `HasDual` threading the branch set. The
-    uncarried component — *completion* (the chosen branch is not forced to run to `End`; a peer's `mem::forget`
-    starves its dual, the #17/#18/#23/#27 residue) — lives in the prose, invisible to the kernel. Choice carries
-    branch-*safety*, not branch-*completion*; the branching connective adds no new coordinate, deflating onto the
-    floor's sum types. -/
-theorem choice_branch_safety_closes :
+/-- The sound core CLOSES (SEAM-COSTS [horn3-concentration]; the gauntlet FAILED on the *deliverable*, not
+    soundness): only the *order + branch-TYPING* core closes via the floor's sum types — each `Branch<L, R>`
+    variant pins the correctly-typed continuation (label–continuation correlation), with `HasDual` threading the
+    branch set (branch-set duality). The renamed theorem (`..._branch_typing_closes`, from `..._branch_safety_`)
+    records the r35 correction: **"handle every label" does NOT close** — exhaustiveness gives scrutinee coverage,
+    not run-to-`End`, so a safe wildcard `match` drops a branch. That uncarried component IS *completion* (the
+    #17/#18/#23/#27 residue, now fed by `mem::forget` AND the dropped branch) — it lives in the prose, invisible to
+    the kernel. Choice carries branch-*typing*, not branch-*completion*; the branching connective adds no new
+    coordinate, deflating onto the floor's sum types. -/
+theorem choice_branch_typing_closes :
     ∃ d : Prog → Bool, SoundW Pchoice d ∧ UsableW Pchoice d ∧ ConcW V d := by
   rw [seam_closes_iff_factors]
   exact ⟨id, fun _ => rfl⟩

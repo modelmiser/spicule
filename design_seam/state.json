@@ -2156,10 +2156,73 @@
       "outcome": "FAILED",
       "cost_usd": 2.7331,
       "timestamp": "2026-06-30T11:15:35+00:00"
+    },
+    {
+      "round": 35,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_choice.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 choice (offer/select, `&`/`\u2295`) (re-import rule under attack)\n\nThis is a **design proposal** for a twenty-eighth *seam* \u2014 the last unprobed **core** session-type feature. It is\n**NOT a fourth-domain bid**; it stays inside the **third confirmed domain (liveness)**. Every prior session seam\n(#18, #23\u2013#27) probed the *sequencing / progress* axis \u2014 order, delegation, n-party topology, priority,\nprojection. **Choice** is the orthogonal **branching** connective: external choice (`offer`, `&`) and internal\nchoice (`select`, `\u2295`).\n\nYou are attacking a **text specification** backed by real `rustc`-checked code (`seam/src/choice.rs`, default\n`no_std` build \u2014 `core` + `alloc`, **no `unsafe`**, self-contained over #23's two-endpoint model). 158 tests pass\n(default).\n\n---\n\n## 0. The floor (stipulated, not under attack)\n\nRust as shipped: affine ownership; nominal typing + private fields; trait resolution (`HasDual`); **sum types +\nexhaustive `match`** (the load-bearing capability here \u2014 an enum forces handling all variants); `Rc`/`RefCell`\nwith their runtime borrow checks; the leakpocalypse fact (`mem::forget` is safe, skips `Drop`, RFC 1066). The\ntransport's byte/label-moving is th",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Handle-all (guarantee #2) is vacuous: `_ => drop(continuation)` is exhaustive yet starves the branch, collapsing into conceded completion residue.",
+          "strongest_point": "Rust exhaustiveness forces scrutinee coverage, not running each continuation, so a wildcard arm defeats 'must handle both' \u2014 handle-all has no content separate from the completion the proposal admits it cannot carry."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "No UB possible (no unsafe, transport out of scope); decidable (recursion excluded); only a wildcard overclaim in guarantee #2.",
+          "strongest_point": "Guarantee #2's 'exhaustive match must handle both' is false\u2014a `_` wildcard arm type-checks while dropping the other branch's Chan\u2014but this collapses into the already-conceded liveness residue, not UB."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Duality normalization is decidable and at worst linear-in-source; only the \u0398(depth) label is wrong (should be \u0398(type-size)).",
+          "strongest_point": "Horn 2's '\u0398(depth)' mismeasures cost \u2014 a balanced Offer tree has 2^depth leaves \u2014 but interning and the no-recursion restriction keep the projection pass linear-in-source, so the imprecision costs nothing and breaks nothing."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Binary-only choice is awkward but n-ary/early-termination remain expressible by nesting; no inexpressibility within the fenced scope.",
+          "strongest_point": "Choice deflates only onto two-element Either, not the floor's n-ary named sum types \u2014 recovering real labeled choice needs positional nesting that drops label names, so the deflation claim is imprecise though not expressively broken."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Precedents (Honda 1993; session_types/JML 2015) are correct and confirm the design; completion residue is the documented affine-vs-linear gap.",
+          "strongest_point": "The proposal's completion-residue admission is literally the known limitation of its own cited precedent (JML 2015: 'does not resolve the conflict between affine Rust and linear session types'), so prior art confirms rather than refutes it \u2014 only the 'deflates onto native sum types' claim overreaches, holding for binary choice but not the n-ary choice the precedent needed macros for."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "genuine-flaw",
+          "attacker-soundness": "argued-past",
+          "attacker-implementation": "tradeoff",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "argued-past"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Deflation is onto two-element Either + exhaustiveness, NOT the floor's n-ary named sum types; labeled n-ary choice needs positional nesting (drops label names) or macro scaffolding (offer!/choose!), per the cited session_types/JML precedent.",
+          "Horn 2 cost is \u0398(type-size), not \u0398(depth): a balanced Offer tree has 2^depth leaves; interning + no-recursion keep the pass linear-in-source, but the metric label must be corrected.",
+          "Completion obligations are multiplied per-branch and made peer-choice-reachable; same category (liveness, no UB) but 'unchanged by branching' understates the per-branch, adversary-triggered amplification."
+        ],
+        "headline": "Guarantee #2 'handle every label' is false; revise it down to two-legged branch-safety.",
+        "rationale": "Two seats confirm `_ => drop(continuation)` is exhaustive, unsafe-free, yet starves a branch \u2014 so #2 ('must handle both') is overstated and collapses into the conceded completion residue. No UB; soundness, decidability, prior-art hold. Proposer must reword #2 and the branch-safety split."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.835,
+      "timestamp": "2026-06-30T14:15:32+00:00"
     }
   ],
   "settled": [],
   "incompatibilities": [],
   "blind_spot_flags": [],
-  "total_cost_usd": 71.8724
+  "total_cost_usd": 74.7074
 }
