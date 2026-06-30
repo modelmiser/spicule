@@ -997,9 +997,9 @@ theorem choice_branch_typing_closes :
     from my own lineage): I cited `thread::scoped`'s removal (RFC 1084) but ignored its fix, `thread::scope`
     (stable 1.63). So completion is **NOT an irreducible linear gap — it is CONCENTRABLE** via the scoped witness,
     at a horn-3 **API-locality** cost (surrender the free movable handle): the whole #17–#28 completion residue was
-    the price of the **free-handle API**, not an inherent gap. And sessions ≠ `linear` #20's cleanup — a
+    the price of the **free-handle API**, not an inherent gap. And sessions ≠ `linear` #17's cleanup — a
     *delimited* session CAN be scoped to force completion, an *open-ended* cleanup cannot (refuting my "session
-    face of #20" and claim (a)). META: the refutation **inverts** my usual error — across the rejections I
+    face of #17" and claim (a)). META: the refutation **inverts** my usual error — across the rejections I
     overclaimed concentration is *total*; here I overclaimed it is *irreducible*; the truth is a cost between. No
     new domain (liveness), coordinate (completion), or mode (N stays 9); the danger is concentrable, so the
     broken-seam tally STAYS 8 (SEAM-COSTS, not the BREAK I predicted). Like every column past concentration, the

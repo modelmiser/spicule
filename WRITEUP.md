@@ -370,7 +370,7 @@ the second alone. A 0/N adversarial result is only as good as your ability to ru
 "the proposer was just weak," and the cleanest way to do that is to *hand the proposer
 the known-good sub-component and watch the failure move, not disappear.*
 
-## 10. The constructive phase — build and break twenty-eight real seams
+## 10. The constructive phase — build and break twenty-nine real seams
 
 The trilemma is a map, so the next step was to stop arguing in the abstract and **build**.
 A different harness shape: the negative half used cold instances to *propose* (and they
@@ -856,6 +856,36 @@ witness `choice_branch_typing_closes` closes its sound core; the horn-3 completi
 kernel. No new domain (**liveness stays the third**), no new coordinate (**progress**, from #24), no new mode
 (**N stays 9** — rejection's fifth firing); twenty-eight primitives. So the FAILED broken-seam tally **stays
 eight** (sound — a deliverable rejection, not a soundness break).
+
+**The completion residue, attacked head-on — and the rejection that reversed my finding.** With every session
+connective exhausted (#28), the *twenty-ninth* primitive stopped probing features and turned on the **residue
+itself** — the run-to-`End` debt every session seam #17–#28 had quietly carried. `must_complete.rs` is a
+`Session<P>` affine handle armed with a `Drop` **completion bomb** (the dual of `take` #9's): drop a `live`
+mid-protocol session and it aborts, so the floor *appears* to compel completion. I pre-registered the humblest
+hypothesis yet — **SEAM-BREAKS**, completion as an **irreducible** linear gap, the "session face of `linear`
+#17's must-run break," and predicted the broken tally would finally tick **8→9**. The cold panel (r36)
+**FAILED the §6 deliverable** — the **rejection mode's sixth firing** (after `typed_nat` #8, `delegation` #24,
+`multiparty` #25, `projected` #27, and `choice` #28) — and it is the **most instructive of the arc, because it
+REVERSES my finding rather than relabelling it**. The mechanism break I *did* find is real but not the finding:
+`mem::forget` skips the bomb and starves the peer, which only shows the **free-handle witness** is wrong. The
+decisive refutation is the **"universal NONE":** a **scoped-closure / CPS combinator** — `with_session(|s| { …;
+s.finish() })`, the **`std::thread::scope` analogue** — **compels completion modulo divergence, no `unsafe`**, by
+moving the obligation to the re-import boundary so the consumer never holds a forgettable handle ("return `End`
+or diverge"). The sting, my sixth self-refutation from my own cited lineage: I leaned on `thread::scoped`'s
+**removal** (RFC 1084) and ignored its **fix**, `thread::scope` (stable since 1.63). So the horn-classifier
+landed **SEAM-COSTS [horn 3, concentration]**: completion is **NOT irreducible — it is *concentrable***, at a
+horn-3 **API-locality** cost (you surrender the free, movable handle). The #17–#28 residue was never a linear
+gap; it was the **price of the free-handle API**. And sessions are **NOT #17's cleanup** — a *delimited* session
+**can** be scoped into a closure; an *open-ended* `linear` cleanup cannot, which is exactly why #20 broke and
+this one only costs. Further panel notes, accepted: the bomb turns `?` into a process-abort operator (unusable
+on fallible code), and peer starvation is fixable by **cancellation propagation** (Mostrous–Vasconcelos's
+*Affine Sessions*, ECOOP 2022's *Stay Safe Under Panic*, MultiCrusty, EGV). What survives: **decidability**
+(Θ(depth); the leak-detection NONE was correctly conceded). The **meta-lesson inverts my usual error** — across
+the rejections I had overclaimed concentration was *total*; here I overclaimed it was *irreducible*. I overstate
+the **extremes** when the truth is a **cost between**. The Lean witness `must_complete_scoped_completion_closes`
+closes the scoped construction. No new domain (**liveness stays the third**), no new mode (**N stays 9** —
+rejection's sixth firing); twenty-nine primitives. So the FAILED broken-seam tally **stays eight** (SEAM-COSTS,
+not a break — my 8→9 prediction was wrong).
 
 **Decontamination, across primitives.** The seamful2 theorem predicted that a failing seam's
 obstruction *relocates* to the re-import boundary rather than vanishing. SPSC: it **vanished**

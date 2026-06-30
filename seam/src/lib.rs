@@ -470,7 +470,7 @@ pub mod choice;
 /// stops probing features and attacks the **completion residue** itself — the leftover every session seam
 /// (#17/#18/#23/#27/#28) carries and I over-claimed as carried five times. A `Session<P>` is an affine handle
 /// with a `Drop` **completion bomb** (cf. `take` #9): drop a `live` mid-protocol session and it aborts, so the
-/// floor *appears* to compel run-to-`End`. The danger is the *remote* twin of `linear` #20's *local*
+/// floor *appears* to compel run-to-`End`. The danger is the *remote* twin of `linear` #17's *local*
 /// must-run-cleanup: a `mem::forget`-ten session starves its **peer**. VERDICT (cold panel, r36): SEAM-COSTS
 /// [horn3-concentration], gauntlet **FAILED** the §6 deliverable — the **rejection mode, 6th firing**, and the
 /// most instructive: it **reverses** my finding. The free-handle bomb IS bypassable (`mem::forget`, confirmed),
@@ -479,7 +479,7 @@ pub mod choice;
 /// obligation to the re-import boundary so the consumer never holds a forgettable handle. STING: I cited
 /// `thread::scoped`'s removal (RFC 1084) but ignored its fix, `thread::scope` (stable 1.63). So completion is
 /// **NOT irreducible — it is CONCENTRABLE** at a horn-3 **API-locality** cost (surrender the free handle): the
-/// whole #17–#28 residue was the price of the **free-handle API**. Sessions ≠ #20's cleanup (a *delimited* session
+/// whole #17–#28 residue was the price of the **free-handle API**. Sessions ≠ #17's cleanup (a *delimited* session
 /// CAN be scoped; open-ended cleanup cannot — refuting claim (a)). Ergonomics: the bomb turns `?` into a
 /// process-abort (unusable on fallible code). Prior art: peer starvation is fixable by **cancellation
 /// propagation** (Mostrous–Vasconcelos *Affine Sessions*; ECOOP 2022 *Stay Safe Under Panic*; MultiCrusty; EGV).

@@ -18,7 +18,7 @@
 //! away from a half-run session, because its `Drop` aborts.
 //!
 //! The danger addressed is the **completion** half of liveness (a peer **starved** by an abandoned session),
-//! not UB. This is the *remote* analogue of `linear` #20's *local* must-run-cleanup: there, `mem::forget`
+//! not UB. This is the *remote* analogue of `linear` #17's *local* must-run-cleanup: there, `mem::forget`
 //! skipped your own cleanup; here it skips a `Drop` that was the **peer's** only guarantee of being answered.
 //!
 //! ## The two facts a "must-complete" discipline needs
@@ -26,7 +26,7 @@
 //! 1. **Drop ⇒ abort.** A `live` `Session` that is dropped before `End` fires the bomb — so the *only* way past
 //!    a `Session` is to advance it (`send`/`recv`) or `finish` it. The abort makes abandonment observable.
 //! 2. **No silent skip.** For "must complete" to hold, there must be **no safe way** to make a `Session`'s
-//!    `Drop` *not run* while also not completing it. THIS is the load-bearing claim — and the one #20 already
+//!    `Drop` *not run* while also not completing it. THIS is the load-bearing claim — and the one #17 already
 //!    falsified for closures: `core::mem::forget` is **safe**, consumes the value by one affine move, and skips
 //!    `Drop` (the leakpocalypse, RFC 1066). `ManuallyDrop`, `Box::leak`, and `Rc`-cycles do the same.
 //!
@@ -52,7 +52,7 @@
 //!   (surrender the free movable handle; run the session inside a scope). The whole #17–#28 completion residue was
 //!   the price of the **free-handle API**, never an inherent gap: every prior session seam vended a forgettable
 //!   `Chan`, so every one carried it.
-//! - **Sessions ≠ cleanup closures — "session face of #20" was WRONG.** #20's open-ended cleanup *cannot* be
+//! - **Sessions ≠ cleanup closures — "session face of #17" was WRONG.** #17's open-ended cleanup *cannot* be
 //!   scoped (a true NONE/break); a **delimited** session *can* — so the peer/interaction structure **does** change
 //!   the outcome (refuting pre-registered claim (a)). My claim (b) holds only for the *free-handle* bomb.
 //! - **Ergonomics cost (real):** holding a `live` `Session` across any fallible op turns `?` into a **process-abort
