@@ -466,6 +466,22 @@ pub mod projected;
 /// *completion*). See `choice`.
 pub mod choice;
 
+/// Twenty-ninth seam (Phase AB — MUST-COMPLETE SESSION): the session connective set is exhausted, so this seam
+/// stops probing features and attacks the **completion residue** itself — the leftover every session seam
+/// (#17/#18/#23/#27/#28) carries and I over-claimed as carried five times. A `Session<P>` is an affine handle
+/// with a `Drop` **completion bomb** (cf. `take` #9): drop a `live` mid-protocol session and it aborts, so the
+/// floor *appears* to compel run-to-`End`. The danger is the *remote* twin of `linear` #20's *local*
+/// must-run-cleanup: a `mem::forget`-ten session starves its **peer**. HYPOTHESIS (gauntlet-adjudicated):
+/// **SEAM-BREAKS** — the **session face of #20's must-run break** (as `priority` #26 was the session face of the
+/// lock-order break). `core::mem::forget(session)` skips the bomb in SAFE code, abandoning the session with no
+/// abort (`tests/must_complete_use.rs`). Pre-registered: (a) the peer/two-endpoint dimension does NOT change the
+/// break; (b) even the abort-bomb cannot force completion (`forget` skips `Drop` before it fires). "Runs to
+/// `End`" is LINEAR; Rust's floor is AFFINE — the same *wrong-structural-logic* NONE as #20, unifying the whole
+/// session arc's completion residue as ONE irreducible linear gap. Deflates onto the leakpocalypse (RFC 1066/1084;
+/// `session_types`/JML 2015). Lean `must_complete_typed_discipline_factors` (a `..._factors`, like `linear`/
+/// `priority`). See `must_complete`.
+pub mod must_complete;
+
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 use core::sync::atomic::{AtomicUsize, Ordering};

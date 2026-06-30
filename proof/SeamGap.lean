@@ -981,4 +981,36 @@ theorem choice_branch_typing_closes :
   rw [seam_closes_iff_factors]
   exact ⟨id, fun _ => rfl⟩
 
+/-- Must-complete-session shape — the *completion-residue* probe (a `Session<P>` affine handle with a `Drop`
+    completion bomb), the session face of `linear` #20's must-run break. After the session connective set
+    (#18/#23–#28) was exhausted, this seam stops probing features and attacks the leftover every session seam
+    carries — the completion residue I over-claimed as carried five times. Read `Pr`/`Wt` by analogy: the
+    precondition is *the session runs to `End`* (completion) and the witness is the affine handle + its `Drop`
+    bomb. In the kernel the typed discipline factors (`Pmustcomplete` is definitionally `V`), as always — the
+    affine *walk* (send/recv advance only at the matching state; an out-of-order op is a type error) is exactly
+    the part the floor DOES carry.
+
+    [VERDICT — to be filled on adjudication.] HYPOTHESIS: the real seam BREAKS — "runs to `End`" is a LINEAR
+    requirement, and Rust's floor is AFFINE (`core::mem::forget` is a safe `fn<T>(T)` that consumes the session by
+    one legal move and skips `Drop`), so the completion bomb never fires and the peer is starved, in safe code.
+    This is the *remote* twin of #20's *local* must-run-cleanup break (a `mem::forget`-ten session starves its
+    PEER, not just its own cleanup) — pre-registered: (a) the two-endpoint dimension does not change the break;
+    (b) even the abort-bomb cannot force completion (`forget` skips `Drop` before it fires). A clean NONE at the
+    type level — the same *wrong-structural-logic* (affine vs linear) verdict as #20, unifying the whole session
+    arc's completion residue (#17/#18/#23/#27/#28) as ONE irreducible linear gap. `..._factors` (not `..._closes`)
+    certifies only the trivial typed sub-fact (the affine walk); the kernel sees neither the linearity gap nor the
+    `forget` bypass. Deflates onto the leakpocalypse (RFC 1066/1084; `session_types`/Jespersen–Munksgaard–Larsen
+    2015's affine-vs-linear gap). -/
+def Pmustcomplete (p : Prog) : Bool := V p
+
+/-- Trivial sub-fact only (see the docstring): the affine *walk* discipline factors (send/recv advance only at the
+    matching state). The real seam is HYPOTHESIZED to BREAK — "runs to `End`" is linear, Rust's affine floor
+    permits the skip (`mem::forget` is safe and bypasses the `Drop` completion bomb), so the must-complete
+    floor-match is a clean NONE, the session face of `linear` #20's break, unifying the session arc's completion
+    residue as one gap. (Provisional, matching the pre-registered hypothesis; the cold panel adjudicates.) -/
+theorem must_complete_typed_discipline_factors :
+    ∃ d : Prog → Bool, SoundW Pmustcomplete d ∧ UsableW Pmustcomplete d ∧ ConcW V d := by
+  rw [seam_closes_iff_factors]
+  exact ⟨id, fun _ => rfl⟩
+
 end SeamGap
