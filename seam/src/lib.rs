@@ -288,10 +288,16 @@ pub mod reseat;
 /// `Replica<T>` merges via `T: JoinSemilattice`; convergence holds iff `join` is commutative + associative +
 /// idempotent — laws the affine/ownership floor **cannot enforce** (a safe non-conforming `join` type-checks
 /// and diverges replicas, exactly as the floor enforced IFC's syntactic proxy but not non-interference). The
-/// spec poses: is convergence a fourth domain that's **floor-mismatched** (no closing seam, like IFC),
-/// **TCB-axiom-costed** (it holds if a blessed library of verified CRDTs discharges the laws, like `mmio`'s
-/// hardware axiom), or a **deflation** to the application-correctness invariant `restore` already located?
-/// See `crdt`.
+/// cold panel (r28) ruled **SEAM-BREAKS [floor-mismatch]** *floor-relatively* (the `T: JoinSemilattice` bound
+/// is a syntactic proxy, not a witness — a safe lawless `join` type-checks and diverges replicas; closing it
+/// is undecidable by Rice) — but scored a **TRADEOFF survival**, because the candidate fourth domain
+/// **DEFLATED**: the gap is the *generic* unchecked-typeclass-law phenomenon (Rust checks the *signatures* of
+/// `Ord`/`Eq`/`Hash`/`Monoid`/semilattice, none of their *laws*), so convergence **projects onto `restore`'s
+/// application-correctness basis** rather than opening a fourth soundness domain. Two further corrections: the
+/// blessed-CRDT TCB rescue is **not MMIO-shaped** (the lattice space is open-ended → law-trust recurs per
+/// user CRDT, never amortizes), and 'dischargeable' holds only at the *model* level (no Rust pass checks
+/// model-to-shipped-code). The domain map stays at **three** (memory/IFC/liveness) + the application-
+/// correctness basis. 21 primitives; FAILED broken-seam tally stays 6; N stays 9 modes. See `crdt`.
 pub mod crdt;
 
 use core::cell::UnsafeCell;

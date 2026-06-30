@@ -661,4 +661,38 @@ theorem reseat_typed_discipline_factors :
   rw [seam_closes_iff_factors]
   exact ⟨id, fun _ => rfl⟩
 
+/-- State-based-CRDT-merge shape — the *fourth-domain* probe (a `Replica<T: JoinSemilattice>` with a
+    `merge` that applies the semilattice `join`). Like the `secret`/`labeled` IFC seams it has **no `unsafe`**
+    — the danger is **semantic** (replica *divergence*, not UB). Read `Pr`/`Wt` by analogy: the precondition
+    is *convergence* (the semilattice laws — commutative / associative / idempotent). In the kernel the typed
+    discipline factors (`Pcrdt` is definitionally `V`), as always — the `T: JoinSemilattice` trait bound and
+    same-`T` typing are the parts the floor DOES carry.
+
+    The real seam BREAKS *floor-relatively* (REPORT_SEAM_SPEC_crdt, r28 — horn-classifier SEAM-BREAKS
+    [floor-mismatch], scored a TRADEOFF survival): the trait bound is a **syntactic proxy, not a witness** —
+    `merge` applies whatever `join` the impl supplies, the bound checks only the *signature*, so a safe
+    non-commutative/non-idempotent `impl` type-checks and **diverges replicas that saw the same updates**
+    (Horn 1, in safe code; closing it is undecidable by Rice). But the candidate fourth domain **DEFLATED**,
+    three corrections accepted: (1) the blessed-CRDT TCB rescue is **not MMIO-shaped** — the lattice space is
+    open-ended, so the law-trust recurs per user CRDT, never amortizing into one foundation axiom; (2)
+    'dischargeable' holds only at the *model* level (Liquid-Haskell/Coq proofs are about a math model; no Rust
+    pass checks model-to-shipped-code, so the trust is irreducible at the compilation boundary); (3) the
+    decisive deflation — the gap is the **generic unchecked-typeclass-law phenomenon** (Rust checks the
+    *signatures* of `Ord`/`Eq`/`Hash`/`Monoid`/semilattice, none of their *laws*), so convergence **projects
+    onto `restore`'s application-correctness basis** rather than opening a fourth soundness domain. The map
+    stays at three domains (memory/IFC/liveness) + the application-correctness basis; N stays 9 modes; the
+    FAILED broken-seam tally stays 6 (this survived). `..._factors` (not `..._closes`) certifies only the
+    trivial typed sub-fact; the kernel sees neither the lawless-`join` divergence nor the deflation. -/
+def Pcrdt (p : Prog) : Bool := V p
+
+/-- Trivial sub-fact only (see the docstring): the *typed* discipline factors — the `JoinSemilattice` trait
+    bound and same-`T` typing are what the floor carries. The real seam BREAKS floor-relatively: a safe
+    lawless `join` type-checks and diverges replicas (the semilattice laws are unenforceable, undecidable by
+    Rice). But the candidate fourth domain DEFLATED — convergence is the generic unchecked-typeclass-law
+    phenomenon, projecting onto `restore`'s application-correctness basis, not a new soundness domain. -/
+theorem crdt_typed_discipline_factors :
+    ∃ d : Prog → Bool, SoundW Pcrdt d ∧ UsableW Pcrdt d ∧ ConcW V d := by
+  rw [seam_closes_iff_factors]
+  exact ⟨id, fun _ => rfl⟩
+
 end SeamGap

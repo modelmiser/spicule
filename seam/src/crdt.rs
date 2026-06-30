@@ -72,7 +72,43 @@
 //! assert_eq!(b.get().value(), 2); // both replicas converge to the same total
 //! ```
 //!
-//! ## The cold panel's verdict (REPORT_SEAM_SPEC_crdt): _pending — filled in after the gauntlet._
+//! ## The cold panel's verdict (REPORT_SEAM_SPEC_crdt, r28): SEAM-BREAKS [floor-mismatch] *floor-relatively*,
+//! ## scored a TRADEOFF survival — but the candidate fourth domain **DEFLATED**.
+//!
+//! The horn-classifier ruled **SEAM-BREAKS [floor-mismatch]** and the supply-side break is **confirmed**: the
+//! `T: JoinSemilattice` bound is a **syntactic proxy, not a witness** — `merge` applies whatever `join` the
+//! impl supplies, the bound checks only the *signature*, so a safe non-commutative/non-idempotent `impl`
+//! type-checks and **diverges replicas that saw the same updates** (Horn 1's hazard, reached in safe code).
+//! The implementation attacker confirmed the floor *provably* cannot carry the laws — closing Horn 1 needs a
+//! semilattice-law verification pass that is **undecidable by Rice's theorem**. But the judge scored the
+//! gauntlet a **TRADEOFF survival** (not a FAILED): the floor-relative break was *pre-registered*, so the
+//! spec's claim was confirmed, not refuted — and the dominant finding is the **deflation** below. So the
+//! FAILED broken-seam tally stays **6**; this is a survival-with-corrections, three accepted:
+//!
+//! 1. **The blessed-CRDT TCB-axiom rescue is NOT MMIO-shaped (ergonomics + expressiveness).** I offered
+//!    "restrict to a blessed library of verified CRDTs → SEAM-COSTS, MMIO-shaped." Rejected: unlike MMIO's
+//!    **finite, foundation-owned** registers, the **lattice space is open-ended**, so the law-trust **recurs
+//!    per user-defined CRDT** instead of amortizing into a one-time axiom — every real use falls back to
+//!    supply-your-own-`join`. The blessed library cannot span the domain.
+//! 2. **'Dischargeable' holds only at the MODEL level (implementation).** Liquid Haskell's typeclass-
+//!    refinement (OOPSLA'20) *can* verify semilattice laws — but those proofs are interactive and about a
+//!    **mathematical model**; **no Rust pass checks model-to-shipped-code refinement**, so the obligation
+//!    stays **trusted/irreducible at the compilation boundary**. (Subtler than `secret`'s constant-time,
+//!    which CompCert-CT/Jasmin *do* preserve to shipped code.)
+//! 3. **The decisive DEFLATION — convergence is NOT a fourth domain; it projects onto `restore`'s basis
+//!    (prior-art + judge).** The gap is the **generic unchecked-typeclass-law phenomenon**: Rust checks the
+//!    *signature* of `Ord`, `Eq`/`Hash`, `Monoid`, and `JoinSemilattice` alike, but **none of their algebraic
+//!    laws** (totality, consistency, associativity, the semilattice laws). So "convergence" is not a fourth
+//!    *soundness domain* parallel to information-flow — it is the **application-correctness invariant** the
+//!    nineteenth seam (`restore`) already located (a logical property the type system never promised),
+//!    **projecting onto an existing basis** rather than opening new ground.
+//!
+//! **The refined finding.** The fourth-domain probe found **no clean fourth domain here**: the soundness-
+//! domain map stays at **three** (memory safety / information flow / liveness) plus the **application-
+//! correctness** basis (`restore`'s), into which convergence folds. Floor-relatively the supply-side break
+//! stands (the affine/ownership floor does not carry the semilattice laws — the IFC-shaped mismatch), but the
+//! *structural* result is a deflation, not a new domain. N stays **9** verdict modes (projects-onto-basis +
+//! floor-mismatch, both already on the board); 21 primitives; the FAILED broken-seam tally stays 6.
 //!
 //! The sound CRDT *does* converge, and a non-conforming `join` *does* diverge — see `tests/crdt_use.rs`.
 

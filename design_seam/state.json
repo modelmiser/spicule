@@ -1714,10 +1714,73 @@
       "outcome": "FAILED",
       "cost_usd": 1.954,
       "timestamp": "2026-06-30T01:58:53+00:00"
+    },
+    {
+      "round": 28,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_crdt.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 state-based CRDT merge (re-import rule under attack)\n\nThis is a **design proposal** for a twenty-first *seam*, the **first probe aimed at a fourth soundness\ndomain**. The arc has mapped three \u2014 **memory safety** (full floor-domain match: many seams close),\n**information flow** (mismatch: no seam closes, `SEAM_SPEC_secret.md`/`labeled`), and **liveness/progress**\n(partial/graded: `ordered_locks`/`lock_registry`). This seam tests whether the floor-domain-match thesis is\ngenuinely domain-general, on **distributed/replicated convergence** (eventual consistency).\n\nYou are attacking a **text specification** backed by real `rustc`-checked code (`seam/src/crdt.rs`, the\ndefault `no_std` build \u2014 `core`-only, **no `unsafe`**, like the constant-time `secret` seam).\n\n---\n\n## 0. The floor (stipulated, not under attack)\n\nRust's type system as shipped: generics + trait resolution (a `Replica<T>::merge` requires `T:\nJoinSemilattice`; a `Replica<GCounter<3>>` is a different type from `Replica<GCounter<4>>`), ownership, and\nordinary method dispatch. There is **no `unsafe`** and the abstract machine models no notion of \"replica\" or\n\"convergence\" \u2014 so the project's usual \"can safe code re",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Trait bound is a syntactic proxy; blessed-CRDT rescue is ATS2-unusable since real lattices are always user-supplied.",
+          "strongest_point": "Unlike MMIO, a blessed CRDT library cannot span an open-ended lattice domain, so every real use falls back to supply-your-own-join \u2014 the TCB axiom is re-incurred per app, not discharged once."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "Trait bound is syntactic; a lawless safe `impl JoinSemilattice` type-checks and diverges replicas under identical updates.",
+          "strongest_point": "`merge` applies whatever `join` the impl supplies, but `T: JoinSemilattice` checks only the method signature, so an accepted non-commutative/non-idempotent join falsifies \u00a74's convergence guarantee."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Law-verification pass is undecidable, but proposal never demands it; compilation stays trivially decidable, confirming floor-mismatch.",
+          "strongest_point": "Closing Horn 1 requires a semilattice-law verification pass that is undecidable by Rice's theorem, so the floor provably cannot carry the laws \u2014 but the proposal correctly never asks the compiler to run it, so its decidability story holds."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Every real CRDT is expressible via a safe JoinSemilattice impl; total expressiveness is bought by leaving the laws unchecked.",
+          "strongest_point": "The blessed-library 'SEAM-COSTS, MMIO-shaped' escape is mis-cast: unlike MMIO's finite foundation-owned primitives, the lattice space is open, so the law-trust recurs per user-defined CRDT rather than amortizing into a one-time axiom."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Prior art refutes the 'floor-mismatch/fourth-domain' framing: lattice laws are dischargeable typeclass refinements and the gap is the generic unlawful-instance problem.",
+          "strongest_point": "Liquid Haskell's OOPSLA'20 typeclass-refinement work verifies CRDT/semilattice laws attached to the trait itself, proving the laws ARE type-level-carryable \u2014 so the seam COSTS (dischargeable TCB axiom), it does not BREAK by irreducible floor-mismatch."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "argued-past",
+          "attacker-implementation": "tradeoff",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "TRADEOFF",
+        "tradeoffs": [
+          "Blessed-CRDT TCB axiom is NOT MMIO-shaped: the lattice space is open-ended, so the laws-trust recurs per user-defined CRDT instead of amortizing into one foundation axiom (ergonomics+expressiveness).",
+          "'Dischargeable' holds only at the model level: Coq/Isabelle/Liquid-Haskell proofs are interactive and about a mathematical model; no Rust pass checks model-to-shipped-code refinement, so that obligation stays trusted/irreducible at the compilation boundary (implementation).",
+          "Strong deflation pressure: the gap is the generic unlawful-typeclass / unchecked-algebraic-law phenomenon (Ord, Hash/Eq, Monoid), so convergence likely projects onto restore's application-correctness basis rather than opening a genuine fourth domain (prior-art) \u2014 though, floor-relatively, the as-shipped affine/ownership floor still does not carry the laws, so supply-side SEAM-BREAKS stands."
+        ],
+        "headline": "Supply-side break holds; blessed rescue is per-lattice cost, not MMIO-once; domain status unresolved.",
+        "rationale": "Soundness break is conceded and floor-relatively stands; no attack forces revision. But the deliverable verdict is admissible only with three recorded, still-open tradeoffs: MMIO mis-cast (coverage), dischargeable-only-at-model-level (refinement gap), and deflation-toward-application-correctness. N stays 9."
+      },
+      "outcome": "TRADEOFF",
+      "cost_usd": 2.6955,
+      "timestamp": "2026-06-30T03:19:51+00:00"
     }
   ],
   "settled": [],
   "incompatibilities": [],
   "blind_spot_flags": [],
-  "total_cost_usd": 55.1372
+  "total_cost_usd": 57.8327
 }
