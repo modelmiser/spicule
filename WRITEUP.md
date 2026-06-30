@@ -370,7 +370,7 @@ the second alone. A 0/N adversarial result is only as good as your ability to ru
 "the proposer was just weak," and the cleanest way to do that is to *hand the proposer
 the known-good sub-component and watch the failure move, not disappear.*
 
-## 10. The constructive phase — build and break eighteen real seams
+## 10. The constructive phase — build and break nineteen real seams
 
 The trilemma is a map, so the next step was to stop arguing in the abstract and **build**.
 A different harness shape: the negative half used cold instances to *propose* (and they
@@ -573,6 +573,28 @@ which *is* the abandonment); and the order-closes/completion-breaks split is **d
 (Jespersen–Munksgaard–Larsen 2015; RFC 1066; ECOOP 2022 *"Stay Safe Under Panic"*, which names it) — the
 contribution is *locating* it on the lattice, not discovering it.
 
+**The packaging dial — real, but fenced.** That last finding (the horn a danger threatens depends on how
+the rule *packages* it) was an *observation* across two different primitives. A *nineteenth* primitive
+(`restore.rs`) turns it into a deliberate experiment: a value-owning scope-restore guard — the real
+`scopeguard::guard(value, f)` + `into_inner`, the shape `linear` declined to host — that carries the
+**identical** un-compellable-`Drop` danger as #17 (`mem::forget` skips the closure) wrapped in #18's
+structure (a sound affine-ownership *core* with the restore as a side-obligation beside it). The cold panel
+ruled **SEAM-COSTS [horn 3]** (survived): the *same* gap that **broke** `linear`'s horn 1 here only **costs**
+horn 3 (a stranded invariant — a lost lease, a stale global — never UB), so the dial is **real**. But the
+panel then **bounded** the thesis, and the bound is the actual yield. (i) The move is *confounded*, not
+single-variable: to package the danger as a side-obligation, #19 had to *add* the value-ownership core #17
+lacked, so the value-ownership model co-varied — a better-controlled probe than the incidental #17-vs-#18
+pair, not a clean manipulation. (ii) The horn is *forceable*: the same skippable-`Drop` danger in a
+**borrowed-slot / `take_mut` packaging forces horn-1 UB** (a mid-restore panic double-drops the borrowed
+slot — the ninth-axis `take` danger), and `Pin`'s drop guarantee and the post-leakpocalypse `thread::scope`
+restructure exhibit horns that **cannot** be repackaged. So *which* horn depends on **where safety rests**,
+which is *partly danger-intrinsic*. (iii) Not novel: `JoinGuard` broke horn 1 and `scopeguard` costs horn 3
+already in 2015, concluded in RFC 1066 — the contribution is the *method* and *locating the dial*, no new
+mode. The refined finding: **which horn a danger threatens is a design choice _within a structural envelope_
+set by whether soundness can be _decoupled_ from the un-compellable closure** — owned ⇒ costs,
+borrowed-across-unwind ⇒ forces. Phase Q said the horn moves; Phase R says it moves *within a fence*, and
+names the fence.
+
 **Decontamination, across primitives.** The seamful2 theorem predicted that a failing seam's
 obstruction *relocates* to the re-import boundary rather than vanishing. SPSC: it **vanished**
 (precondition factors through the witness). MMIO: it **moved and stayed decidable** (the
@@ -601,7 +623,7 @@ was the whole verdict — including the one mirage (the fuel knob), the two genu
 the one *real-but-inseparable* destination (immovability), and the one that landed *on coordinates already
 on the map* (validity) — the last of which is what closes the basis.
 
-**The adversary earned its keep — seventeen times.** On MMIO it named the axiom's category correctly
+**The adversary earned its keep — nineteen times.** On MMIO it named the axiom's category correctly
 (a TCB boundary, not a horn) and surfaced a horn-3 cost the builder had under-weighted. On the
 intrusive list it proved something *worse* than the builder predicted: branding does not restore
 soundness at all (a brand is an *access* capability, not a *storage* lifetime), correcting a real
@@ -673,14 +695,23 @@ probes: it confirmed (against the builder's own "first/novel" framing) that the 
 component-wise structure *real* (the soundness attacker proved `mem::forget` cannot parlay abandonment into
 an order violation), so the seam **holds with a horn-3 cost** — the same linearity gap that *broke* `linear`
 only *de-concentrates* here, a SEAM-COSTS not a new mode, because completion sits beside a sound safety core.
+And on the **value-owning scope-restore guard** it did the eleventh thing — it confirmed a *controlled*
+result and then **fenced** it: the same `mem::forget` gap that broke `linear` only *costs* when packaged
+beside a sound ownership core, so the horn-dial is real — but the panel ruled the move *confounded* (the
+value-ownership model co-varied) and the dial *bounded* (a borrowed-slot/`take_mut` packaging *forces* horn 1,
+and `Pin`/`thread::scope` show un-repackageable horns), so which horn a danger threatens is a design choice
+*within an envelope* set by whether soundness can be decoupled from the un-compellable closure — confirm and
+boundary in one verdict, no new mode (the dial itself is RFC-1066 folklore).
 Spec↔impl divergences, sharpened overclaims, novelty-deflations, one axis-rejection, one relabel,
 one distinctness-ruling, an inseparable-category finding (twice), the closed-basis certification, a
 domain-generalization, a floor-domain-mismatch diagnosis (two horn-drops in the IFC domain), and a
 graded-partial-match diagnosis (the liveness domain — across *two* probes: a static floor that *partly*
 fits, then a runtime floor that fits *differently* but not *more*, so upgrading the floor proved
-non-monotone and "granularity" a ladder), and one *component-wise hold* (the session channel — order-safety
-closes while completion costs horn 3, the same gap that broke one seam only costing another) — exactly what
-build/break separation exists to surface. A
+non-monotone and "granularity" a ladder), one *component-wise hold* (the session channel — order-safety
+closes while completion costs horn 3, the same gap that broke one seam only costing another), and one
+*controlled-packaging confirmation that came back fenced* (the restore guard — the horn-dial is real but
+bounded by whether soundness can be decoupled from the un-compellable closure, the move confounded and the
+horn forceable) — exactly what build/break separation exists to surface. A
 discovery procedure that can say "no", "the right name", "why it doesn't merge", "real but unmeasurable",
 "real but adds nothing — the basis is closed", "this is a *different domain* entirely", "this floor is the
 wrong floor for that domain", "this floor *partly* fits that domain — and a better floor trades the gap,
@@ -692,7 +723,7 @@ cold review had flagged to a genuine characterization — `seam_closes_iff_facto
 closes **iff** its precondition factors through the safe witness — with the regimes as
 machine-checked instances (`spsc_seam_closes`, `intrusive_seam_does_not_close`, the slab's
 `slab_runtime_closes_but_static_does_not`: the same precondition closes through a *runtime*
-witness but not the *static* one, and `branded_seam_closes`/`refined_seam_closes`/`shared_seam_closes`/`typed_nat_seam_closes`/`take_seam_closes`/`drain_seam_closes`/`selfref_seam_closes`/`validity_seam_closes`/`secret_typed_discipline_factors`/`labeled_typed_discipline_factors`/`ordered_locks_typed_discipline_factors`/`lock_registry_typed_discipline_factors`/`linear_typed_discipline_factors`:
+witness but not the *static* one, and `branded_seam_closes`/`refined_seam_closes`/`shared_seam_closes`/`typed_nat_seam_closes`/`take_seam_closes`/`drain_seam_closes`/`selfref_seam_closes`/`validity_seam_closes`/`secret_typed_discipline_factors`/`labeled_typed_discipline_factors`/`ordered_locks_typed_discipline_factors`/`lock_registry_typed_discipline_factors`/`linear_typed_discipline_factors`/`restore_ownership_core_closes`:
 all close like SPSC in the kernel — the recovered axes, the five broken seams' domain gaps, the graded floor-match, the non-monotone floor-upgrade, and the structural-logic (affine-vs-linear) break alike invisible to it), `propext` only. Honest bound unchanged: the
 *math* is now a real characterization, but the faithfulness of "precondition" and "witness" to
 actual Rust primitives — *which axis a closing seam spends* (zero-cost, API-locality, legibility,

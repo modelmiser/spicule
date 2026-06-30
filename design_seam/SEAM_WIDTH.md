@@ -172,3 +172,30 @@ forecloses two concurrently-live endpoints), "usable" holds only for *infallible
 fallible step forces `?`, which *is* the abandonment), and the order-closes/completion-breaks split is
 documented folklore (Jespersen–Munksgaard–Larsen 2015; RFC 1066; ECOOP 2022 *"Stay Safe Under Panic"*) — the
 contribution is *locating* it on the lattice, not discovering it.
+
+**A seventh probe HOLDS — and turns "the horn depends on packaging" from an observation into a (bounded)
+experiment.** The value-owning scope-restore guard (`seam/src/restore.rs`, a `Restore<T, F: FnOnce(T)>` —
+the real `scopeguard::guard(value, f)` + `into_inner`, core-only, no `unsafe`) is the nineteenth seam and
+the **controlled-packaging probe**: it carries the **identical** un-compellable-`Drop` danger as the *fifth*
+break (`mem::forget` skips the restore closure — bit-for-bit #17's gap) but wraps it in the *sixth* probe's
+structure (a sound affine-ownership core, beside which the restore is a side-obligation). The cold panel
+(r26) ruled **SEAM-COSTS [horn 3]**, survived — confirming the dial: the **same** `mem::forget` gap that
+**broke** #17's horn 1 only **costs** horn 3 here. On the **seam-width** instrument it earns no row, for the
+*holding* reason rather than the breaking one: width is **O(1) per guard, O(0) per element** — it is a
+`scopeguard`, the consumer writes no `unsafe` and no manual restore bookkeeping — so, exactly as with the
+session channel, the horn-3 cost is **not a per-element width crossing** but a *de-concentration of an
+obligation* (the un-compellable "don't `forget` the guard," recurring at every `?`/panic/early-return),
+invisible to a width metric. The panel **bounded** the thesis three ways, all accepted: **(i) confounded** —
+to package the danger as a side-obligation, #19 also adds the value-ownership core #17 lacked, so the
+value-ownership model co-varies (a better-controlled probe than the incidental #17-vs-#18 pair, not a clean
+single-variable manipulation); **(ii) bounded, not universal** — the horn is *forceable*: the same
+skippable-`Drop` danger in a **borrowed-slot / `take_mut`** packaging forces **horn-1 UB** (the ninth-axis
+`take` danger — a mid-restore panic double-drops the borrowed slot), and `Pin`'s drop guarantee and the
+post-leakpocalypse `thread::scope` restructure exhibit horns that **cannot** be repackaged — so *which* horn
+depends on **where safety rests**, partly danger-intrinsic; **(iii) not novel** — `JoinGuard`/`thread::scoped`
+broke horn 1 and `scopeguard` costs horn 3 already in 2015 (RFC 1066, the leakpocalypse), so the
+contribution is the *method* and *locating* the dial, **no new verdict mode** (N stays nine modes; the broken
+count stays **five** — this one holds). The refined finding: **which horn a danger threatens is a design
+choice *within a structural envelope* set by whether soundness can be *decoupled* from the un-compellable
+closure** — owned value ⇒ it *costs* (this seam); borrowed-across-unwind / `Pin` / `thread::scope` ⇒ it
+*forces*. Phase Q said the horn moves; this says it moves *within a fence*, and names the fence.

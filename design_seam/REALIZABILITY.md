@@ -1,6 +1,6 @@
 # The realizability table — the Seam Trilemma is a 3-of-N projection
 
-*Phases D–Q. The constructive question the slab opened, the branded index extended, the refined index
+*Phases D–R. The constructive question the slab opened, the branded index extended, the refined index
 closed, the shared-ownership seam pushed to seven, the take-and-replace seam to eight, and the
 drain-and-yield seam to nine: is the Seam Trilemma the whole story (3 horns), or a low-dimensional
 shadow of a larger tension? Answer: it is a **3-of-N projection with N ≥ 9** — where the recovered axes
@@ -46,7 +46,23 @@ component beside a sound core* here, so **which horn a linearity gap threatens d
 [no duality in `core`/no-`unsafe`, E0499]; "usable" only for infallible straight-line protocols; and the
 split is documented folklore — Jespersen–Munksgaard–Larsen 2015, ECOOP 2022 *Stay Safe Under Panic* — so
 the contribution is *locating* it on the lattice.) N stays 9; the five broken seams are unchanged — this
-one holds.** (Phases L–Q.)*
+one holds.** And a nineteenth — a *value-owning scope-restore guard* (the real `scopeguard::guard`) —
+turned that "**which horn depends on packaging**" observation from an incidental cross-primitive coincidence
+into a **deliberate, controlled probe**: it carries #17's *identical* un-compellable-`Drop` danger but wraps
+it in #18's structure (a sound affine-ownership *core* beside which the restore is a side-obligation), and
+the cold panel (r26) ruled **SEAM-COSTS [horn 3]** — the *same* `mem::forget` gap that **broke** #17's horn 1
+only **costs** here. **The dial is real — but the panel BOUNDED the thesis, all accepted:** the move is
+*confounded* (#19 also adds the value-ownership core #17 lacked, so the value-ownership model co-varies — a
+better-controlled probe than the incidental #17-vs-#18 pair, not a single-variable manipulation); the horn
+is *forceable* (the same skippable-`Drop` danger in a **borrowed-slot / `take_mut`** packaging forces
+**horn-1 UB** — the #9 `take` danger — and `Pin`'s drop guarantee plus the `thread::scope` restructure
+exhibit horns that **cannot** be repackaged, so *which* horn depends on **where safety rests** — partly
+danger-*intrinsic*); and it is *not novel* (`JoinGuard` broke horn 1, `scopeguard` costs horn 3, concluded
+in RFC 1066 in 2015 — so the contribution is the *method* and *locating the dial*, **no new mode**). The
+refined finding: **which horn a danger threatens is a design choice *within a structural envelope* set by
+whether soundness can be DECOUPLED from the un-compellable closure** (owned ⇒ costs; borrowed-across-unwind /
+`Pin` / `thread::scope` ⇒ forces). Phase Q said the horn moves; Phase R says it moves *within a fence, and
+names the fence*. N stays 9; the five broken seams unchanged — this one holds too.** (Phases L–R.)*
 
 > **A note on the "#5/#6/#7" shorthand (and a numbering collision).** `#6` (zero-cost) and `#7`
 > (AI-legible) are the literal seed-property numbers. The "**#5⟂#7 cell**" shorthand, coined for the
@@ -532,6 +548,38 @@ It is the crucible for the two prior liveness findings — #15 (typestate carrie
 > stays 9; the five broken seams are unchanged — this one is the arc's first SEAM-COSTS *hold* outside
 > memory safety.
 
+#### The packaging dial, deliberately turned — a nineteenth primitive confirms it BUT names its fence
+
+Phase Q's "which horn depends on packaging" was an *observation*: #17 and #18 were different primitives, so
+the horn-move could be incidental. A nineteenth — a **value-owning scope-restore guard** (`Restore<T, F>`,
+the real `scopeguard::guard(value, f)` + `into_inner` — the shape #17's `MustRun` deliberately declined) —
+turns it into a **controlled experiment**: hold #17's *identical* un-compellable-`Drop` danger fixed
+(`mem::forget` skips the restore), change only how the rule packages it (wrap it in #18's structure — a
+sound affine-ownership *core* beside which the restore is a side-obligation), and watch the verdict move.
+The cold panel (r26) ruled **SEAM-COSTS [horn 3]** (TRADEOFF, survived): three attackers conceded the
+ownership core is sound (no safe double-free/alias/double-consume; `mem::swap` strands a value but yields no
+UB; trivially decidable), and the *same* `mem::forget` gap that **broke** #17's horn 1 here only **costs**
+horn 3 (the restore strands a *logical invariant* — a lost lease, a stale global — recurring at every
+`?`/panic/return). **The dial is real.**
+
+> **But the panel BOUNDED the thesis three ways — all accepted, and they sharpen it past the prediction.**
+> (1) **Confounded, not single-variable.** "Only the packaging changed" is false: to package a danger as a
+> *side*-obligation you must introduce a sound core for it to sit *beside*, so #19 also adds the
+> value-ownership core #17 lacked — the value-ownership model **co-varies**. A better-controlled probe than
+> the incidental #17-vs-#18 pair, not a clean manipulation. (2) **Bounded, not universal — the horn is
+> FORCEABLE.** The *same* skippable-`Drop` danger in a **borrowed-slot / `take_mut`** packaging forces
+> **horn-1 UB** (a mid-restore panic double-drops the borrowed slot — the ninth-axis `take` danger), and
+> `Pin`'s drop guarantee and the post-leakpocalypse `thread::scope` restructure (the closure shape that
+> *forces* the join) exhibit horns that **cannot** be repackaged. So *which* horn depends on **where safety
+> rests** — *partly danger-intrinsic*. (3) **Not novel — confirm-by-restaging, no new mode.** `JoinGuard`
+> broke horn 1 and `scopeguard` costs horn 3 already in 2015 (RFC 1066, the leakpocalypse); the contribution
+> is the **method** (Phase Q's observation made a *deliberate* probe) and **locating the dial**, not a new
+> verdict structure. **The refined finding: which horn a danger threatens is a design choice *within a
+> structural envelope* set by whether soundness can be DECOUPLED from the un-compellable closure** — owned ⇒
+> costs (this seam, `scopeguard`); borrowed-across-unwind / `Pin` / `thread::scope` ⇒ forces horn 1. Phase Q
+> said the horn moves; Phase R says it moves *within a fence, and names the fence*. N stays 9; the five
+> broken seams are unchanged — this one holds.
+
 ## The recursion: each primitive un-bundled one folded axis
 
 ```
@@ -606,6 +654,20 @@ session │  COMPOSITE precondition       ⇒ HOLDS WITH COST: SEAM-COSTS [horn3
         │                              infallible-straight-line only; FOLKLORE (JML'15; ECOOP'22 Stay Safe
         │                              Under Panic) → contribution = LOCATING it. N stays 9; 5 broken unchanged.
         ▼
+restore │  CONTROLLED PACKAGING probe  ⇒ HOLDS WITH COST: SEAM-COSTS [horn3] (TRADEOFF, survived r26). #17's
+        │  (value-owning scope-restore   IDENTICAL un-compellable-Drop danger wrapped in #18's structure (sound
+        │   guard = real scopeguard)     affine-ownership CORE + restore as side-obligation). SAME mem::forget gap
+        │                              that BROKE #17's horn1 only COSTS horn3 here → the packaging dial is REAL.
+        │                              BUT BOUNDED 3 ways: (1) CONFOUNDED — #19 also adds the value-ownership core
+        │                              #17 lacked, so ownership co-varies (better-controlled, not single-variable);
+        │                              (2) FORCEABLE — same danger in a borrowed-slot/take_mut packaging FORCES
+        │                              horn1 UB (the #9 take danger); Pin's drop-guarantee + thread::scope show
+        │                              un-repackageable horns → which horn depends on WHERE SAFETY RESTS, partly
+        │                              danger-intrinsic; (3) NOT NOVEL — JoinGuard horn1 / scopeguard horn3 already
+        │                              in 2015 (RFC 1066). FINDING: the horn is a design choice WITHIN A STRUCTURAL
+        │                              ENVELOPE set by whether soundness DECOUPLES from the closure (owned ⇒ costs;
+        │                              borrowed-across-unwind/Pin/thread::scope ⇒ forces). No new mode; N stays 9.
+        ▼
 Realizability table         MEMORY-SAFETY domain (on a MATCHED affine floor): N ≥ 9 CLOSED axes (sound,
                             decidable, concentration, API-locality, #6, #7, bare-metal, unwind-safety,
                             leak-freedom) + INSEPARABLE (move-stability, validity) + 2 outside-the-axes
@@ -621,7 +683,12 @@ Realizability table         MEMORY-SAFETY domain (on a MATCHED affine floor): N 
                             is matched COMPONENT-WISE and HOLDS WITH COST (SEAM-COSTS [horn3]): order-safety
                             CLOSES, completion COSTS horn-3 — the same linearity gap that BROKE #17 only de-
                             concentrates here, because which horn it threatens depends on how the rule PACKAGES
-                            it. The Seam Trilemma is DOMAIN-GENERAL, the cost-basis
+                            it. And a CONTROLLED PACKAGING probe (value-owning scope-restore guard) turned that
+                            into a deliberate experiment — HOLDS WITH COST (SEAM-COSTS [horn3], r26), the dial
+                            REAL but BOUNDED: the move is confounded (ownership co-varies), the horn is forceable
+                            (borrowed-slot/take_mut → horn1 UB; Pin / thread::scope un-repackageable), so the horn
+                            is a design choice WITHIN A STRUCTURAL ENVELOPE set by whether soundness DECOUPLES from
+                            the un-compellable closure. The Seam Trilemma is DOMAIN-GENERAL, the cost-basis
                             PER-DOMAIN, and WHICH SEAMS CLOSE depends on the FLOOR-DOMAIN MATCH — GRADED (full /
                             partial / none), set per PRECONDITION not per domain, and not monotonically liftable.
                             Nine method modes:
@@ -734,7 +801,7 @@ The axes are not independent toggles you can set freely — **two trades and a d
   invisible in non-leak code), yet still real — a reminder that "deflatable" and "not an axis" are
   different verdicts (the rejected checker-tractability probe is the latter; leak-freedom the former).
 - The Lean kernel (`../proof/SeamGap.lean`) sees only whether a precondition factors through a
-  Boolean witness — so it certifies *closure* (`spsc`/`branded`/`refined`/`shared`/`typed_nat`/`take`/`drain`/`selfref`/`validity` — and `session_order_safety_closes`, the eighteenth seam, whose *order-safety* component closes like a holding seam (it HOLDS with a horn-3 completion cost the kernel cannot see) — (+ `secret`/`labeled`/`ordered_locks`/`lock_registry`/`linear`, which certify only the trivial typed sub-fact — the two IFC seams break, and three liveness-domain seams break: the static lock-ordering one partially-matches, the runtime registry shows the floor-upgrade is non-monotone, and the must-run-cleanup one is a clean NONE breaking on wrong-structural-logic, affine≠linear)
+  Boolean witness — so it certifies *closure* (`spsc`/`branded`/`refined`/`shared`/`typed_nat`/`take`/`drain`/`selfref`/`validity` — and `session_order_safety_closes`, the eighteenth seam, whose *order-safety* component closes like a holding seam (it HOLDS with a horn-3 completion cost the kernel cannot see), and `restore_ownership_core_closes`, the nineteenth seam, whose *ownership* core closes the same way (it HOLDS with a horn-3 restore cost — the controlled-packaging probe: the same `mem::forget` gap that broke #17 only costs here, but bounded — the horn is forceable in a borrowed-slot/`take_mut` packaging) — (+ `secret`/`labeled`/`ordered_locks`/`lock_registry`/`linear`, which certify only the trivial typed sub-fact — the two IFC seams break, and three liveness-domain seams break: the static lock-ordering one partially-matches, the runtime registry shows the floor-upgrade is non-monotone, and the must-run-cleanup one is a clean NONE breaking on wrong-structural-logic, affine≠linear)
   all close, like SPSC) but is blind to *which axis a closing seam spends* — or whether that "axis" is
   even separable (the self-ref cell closes in the kernel exactly like the rest; its inseparability is
   pure modeling-dictionary). Every column past

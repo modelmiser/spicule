@@ -42,7 +42,15 @@ it shows the floor matches a *composite* precondition **component-wise** — pro
 affine typestate (sound, no `root`-hole), while **completion** is a horn-3 *concentration* cost — and the
 *same* `mem::forget` linearity gap that **broke** #17's horn 1 only **costs** here, because completion is one
 component beside a sound safety core, not the whole promise: *which horn a danger threatens is set by how the
-rule packages it.*
+rule packages it.* And a nineteenth — a *value-owning scope-restore guard* — turned that observation into a
+*controlled* experiment (carry #17's identical danger in #18's structure) and held with a cost too
+(SEAM-COSTS [horn 3]), confirming the dial is **real** but **bounding** it: the move is *confounded*
+(value-ownership co-varies with packaging), and the horn is *forceable* (the same danger in a
+borrowed-slot/`take_mut` packaging forces horn-1 UB; `Pin` and `thread::scope` exhibit un-repackageable
+horns), so the dial moves the horn only **within a structural envelope** set by whether soundness can be
+*decoupled* from the un-compellable closure (owned ⇒ costs; borrowed-across-unwind ⇒ forces) — and the dial
+itself restages the 2015 leakpocalypse (`JoinGuard` horn-1 / `scopeguard` horn-3, RFC 1066), so the
+contribution is the *method* and *locating the fence*, not a new mode.
 
 ## The headline result
 
@@ -560,11 +568,34 @@ The adversarial process earned its keep eighteen times:
     abandonment); "usable" holds only for *infallible straight-line* protocols; and the split is documented
     **folklore** (Jespersen–Munksgaard–Larsen 2015; RFC 1066; ECOOP 2022 "Stay Safe Under Panic") — the
     contribution is *locating* it on the lattice, not discovering it.
+18. **Value-owning scope-restore guard (the controlled-packaging probe — the dial is real but BOUNDED):** a
+    `Restore<T, F: FnOnce(T)>` guard (the real `scopeguard::guard(value, f)` + `into_inner` — the value-owning
+    shape #17's `MustRun` *declined*), built to turn the session finding ("which horn a danger threatens is set
+    by how the rule packages it") from an **observation** across two primitives into a *deliberate* experiment:
+    it carries #17's **identical** un-compellable-`Drop` danger (`mem::forget` skips the restore) wrapped in
+    #18's structure (a sound affine-ownership core beside which the restore is a side-obligation). The panel
+    ruled **SEAM-COSTS [horn 3]** (TRADEOFF, **survived 1/1**, r26) — the dial is **real**: the *same*
+    `mem::forget` gap that **broke** #17's horn 1 only **costs** horn 3 here (an undischargeable "don't forget
+    the guard" obligation; the restore strands a logical invariant, never UB, because memory safety never
+    rested on the closure). Three attackers conceded the ownership core sound (no safe double-free/alias/
+    double-consume; trivially decidable). But two ruled BREAKS, folded into recorded costs, **bounding the
+    thesis** (all accepted): (a) the move is **confounded, not single-variable** — #19 also adds the
+    value-ownership core #17 lacked, so the value-ownership model co-varies (a better-controlled probe than the
+    incidental #17/#18 pair, not a clean manipulation); (b) the thesis is **bounded, not universal** — the horn
+    is *forceable*: the same skippable-`Drop` danger in a **borrowed-slot / `take_mut`** packaging forces
+    **horn-1 UB** (the #9 `take` danger), and `Pin`'s drop guarantee + the `thread::scope` restructure exhibit
+    *un-repackageable* horns, so *which* horn depends on **where safety rests** — partly danger-intrinsic; (c)
+    **not novel, no new mode** — `JoinGuard` broke horn 1 and `scopeguard` costs horn 3 already in 2015 (RFC
+    1066, the leakpocalypse); the contribution is the *method* and *locating the dial*. The refined finding:
+    **the packaging dial moves the horn only within a structural envelope set by whether soundness can be
+    *decoupled* from the un-compellable closure** — owned value ⇒ a side-obligation that *costs*;
+    borrowed-across-unwind / `Pin` / `thread::scope` ⇒ a danger that *forces* horn 1. Phase Q said the horn
+    moves; Phase R says it moves *within a fence*, and names the fence.
 
 ## Artifacts
 
-- Specs (attacked as text): `SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat,take,drain,selfref,validity,secret,labeled,ordered_locks,lock_registry,linear,session}.md`
-- Cold verdicts: `REPORT_SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat,take,drain,selfref,validity,secret,labeled,ordered_locks,lock_registry,linear,session}.md` (+ raw transcripts in `runs_seam/`)
+- Specs (attacked as text): `SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat,take,drain,selfref,validity,secret,labeled,ordered_locks,lock_registry,linear,session,restore}.md`
+- Cold verdicts: `REPORT_SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat,take,drain,selfref,validity,secret,labeled,ordered_locks,lock_registry,linear,session,restore}.md` (+ raw transcripts in `runs_seam/`)
 - Real Rust (rustc-checked, `#![no_std]`): `../seam/` — `src/lib.rs` (SPSC), `src/mmio.rs`,
   `src/intrusive.rs`, `src/slab.rs`, `src/branded.rs`, `src/refined.rs`, `src/shared.rs` (the lone
   `alloc` user), `src/typed_nat.rs` (eighth-axis probe 1 — sound, no new axis), `src/take.rs`
@@ -578,10 +609,14 @@ The adversarial process earned its keep eighteen times:
   breadth-wise *linearity* probe — `core`-only; *breaks*, a clean **none** grade and a new
   *wrong-structural-logic* mode — affine vs linear), `src/session.rs` (the *composite-precondition* probe —
   `core`-only, no `unsafe`; *holds with a cost* — SEAM-COSTS [horn 3]: order-safety closes, completion costs;
-  the same `mem::forget` gap that broke #17's horn 1 only costs here); consumer code is
+  the same `mem::forget` gap that broke #17's horn 1 only costs here), `src/restore.rs` (the
+  *controlled-packaging* probe — `core`-only, no `unsafe`; *holds with a cost* — SEAM-COSTS [horn 3]: a
+  value-owning scope-restore guard carrying #17's identical danger in #18's structure; the dial is real but
+  **bounded** — the move is confounded, the horn is forceable in a borrowed-slot/`take_mut` packaging, and
+  it restages the 2015 leakpocalypse); consumer code is
   `#![forbid(unsafe_code)]`; laundering paths are `compile_fail`
-  doctests (65 `tests/` integration tests + 33 doctests = 98 total in the default `no_std` build; with
-  `--features lockdep` the runtime registry adds its tests for **105 total**).
+  doctests (72 `tests/` integration tests + 37 doctests = 109 total in the default `no_std` build; with
+  `--features lockdep` the runtime registry adds its tests for **116 total**).
 - Seam-width instrument: `SEAM_WIDTH.md`; full face lattice: `REALIZABILITY.md`
 - Mechanization: `../proof/SeamGap.lean` — `seam_closes_iff_factors` + the
   `spsc`/`intrusive`/`slab`/`branded`/`refined`/`shared`/`typed_nat`/`take`/`drain`/`selfref`/`validity` instances,
@@ -589,7 +624,10 @@ The adversarial process earned its keep eighteen times:
   `ordered_locks_typed_discipline_factors`, `lock_registry_typed_discipline_factors`, and
   `linear_typed_discipline_factors` (the two IFC seams' + the three liveness seams' trivial sub-facts —
   all five break), plus `session_order_safety_closes` (the eighteenth seam *holds* with a horn-3 cost — its
-  order-safety component closes like a closing seam; the completion cost is modeling-dictionary) (propext-only).
+  order-safety component closes like a closing seam; the completion cost is modeling-dictionary) and
+  `restore_ownership_core_closes` (the nineteenth seam *holds* with a horn-3 cost — its affine-ownership core
+  closes; the restore cost is modeling-dictionary, the same #17 gap that only *costs* once soundness is
+  decoupled from the closure) (propext-only).
 
 ## The one-sentence upgrade to the trilemma
 
@@ -640,4 +678,7 @@ safety) / partial-to-none (liveness, by precondition) / none (information flow) 
 freely lifted (upgrading the floor trades one gap for a finer one and spends the closed cost-basis), the
 floor can fail a precondition not only by domain but by *structural logic* (affine vs linear), and a single
 *composite* precondition can be matched *component-wise* — one horn closing while another costs, with which
-horn a danger threatens set by how the re-import rule packages it.**
+horn a danger threatens set by how the re-import rule packages it — yet that packaging dial is itself
+*bounded*: it moves the horn only within a structural envelope set by whether soundness can be *decoupled*
+from the danger (owned ⇒ the danger costs; borrowed-across-unwind / address-pinned / borrow-scoped ⇒ it
+forces a fixed horn), so "which horn" is a design choice **within** a danger-intrinsic fence, not freely.**
