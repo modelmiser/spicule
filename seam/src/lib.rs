@@ -426,12 +426,21 @@ pub mod priority;
 /// vends only trusted builders ([`projected::relay`], [`projected::relay4`]) that thread one strictly-increasing
 /// `Nat` per edge. Two mechanisms compound: (1) **access** — no public `worker()`, so the #26 exploit is
 /// uncompilable; (2) **structure** — a monotone-priority chain cannot close into a ring (the closing edge needs a
-/// decreasing `Lt` step, no instance). So deadlock-freedom HOLDS by construction. HYPOTHESIS
-/// (gauntlet-adjudicated): SEAM-COSTS [horn 3] — deadlock-freedom concentrated entirely in the trusted
-/// constructor (the mini-projection), at the trilemma's *expressiveness* cost: only acyclic topologies are
-/// expressible (each needs a foundation-authored builder); genuinely-deadlock-free *cyclic* protocols are
-/// categorically excluded. Confirms the #24–26 arc: global progress's only sound home is a trusted whole-program
-/// constructor. Lean `projected_dlf_closes` (a `..._closes`, the first since #25). See `projected`.
+/// decreasing `Lt` step, no instance). So the danger is unconstructible. The cold panel (r34) ruled **SEAM-COSTS
+/// [horn 3] — SOUND** (every attacker conceded Horn 1: the #26 ring is unconstructible) **but FAILED the §6
+/// deliverable** — the REJECTION mode's **4th firing** (after `typed_nat` #8, `delegation` #24, `multiparty` #25;
+/// #26 was a break). My §4 overclaimed "deadlock-freedom by construction" + "the consumer carries nothing
+/// global." The genuine price: the builder proves a deadlock-free schedule *exists* (a static `Nat` witness), but
+/// affine Rust **never forces the runtime to follow it**, so a **progress residue** — *run-all, in-order,
+/// no-drop* — stays on the untrusted consumer. Honest phrasing: "**schedulability** by construction, given all
+/// roles execute." Concentration is **partial**: the constructor carries the *topology* obligation (no cycle —
+/// the genuine #26 fix); the *completion/execution* obligation never left the consumer (the #17/#18/#23 residue —
+/// Scribble/`mpstthree` are deadlock-free only assuming every participant executes, which I silently imported).
+/// (Secondary: the expressiveness cost was *over*stated — acyclic generality is recoverable via one generic
+/// combinator, as `mpstthree` proves.) The refined finding: the **progress coordinate decomposes** —
+/// deadlock-freedom/topology (a trusted constructor can carry) vs completion/execution (the consumer always
+/// carries). Sound, so the broken-seam tally STAYS 8; N stays 9; Lean `projected_schedulability_closes` (a
+/// `..._closes`, the first since #25). See `projected`.
 pub mod projected;
 
 use core::cell::UnsafeCell;

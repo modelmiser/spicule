@@ -28,24 +28,49 @@
 //! use seam_spsc::projected::worker; // ERROR: function `worker` is private — no public per-role constructor
 //! ```
 //!
-//! ### The trusted builders mint deadlock-free assemblies that run to completion — see `tests/projected_use.rs`.
+//! ### The trusted builders mint schedulable assemblies that run to completion — see `tests/projected_use.rs`.
 //!
-//! ## HYPOTHESIS (pre-gauntlet — the §6 deliverable is what the cold panel adjudicates)
+//! ## The cold panel's verdict (REPORT_SEAM_SPEC_projected, r34): SEAM-COSTS [horn 3] — SOUND, the salvage WORKS,
+//! ## but the gauntlet FAILED the §6 deliverable (the REJECTION mode, 4th firing): "concentrated entirely" and
+//! ## "deadlock-freedom by construction" overclaimed — a *progress residue* stays on the untrusted consumer.
 //!
-//! The salvage should **HOLD**: sealing `worker()` makes the #26 deadlocking ring **unconstructible** from safe
-//! code, and the trusted monotone-priority builders mint deadlock-free assemblies by construction. Expected
-//! verdict: **SEAM-COSTS [horn 3]** — deadlock-freedom is **concentrated entirely in the trusted constructor**
-//! (the mini-projection #26's break identified as the real carrier), not in the per-channel `Lt` discipline. The
-//! honest **cost** (the trilemma biting on its *expressiveness* corner, pre-conceded — not a new overclaim):
-//! only **acyclic** topologies (pipelines, trees) are expressible, each needing a foundation-authored builder
-//! (or a generic acyclic builder); genuinely-deadlock-free **cyclic** protocols — which exist, with clever
-//! priority assignments (Kobayashi) — are **categorically excluded**. So the salvage trades *generality* for
-//! *soundness-by-construction*. This **confirms** the #24–26 progress arc concretely: global progress's only
-//! sound home in the type system is a **trusted whole-program constructor**; the bare per-channel discipline
-//! (#26) carries nothing global. Likely gauntlet pushback (pre-acknowledged): "this is the *absence* of the
-//! dangerous feature, not a re-import rule" — to which the honest answer is that that *is* the trilemma's price
-//! for global progress, and the contribution is locating it. Lean `projected_dlf_closes` (a `..._closes` — the
-//! sound deadlock-free-by-construction core closes, the first since #25's order core).
+//! The salvage is **sound** and **resolves the #26 break**: the horn-classifier ruled **SEAM-COSTS [horn 3]**,
+//! every attacker conceding Horn 1 (the #26 deadlocking ring is **unconstructible** — no public `worker()`, no
+//! decreasing `Lt`) and Horn 2 (Θ(depth)). But the **judge ruled FAILED** on the §6 deliverable — the **rejection
+//! mode** (a sound seam whose deliverable is rejected), firing the **fourth time** (after `typed_nat` #8,
+//! `delegation` #24, `multiparty` #25; #26 was a *break*, not a rejection). I accept it.
+//!
+//! **The overclaim (the genuine flaw).** My §4 claimed "**deadlock-freedom by construction**" and that the
+//! "consumer carries nothing global." False in kind. The monotone-priority builder proves a deadlock-free
+//! schedule **exists** (the `Nat`s are a *static* witness), but **affine Rust never forces the runtime to follow
+//! it** — nothing at the type level compels the caller to drive the witnessed schedule. So a **progress residue**
+//! stays on the untrusted consumer: *run-all, in-order, no-drop* (actually drive every minted role, in a
+//! priority-respecting order, without dropping one). The honest phrasing is "**schedulability by construction,
+//! given all roles execute**." Concentration is **partial, not total**: the trusted constructor carries the
+//! **topology** obligation (no cycle — the genuine #26 fix), but the **completion/execution** obligation never
+//! left the consumer — it is the same #17/#18/#23 horn-3 completion gap. The giveaway, from prior art: generated
+//! MPST endpoints (Scribble, `mpstthree`) are deadlock-free **only under the standard assumption that every
+//! participant executes its endpoint** — I silently imported that assumption (calling it the "single-threaded
+//! witness") while claiming the consumer carries nothing; **the execution assumption *is* the leftover global
+//! obligation.**
+//!
+//! **Secondary deflation (the cost was OVERstated, not understated).** My "only acyclic topologies, each needing
+//! a foundation-authored builder" overstates the price: acyclic **generality is recoverable via one generic
+//! trusted combinator** (`mpstthree` proves it) — the expressiveness attacks *remove* cost, not add it. The
+//! vacuity charge (excluding cyclic topologies is feature-removal, not re-import) is real but is the design's
+//! **pre-conceded** expressiveness corner, not a soundness defect.
+//!
+//! **The refined finding (what the salvage actually teaches).** The **progress coordinate decomposes** into two
+//! sub-obligations: **deadlock-freedom / topology** (no cyclic wait — which a trusted whole-program constructor
+//! *can* carry, by construction, resolving #26) and **completion / execution** (run-all, in-order, no-drop —
+//! which the consumer *always* carries, the #17/#18/#23 residue, because affine Rust witnesses a schedule but
+//! never forces it). I conflated the two. So the salvage **confirms** the #24–26 arc with a sharper split: the
+//! constructor carries progress's *topology* half; the *completion* half never left the consumer. The seam is
+//! sound, so the **FAILED broken-seam tally STAYS 8** (a deliverable rejection, not a soundness break — like
+//! `typed_nat`/`delegation`/`multiparty`); **N stays 9** (rejection's 4th firing); 27 primitives; liveness stays
+//! the third domain. Lean `projected_schedulability_closes` (a `..._closes` — the sound *schedulability*-by-
+//! construction core closes; the first since #25). Prior-art deflation confirmed (Scribble, `mpstthree`,
+//! deadlock-free-by-construction-of-generated-code) — and, as ever, its own sources sharpened the correction.
 
 use crate::binary_session::{session, Chan, End, Rx, Tx};
 use crate::typed_nat::{Lt, N0, N1, N2};

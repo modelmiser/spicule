@@ -894,36 +894,47 @@ theorem priority_typed_discipline_factors :
   rw [seam_closes_iff_factors]
   exact ⟨id, fun _ => rfl⟩
 
-/-- Projected session (deadlock-freedom by construction) shape — the **#26 salvage**, and the seam that CLOSES
-    where `priority` #26 broke. Read `Pr`/`Wt` by analogy: the precondition is *deadlock-freedom of the assembly*
-    and the witness is a trusted, edge-consistent, monotone-priority builder over #23's edges and #8's `Lt`
-    (`Pproj` is definitionally `V`). #26 broke because its per-role constructor `role()` was **public**, so a
-    caller wired locally-valid roles into a deadlocking ring. This seam **seals** the per-role constructor
-    (`worker()` is module-private) and vends only trusted builders (`relay`, `relay4`) that thread strictly-
-    increasing priorities. Two mechanisms make deadlock-freedom hold by construction: (1) access — the #26
-    exploit is uncompilable (no public `worker()`); (2) structure — a monotone chain cannot close into a ring (the
-    closing edge needs a decreasing `Lt` step, no instance). So the sound deadlock-free core CLOSES.
+/-- Projected session (schedulability by construction) shape — the **#26 salvage**, SOUND, and the seam that
+    CLOSES where `priority` #26 broke. Read `Pr`/`Wt` by analogy: the precondition is *schedulability of the
+    assembly* (a terminating schedule EXISTS) and the witness is a trusted, edge-consistent, monotone-priority
+    builder over #23's edges and #8's `Lt` (`Pproj` is definitionally `V`). #26 broke because its per-role
+    constructor `role()` was **public**, so a caller wired locally-valid roles into a deadlocking ring. This seam
+    **seals** the per-role constructor (`worker()` is module-private) and vends only trusted builders (`relay`,
+    `relay4`) that thread strictly-increasing priorities. Two mechanisms make the danger unconstructible: (1)
+    access — the #26 exploit is uncompilable (no public `worker()`); (2) structure — a monotone chain cannot close
+    into a ring (the closing edge needs a decreasing `Lt` step, no instance). So the sound schedulability core
+    CLOSES — the #26 break is genuinely resolved.
 
-    The cold panel (REPORT_SEAM_SPEC_projected, r34) ruled [VERDICT — to be filled on adjudication]. The seam
-    HOLDS its soundness: the worst case is a memory-safe assembly that runs to completion; the danger (#26's
-    deadlocking ring) is unconstructible. Deadlock-freedom is concentrated entirely in the trusted constructor
-    (the mini-projection #26's break named) — a horn-3 cost — at the trilemma's expressiveness corner: only
-    acyclic topologies are expressible, each needing a foundation-authored builder; genuinely-deadlock-free cyclic
-    protocols are categorically excluded. This confirms the #24–26 arc: global progress's only sound home is a
-    trusted whole-program constructor; the bare per-channel discipline (#26) carries nothing global. No new domain
-    (liveness), coordinate (progress, from #24), or mode (N stays 9). Like every column past concentration, the
-    horn-3 cost (the constructor as TCB) is modeling-dictionary; the kernel sees only that the trusted-builder
-    witness suffices. -/
+    The cold panel (REPORT_SEAM_SPEC_projected, r34): the horn-classifier ruled **SEAM-COSTS [horn 3]** (SOUND —
+    horn 1 conceded: the ring is unconstructible, no role inputs, no decreasing `Lt`; horn 2 Θ(depth)), but the
+    JUDGE ruled **FAILED on the §6 DELIVERABLE** — the **rejection mode, 4th firing** (after `typed_nat` #8,
+    `delegation` #24, `multiparty` #25; #26 was a break). My §4 overclaimed: "deadlock-freedom by construction"
+    and "the consumer carries nothing global." The genuine price (attacker-soundness): the monotone-priority
+    builder proves a deadlock-free schedule *exists*, but affine Rust **never forces the runtime to follow it**,
+    so a **progress residue** stays on the untrusted caller — *run-all, in-order, no-drop*. So
+    "deadlock-freedom by construction" downgrades to "**schedulability by construction, given all roles
+    execute**"; concentration is **partial**: the constructor carries the **topology** obligation (no cycle — the
+    #26 fix), but the **completion/execution** obligation never left the consumer (the #17/#18/#23 horn-3
+    completion gap). The giveaway: Scribble/`mpstthree` endpoints are deadlock-free *only* under the assumption
+    every participant executes its endpoint — I imported that ("single-threaded witness") while claiming the
+    consumer carries nothing; the execution assumption IS the leftover global obligation. (Secondary deflation:
+    the expressiveness cost was *overstated* — acyclic generality is recoverable via one generic trusted
+    combinator, as `mpstthree` proves.) The refined finding: the **progress coordinate decomposes** —
+    *deadlock-freedom/topology* (the trusted constructor can carry) vs *completion/execution* (the consumer always
+    carries). Sound, so the broken-seam tally STAYS 8; N stays 9 (rejection mode). Like every column past
+    concentration, the cost is modeling-dictionary; the kernel sees only that the trusted-builder witness
+    suffices for schedulability. -/
 def Pproj (p : Prog) : Bool := V p
 
-/-- The sound core CLOSES (SEAM-COSTS [horn 3]; the seam that closes where #26 broke): the deadlock-free-by-
+/-- The sound core CLOSES (SEAM-COSTS [horn 3]; the seam that closes where #26 broke): the *schedulability*-by-
     construction core closes via the sealed per-role constructor + the trusted monotone-priority builders — the
-    #26 exploit is uncompilable and a monotone chain cannot close into a ring. The uncarried component — that
-    deadlock-freedom is *concentrated in the trusted constructor* (a mini-projection in the TCB) and costs
-    *expressiveness* (acyclic topologies only) — lives in the prose, invisible to the kernel. The first
-    `..._closes` since #25, and the resolution of the #26 break: the per-channel discipline carries nothing
-    global, but a trusted whole-program constructor does. -/
-theorem projected_dlf_closes :
+    #26 exploit is uncompilable and a monotone chain cannot close into a ring, so a terminating schedule provably
+    EXISTS. The uncarried components — that the consumer must still *follow* that schedule (run-all/in-order/
+    no-drop: the progress/completion residue affine Rust never forces) and that concentration is therefore
+    *partial*, not total — live in the prose, invisible to the kernel. The first `..._closes` since #25; SOUND
+    like `typed_nat`/`delegation`/`multiparty` (their deliverables rejected too). It resolves the #26 break's
+    topology half while confirming the completion half never left the consumer. -/
+theorem projected_schedulability_closes :
     ∃ d : Prog → Bool, SoundW Pproj d ∧ UsableW Pproj d ∧ ConcW V d := by
   rw [seam_closes_iff_factors]
   exact ⟨id, fun _ => rfl⟩

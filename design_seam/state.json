@@ -2094,10 +2094,72 @@
       "outcome": "FAILED",
       "cost_usd": 3.1465,
       "timestamp": "2026-06-30T08:56:24+00:00"
+    },
+    {
+      "round": 34,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_projected.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 projected sessions (deadlock-freedom by construction) (re-import rule under attack)\n\nThis is a **design proposal** for a twenty-seventh *seam* \u2014 the **salvage of the twenty-sixth** (`priority`),\nwhich broke. `REPORT_SEAM_SPEC_priority.md` (r33) ruled SEAM-BREAKS [horn 1]: the per-role constructor\n`role::<Pi, Po>` was **public**, so a caller wired three locally-valid `role::<N1, N2>` relays into a source-less\nring that compiled (no `unsafe`) and deadlocked. The verdict named the real carrier of deadlock-freedom: the\n**trusted, edge-consistent constructor** (`relay()` was a \"mini-projection\"), not the per-channel `Lt` discipline.\nThis seam makes that explicit by **sealing** the per-role constructor and vending only trusted builders.\n\nYou are attacking a **text specification** backed by real `rustc`-checked code (`seam/src/projected.rs`, default\n`no_std` build \u2014 `core` + `alloc`, **no `unsafe`**, built on `binary_session` #23 and `typed_nat` #8). 154 tests\npass (default).\n\n---\n\n## 0. The floor (stipulated, not under attack)\n\nRust as shipped: affine ownership; **module privacy** (a non-`pub` `fn` / private fields are unreachable from\nother modules \u2014 this is the load-beari",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Acyclic generality is recoverable via one trusted macro; shipping only relay/relay4 is feature-removal, not re-import.",
+          "strongest_point": "The cited prior art (mpstthree) is a general macro projector for arbitrary arity, proving the usable acyclic generality is recoverable within the same soundness envelope \u2014 so two hardcoded builders is unfinished implementation misattributed to the trilemma."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Seal genuinely blocks the #26 ring in-scope; only a Horn-3 overclaim: progress obligation isn't fully concentrated.",
+          "strongest_point": "Affine Rust never forces the priority-respecting schedule, so 'deadlock-freedom by construction' is really 'schedulability by construction'\u2014a run-all/in-order/no-drop progress residue stays on the untrusted caller, contradicting 'consumer carries nothing global.'"
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Fixed relay/relay4 builders + Peano Lt are \u0398(depth); the only hard pass (general projection) is deliberately excluded, not solved.",
+          "strongest_point": "There is no undecidable/super-polynomial pass in the artifact because the sole algorithmically-hard pass \u2014 projectability/topological-order witness over an arbitrary caller-supplied global type \u2014 is exactly the generality the proposal amputates."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Generic acyclic builder (edge-consistency combinator + Lt) is sound and recovers surrendered expressiveness; conceded cost is an API artifact, not the trilemma.",
+          "strongest_point": "One length-generic edge-consistency combinator soundly admits all acyclic topologies, so the Lt discipline does carry global acyclicity\u2014falsifying both the 'per-topology builder' cost and the 'only a whole-program constructor carries global progress' thesis."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Priority mechanism is Kobayashi/Padovani/PCP, which admit cyclic deadlock-free protocols decidably; 'categorically excluded' over-claims and mislabels a design choice as the trilemma.",
+          "strongest_point": "The proposal's per-edge priority IS Kobayashi/Padovani/Dardha-Gay's technique, whose entire purpose was sound+decidable+cyclic deadlock-freedom via partial orders \u2014 so the 'cyclic categorically excluded / trilemma bites' framing is refuted by the very mechanism it borrows."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "genuine-flaw",
+          "attacker-soundness": "tradeoff",
+          "attacker-implementation": "argued-past",
+          "attacker-expressiveness": "genuine-flaw",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Horn-3 overclaim: 'deadlock-freedom by construction' must read 'schedulability by construction, given all roles execute'; residual progress obligation (run-all, in-order, no-drop) stays on the untrusted caller, so concentration is partial not total.",
+          "Cyclic recovery in this host (const Lt, no SMT) is genuinely uncertain \u2014 a whole-network partial-order check may be non-structural; this is a real open cost separate from the framing flaw."
+        ],
+        "headline": "Seal is sound, but the cost/vacuity framing \u2014 the salvage deliverable \u2014 contains genuine flaws.",
+        "rationale": "All concede the #26 ring is unconstructible (Horn 1 holds). But acyclic generality is recoverable via one trusted combinator (mpstthree proves it), and 'cyclic categorically excluded/trilemma bites' is refuted by the borrowed Kobayashi/PCP priority lineage. Cost misattributed; thesis overstated; revise."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.7331,
+      "timestamp": "2026-06-30T11:15:35+00:00"
     }
   ],
   "settled": [],
   "incompatibilities": [],
   "blind_spot_flags": [],
-  "total_cost_usd": 69.1393
+  "total_cost_usd": 71.8724
 }
