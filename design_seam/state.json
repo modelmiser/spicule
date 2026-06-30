@@ -1969,10 +1969,72 @@
       "outcome": "FAILED",
       "cost_usd": 2.8756,
       "timestamp": "2026-06-30T07:01:29+00:00"
+    },
+    {
+      "round": 32,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_multiparty.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 multiparty session (n-party progress) (re-import rule under attack)\n\nThis is a **design proposal** for a twenty-fifth *seam*. It is **NOT a fourth-domain bid** \u2014 it stays inside the\n**third confirmed domain (liveness)** and answers the question the twenty-third seam left open and the\ntwenty-fourth named. `SEAM_SPEC_binary_session.md`'s deflation #1 conceded it outright: \"*two interleaved\n`session()` calls type-check a mutual-wait deadlock; **global deadlock-freedom is out of reach of binary session\ntypes \u2014 it needs multiparty/Kobayashi typing**.*\" `SEAM_SPEC_delegation.md` then *named the coordinate* \u2014\n**progress / deadlock-freedom** \u2014 as distinct from completion (linearity) and leak-freedom. This seam builds the\nmultiparty thing and asks **where on the trilemma the progress coordinate lives at n-party scale**.\n\nYou are attacking a **text specification** backed by real `rustc`-checked code (`seam/src/multiparty.rs`, default\n`no_std` build \u2014 `core` + `alloc`, **no `unsafe`**, built *on* `binary_session`). 148 tests pass (default).\n\n---\n\n## 0. The floor (stipulated, not under attack)\n\nRust as shipped: affine ownership (handles `!Copy`/`!Clone`, consumed by each op), nom",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Witness is a single-shot, fixed-N=3, single-threaded toy; concentration only looks free there \u2014 but proposal pre-registers this and claims no usability.",
+          "strongest_point": "Horn 3's 'concentration CONFIRMED' is shown only on the one protocol shape (one message, no loop, no async) where affine consume-self typestate's threading cost is hidden; real looping/dynamic-N/async relays make it intolerable, which actually reinforces the proposal's whole-protocol conclusion rather than refuting it."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Only disclaimed property (global progress) fails; claimed invariants enforced, no UB, checking decidable.",
+          "strongest_point": "The Kobayashi line nearly refutes 'no per-role discipline rejects the ring,' but its global level-consistency inference falls outside the proposal's stipulated structural floor, so the claim's qualifier holds."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Deliverable's 'global progress \u21d2 generative whole-protocol' location is false; Kobayashi gives a non-generative per-process discipline the proposal cites yet ignores.",
+          "strongest_point": "Kobayashi deadlock-freedom typing \u2014 cited by the proposal \u2014 is a per-role/per-process discipline with no global type that rejects the ring, refuting the \u00a76 claim that global progress can only live in a generative whole-protocol projection; the real cost it hides is that the corresponding cyclic-wait certification pass is NP-hard-to-undecidable (CFSM reachability) for interleaved sessions."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Central thesis (global progress concentratable only whole-protocol) refuted by cited Kobayashi/priority-based per-role deadlock-freedom typing, which rejects ring without any global type.",
+          "strongest_point": "Per-channel priority/obligation disciplines (Kobayashi, Padovani, Dardha\u2013Gay \u2014 one of them the proposal's own citation) reject the source-less ring while accepting the relay using only local annotations, so the 'global progress lives only whole-protocol' dichotomy is false."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Kobayashi/Dardha-Gay priority typing rejects cyclic deadlock per-channel with no global type, refuting the whole-protocol-only claim",
+          "strongest_point": "The proposal's headline \u2014 global progress can only be concentrated whole-protocol in a global-type projection \u2014 is refuted by Kobayashi/Padovani/Dardha-Gay priority-annotated binary session types, which reject the source-less ring with no global type at all."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "argued-past",
+          "attacker-implementation": "genuine-flaw",
+          "attacker-expressiveness": "genuine-flaw",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Horn 3 'concentration CONFIRMED' is demonstrated only on the degenerate single-shot, fixed-N=3, single-threaded witness; recursion/dynamic-N/async erode it.",
+          "The surviving weaker thesis: global progress is not concentrable per-call and needs strictly more than the per-edge HasDual floor \u2014 but NOT necessarily a generative global-type projection."
+        ],
+        "headline": "Deliverable's 'global progress lives only in a generative whole-protocol projection' claim is false.",
+        "rationale": "Soundness holds (no UB; SEAM-COSTS horn 3). But three seats refute the scored locating claim: priority/obligation typing (Kobayashi, Padovani, Dardha\u2013Gay \u2014 the proposal's own miscited source) rejects the ring per-channel, non-generatively, with no global type. Revise the taxonomy."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 1.662,
+      "timestamp": "2026-06-30T07:43:16+00:00"
     }
   ],
   "settled": [],
   "incompatibilities": [],
   "blind_spot_flags": [],
-  "total_cost_usd": 64.3308
+  "total_cost_usd": 65.9928
 }

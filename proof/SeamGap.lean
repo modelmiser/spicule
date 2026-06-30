@@ -819,25 +819,36 @@ theorem delegation_handoff_core_closes :
     coordinate #24 named, now at n-party scale. The witness `ring()` — three perfectly-dual binary edges wired
     into a source-less cycle — *type-checks a system with no terminating schedule*: every role is `RecvThenSend`,
     so no role can send before it receives and no role can receive before someone sends. The per-edge floor
-    accepts the globally-deadlocked topology because deadlock-freedom is a property of the *whole composition*
-    (here: the existence of a source role), which no per-edge or per-role re-import rule can range over. The
-    recognized resolution concentrates global progress **whole-protocol**, in a trusted projection of a coherent
-    *global type* to per-role *local types* (Honda–Yoshida–Carbone POPL 2008; Coppo–Dezani–Yoshida–Padovani MSCS
-    2016; the `mpstthree` crate, Lagaillardie–Neykova–Yoshida 2020 — deadlock-free *by construction of the
-    generated endpoints*), NOT in a per-call rule. So multiparty sharpens the **concentration leg (horn 3)**: the
-    seam's location is property-scoped — local properties concentrate per-call (and CLOSE, as here); global
-    progress concentrates only whole-protocol (a *generative* seam). No new domain (liveness), coordinate
-    (progress, from #24), or mode (N stays 9); memory-safe throughout, so the FAILED tally is unchanged. Like
-    every column past concentration, the horn-3 cost and the whole-protocol relocation are modeling-dictionary;
-    the kernel sees only that the role-local order + linearity witness suffices. -/
+    accepts the globally-deadlocked topology because deadlock-freedom is a property of the *whole composition*,
+    which the per-edge floor cannot range over.
+
+    The cold panel (REPORT_SEAM_SPEC_multiparty, r32) ruled the gauntlet **FAILED — on the §6 DELIVERABLE, not on
+    soundness** (the horn-classifier still read the *mechanism* as SEAM-COSTS [horn 3]). This is the method's
+    **REJECTION mode**, firing the **third time** (after `typed_nat` #8 and `delegation` #24, both sound +
+    rejected): my pre-registered claim — "global progress can be concentrated *only* whole-protocol, in a
+    *generative* projection of a coherent global type; no per-role discipline can reject the ring" — was a **false
+    dichotomy**, refuted (again) from my own cited lineage. Three seats named the middle rung I omitted:
+    **per-channel priority/obligation typing** (Kobayashi linear-π; Padovani; Dardha–Gay FoSSaCS 2018;
+    Kokke–Dardha) rejects the source-less ring *compositionally, with no global type*, via `prio(recv) <
+    prio(send)` chaining to a contradictory `p < p` on the cycle — and I had **mis-filed Kobayashi as *support***
+    for the whole-protocol thesis when he is the *counterexample*. The honest taxonomy has **three rungs**: (a)
+    per-edge `HasDual` floor [doesn't carry]; (b) per-channel priority typing + a whole-program acyclicity check
+    [no global type]; (c) generative MPST projection. The surviving weaker truth (credited by the soundness
+    seat): global progress is **not concentrable per-call** and needs strictly more than the per-edge floor — but
+    it is a **whole-program** obligation, not necessarily a *generative* one. No new domain (liveness), coordinate
+    (progress, from #24), or mode (N stays 9); the seam is sound, so the broken-seam tally is unchanged. Like
+    every column past concentration, the horn-3 cost and the three-rung relocation are modeling-dictionary; the
+    kernel sees only that the role-local order + linearity witness suffices. -/
 def Pmulti (p : Prog) : Bool := V p
 
-/-- The sound core CLOSES (SEAM-COSTS [horn 3]): the *role-local order* + *linearity* core closes via affine
-    typestate, exactly as #18/#23 — `relay` and `ring` are built from the identical per-edge floor, and that
-    floor's per-role discipline is sound and decidable. The uncarried component — **global progress /
-    deadlock-freedom** — lives in the prose: it is a property of the whole composition (a source must exist),
-    which the per-edge floor cannot range over (`ring()` type-checks a deadlock), so it can only be concentrated
-    whole-protocol, in a trusted global-type projection. That relocation is invisible to the kernel. -/
+/-- The sound core CLOSES (SEAM-COSTS [horn 3]; the gauntlet FAILED on the *deliverable*, not soundness): the
+    *role-local order* + *linearity* core closes via affine typestate, exactly as #18/#23 — `relay` and `ring`
+    are built from the identical per-edge floor, and that floor's per-role discipline is sound and decidable, like
+    `typed_nat`/`delegation` (sound, deliverable rejected). The uncarried component — **global progress /
+    deadlock-freedom** — lives in the prose: it is a whole-program (not per-call) obligation strictly above the
+    per-edge floor, dischargeable by per-channel priority typing (no global type) *or* a generative global-type
+    projection — a three-rung taxonomy, not the two-rung dichotomy I staked. That relocation is invisible to the
+    kernel; the rejection corrected my collapse of the priority-typing rung into the generative one. -/
 theorem multiparty_role_order_core_closes :
     ∃ d : Prog → Bool, SoundW Pmulti d ∧ UsableW Pmulti d ∧ ConcW V d := by
   rw [seam_closes_iff_factors]

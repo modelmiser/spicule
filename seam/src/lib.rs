@@ -379,14 +379,20 @@ pub mod delegation;
 /// mints a coherent `A→B→C` (a source role exists → it completes) and [`multiparty::ring`] mints an incoherent
 /// `A→B→C→A` (every role recv-first → no source → no terminating schedule). Both come from the identical
 /// per-edge floor; only the global topology differs, and the floor cannot see it: **`ring()` type-checks a
-/// globally-deadlocked system**. HYPOTHESIS (gauntlet-adjudicated): no new domain (liveness), coordinate
-/// (progress, from #24), or mode (N=9); the increment is on the **concentration leg (horn 3)** — a *global*
-/// property like deadlock-freedom cannot be concentrated in a per-call re-import rule, only **whole-protocol**,
-/// in a trusted projection of a coherent *global type* to per-role *local types* (Honda–Yoshida–Carbone POPL
-/// 2008; Coppo–Dezani–Yoshida–Padovani MSCS 2016; the `mpstthree` crate, Lagaillardie–Neykova–Yoshida
-/// COORDINATION 2020 — deadlock-free *by construction of the generated endpoints*). Per-role order + linearity
-/// CLOSE as in #23; global progress is a floor-mismatch for the re-import SHAPE, memory-safe throughout (a
-/// deadlock is not UB; leakpocalypse) so not a soundness break. Expected: SEAM-COSTS [horn 3]. See `multiparty`.
+/// globally-deadlocked system**. The cold panel (r32) ruled it **SOUND (SEAM-COSTS [horn 3]) but FAILED the §6
+/// deliverable** — the REJECTION mode's **3rd firing** (after `typed_nat` #8 and `delegation` #24), and again
+/// **refuted from my own cited lineage**. My claim — global progress lives *only* whole-protocol in a
+/// *generative* global-type projection, no per-role discipline able to reject the ring — was a **false
+/// dichotomy**: I omitted the middle rung, **per-channel priority/obligation typing** (Kobayashi; Padovani;
+/// Dardha–Gay FoSSaCS 2018; Kokke–Dardha), which rejects the source-less ring *compositionally, with no global
+/// type*, via `prio(recv) < prio(send)` → `p < p` on the cycle. I even **mis-filed Kobayashi as *support* when
+/// he is the *counterexample*.** The true taxonomy has **three rungs**: (a) per-edge `HasDual` floor [doesn't
+/// carry]; (b) per-channel priority typing + whole-program acyclicity [no global type]; (c) generative MPST
+/// projection. What survives: global progress is **not concentrable per-call** and needs strictly more than the
+/// per-edge floor — but it is a **whole-program** obligation, not necessarily a generative one. Per-role order +
+/// linearity CLOSE as in #23 (Lean `multiparty_role_order_core_closes`). Sound, so the broken-seam tally **stays
+/// 7**; N stays 9 (rejection, 3rd firing); liveness stays the third domain; progress its third coordinate (lock
+/// seams #15/#16 = lock face, delegation = session face, multiparty = global-topology face). See `multiparty`.
 pub mod multiparty;
 
 use core::cell::UnsafeCell;

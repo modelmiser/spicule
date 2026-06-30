@@ -56,21 +56,59 @@
 //! assert!(a.recv().is_err());
 //! ```
 //!
-//! ## HYPOTHESIS (pre-gauntlet — the §6 deliverable is what the cold panel adjudicates)
+//! ## The cold panel's verdict (REPORT_SEAM_SPEC_multiparty, r32): SOUND, but the gauntlet FAILED on the §6
+//! ## DELIVERABLE — the REJECTION mode (3rd, after `typed_nat` #8 and `delegation` #24). My "generative seam is
+//! ## the UNIQUE home of global progress" claim was a **false dichotomy**, refuted (again) from my own citations.
 //!
-//! Multiparty does **not** open a new domain (still liveness) or a new coordinate (progress, named by #24) or a
-//! new mode (N stays 9). Its content is a sharpening of the trilemma's **concentration leg (horn 3)**: a
-//! *global* property like deadlock-freedom **cannot be concentrated in a per-call re-import rule** — it can only
-//! be concentrated **whole-protocol**, in a trusted projection of a coherent *global type* to per-role *local
-//! types* (Honda–Yoshida–Carbone, POPL 2008; Coppo–Dezani–Yoshida–Padovani, MSCS 2016; the `mpstthree` Rust
-//! crate, Lagaillardie–Neykova–Yoshida, COORDINATION 2020 — deadlock-freedom holds *by construction of the
-//! generated endpoints*, not by checking arbitrary compositions). So the seam's **location is property-scoped**:
-//! local properties (order, linearity, the per-role core) concentrate per-call and **CLOSE** as in #23; global
-//! progress concentrates only whole-protocol — a *generative* seam, not a re-import rule. The per-edge floor
-//! demonstrably accepts a deadlocking ring, so global progress is a **floor-mismatch for the re-import SHAPE** —
-//! but memory-safe throughout (a deadlocked session is not UB; leakpocalypse), so this is **not** a soundness
-//! break (the FAILED tally should stay 7). The expected verdict: **SEAM-COSTS [horn 3]** for the per-role core;
-//! global progress is the whole-protocol concentration the floor cannot supply.
+//! The **re-import rule is sound** — the horn-classifier ruled **SEAM-COSTS [horn 3]** (no UB: the worst case is
+//! a memory-safe recv-`Err` hang, not undefined behavior; structural `HasDual` keeps Horn 2 decidable). But the
+//! **judge ruled FAILED** on the in-scope §6 deliverable, and I accept it. This is the method's **rejection
+//! mode** (the seam is sound, like `typed_nat` #8 and `delegation` #24, but its deliverable is rejected), firing
+//! for the **third time** — and, as with #24, **refuted from my own cited lineage**.
+//!
+//! **The defect (a false dichotomy).** I staked the deliverable on global progress living **only**
+//! whole-protocol, in a *generative* projection of a coherent global type — and explicitly asked the panel to
+//! answer "no" to "*could any per-role discipline (no global type) reject `ring`?*" **That is false.** Three
+//! seats converged on the middle rung I omitted: **per-channel priority / obligation typing** — Kobayashi
+//! (linear-π deadlock-freedom via levels/obligations), Padovani, **Dardha–Gay (FoSSaCS 2018, "A New Approach to
+//! Deadlock-Freedom… via priorities")**, Kokke–Dardha — which is **per-channel, compositional, non-generative,
+//! and uses no global type**, yet rejects the source-less ring *exactly* via `prio(recv) < prio(send)` chaining
+//! to a contradictory `p < p` around the cycle, while admitting the relay (acyclic priorities). The `ring`/
+//! `relay` pair is that tradition's own running example. Worse: I **mis-filed Kobayashi in §5 as *supporting*
+//! the whole-protocol thesis when he is the *counterexample*** — collapsing rung (b) into rung (c) to manufacture
+//! the result. The honest taxonomy has **three rungs**, not two:
+//! - **(a) per-edge `HasDual` floor** — does **not** carry global progress (`ring()` type-checks a deadlock).
+//! - **(b) per-channel priority/obligation typing** (Kobayashi; Dardha–Gay) — rejects the ring *compositionally,
+//!   with no global type*, but needs a **whole-program acyclicity check** on the priorities.
+//! - **(c) generative whole-protocol global-type projection** (Honda–Yoshida–Carbone MPST; `mpstthree`) —
+//!   deadlock-free *by construction of the generated endpoints*.
+//!
+//! **What SURVIVES (the weaker, true thesis — credited by the soundness attacker).** Global progress is **not
+//! concentrable per-call** and needs **strictly more than the per-edge `HasDual` floor** — `ring()` proves the
+//! floor accepts a deadlock. But it is carried **whole-program**, which is *not* the same as a generative
+//! global-type projection: rung (b) carries it with no global type at all. So the correct locating claim is
+//! "global progress is a whole-program (not per-call) obligation, above the floor" — **not** "only a generative
+//! seam." I over-reached from the true weaker claim to a false unique-home claim.
+//!
+//! **Recorded tradeoffs (accepted, carried into the prose):**
+//! 1. **Horn-3 "concentration confirmed" rests on a degenerate witness** — single-shot, fixed `N = 3`,
+//!    single-threaded. Recursion / dynamic-`N` / async erode it (the same `Rec`/`Var` and concurrency limits as
+//!    #23/#24). The "deadlock" here is also degenerate: not a concurrent cyclic-wait *hang* but "no source →
+//!    every `recv` is `Err`," a static starvation the single thread observes immediately.
+//! 2. The per-role order + linearity core genuinely **CLOSES** (Lean `multiparty_role_order_core_closes`), like
+//!    #23 — that part of the soundness story is uncontested.
+//!
+//! **The net finding (the probe earned its keep by being instructively WRONG — a third time).** I predicted the
+//! concentration leg had exactly two rungs (floor / generative) and that global progress crowned the generative
+//! one uniquely; the method **refuted the dichotomy with my own miscited source**, restoring the **three-rung**
+//! taxonomy: global progress is a **whole-program obligation strictly above the per-edge floor**, dischargeable
+//! by per-channel priority typing (no global type, rung b) *or* a generative projection (rung c). No new domain
+//! (liveness), no new coordinate (progress, from #24), no new mode (N stays 9 — rejection's 3rd firing); the
+//! seam is sound, so the broken-seam (soundness) tally **stays 7**; 25 primitives. Liveness stays the third
+//! domain; progress stays its third coordinate (the lock seams #15/#16 = its *lock* face, delegation #24 = its
+//! *session* face, multiparty = its *global-topology* face). Prior-art deflation confirmed (Honda–Yoshida–
+//! Carbone 2008; Kobayashi; Dardha–Gay 2018; `mpstthree`) — but, once more, the deflation's own sources are
+//! what refuted the headline.
 //!
 //! The coherent relay completes; the ring type-checks but cannot start — see `tests/multiparty_use.rs`.
 
