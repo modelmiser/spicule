@@ -76,7 +76,16 @@ computation — the op-count is an **unsound** proxy for real time, and the cons
 cost monad** (op-count ≠ cycles is WCET's *founding premise*). It deflates too — to `typed_nat` (#8, which
 does not even scale), an uninstalled `mmio`-shaped axiom (#2), and liveness's partial-match. So **two**
 fourth-domain candidates have now deflated (`crdt` survived, `wcet` FAILED), **neither opening a fourth
-domain** — the three confirmed domains look **special**. FAILED tally now **seven**.
+domain** — the three confirmed domains look **special**. FAILED tally now **seven**. And a twenty-third — a
+*real binary session* (`session::<P>()` vending two dual affine endpoints, both live, over
+`Rc<RefCell<Transport>>`) — turned back **inside** liveness to *deepen* it, removing #18's single-handle
+limitation. It **HELD** (SEAM-COSTS [horn 3], TRADEOFF, r30): #18's component-wise grading **survives** — order
+and *per-session* progress close, completion costs horn 3 (now peer-observable). But the "real binary session"
+framing was **deflated** to "#18 with a duplicated handle and a `RefCell` between the copies," yielding two
+genuine sharpenings of the liveness map: binary duality gives only **per-session** progress (two interleaved
+sessions type-check a mutual-wait deadlock — global deadlock-freedom needs multiparty typing), and the
+**leakpocalypse double-bind** (a peer's `mem::forget` leaks the `Rc`, so the fallible `recv`'s `Err` is
+**non-actionable**) deepens the #17/#18 linearity gap. FAILED tally stays **seven** (this survived).
 
 ## The headline result
 
@@ -684,11 +693,41 @@ The adversarial process earned its keep eighteen times:
     one. **Meta:** two fourth-domain candidates probed (`crdt` deflated + *survived*; `wcet` deflated +
     *FAILED*), **neither opens a fourth domain** — the three confirmed domains (memory safety / information
     flow / liveness) look **special**. N stays **9** modes; the FAILED broken-seam tally rises to **seven**.
+22. **Real binary session (the two-endpoint liveness DEEPENING — HELD):** `session::<P>()` vends two *dual*
+    affine endpoints (`Chan<P>` / `Chan<P::Dual>`), **both live**, sharing the wire through
+    `Rc<RefCell<Transport>>` (the `alloc` + interior mutability the duality costs). **Not** a fourth-domain bid
+    — after both fourth-domain candidates deflated, this stays in the **third confirmed domain (liveness)** and
+    *deepens* it, removing #18's most-cited limitation (one `&mut Transport` could not hold two
+    concurrently-live endpoints at all — `E0499`). The panel ruled **SEAM-COSTS [horn 3], TRADEOFF**
+    (r30) — it **HOLDS**, every attacker granting **no-UB** (the worst case is a starved, memory-safe handle).
+    **#18's component-wise grading SURVIVES:** order **closes** (affine typestate), *per-session* relative
+    progress **closes** (`HasDual` duality), decidability holds (`HasDual` projection Θ(depth), no SMT), and
+    **completion costs horn 3** (the #17/#18 linearity gap — a peer's `mem::forget` starves its dual — now
+    **peer-observable**). But the "real binary session" framing was substantially **deflated**, five corrections
+    accepted: (a) **the sharpest** — relative progress closes only **per session**, because two interleaved
+    `session()` calls **type-check a mutual-wait deadlock** (Kobayashi/Padovani); **global deadlock-freedom is
+    out of reach of binary session types** — it needs multiparty/Kobayashi typing, and the spec scoped out
+    exactly the case where duality's progress claim has teeth; (b) the **single-threaded** witness makes "peer
+    waits forever" *self-abandonment-flavored* (one thread owns both handles) — only the **static**
+    two-live-endpoint limitation is lifted, not `session_types` (2015)'s real two-thread concurrency; (c) the
+    fallible `recv`'s `Err` is **non-actionable** — `mem::forget` **leaks the `Rc`** (skips `Drop`, strong count
+    not decremented), so a starved dual cannot distinguish "not-yet" from "abandoned" (the **leakpocalypse
+    double-bind**: the gap that costs completion *also* denies an actionable abandonment signal — an actionable
+    one, like `mpsc`'s disconnect-`Err`, would need `Drop` to fire); (d) only **straight-line `i32` protocols**
+    — no choice/`offer`, no **delegation** (channel-over-channel, *the* session-type feature), no recursion, so
+    without delegation it is "#18 doubled"; (e) **citation fix** — ECOOP 2022 "Stay Safe Under Panic" is
+    **Lagaillardie–Neykova–Yoshida**. The finding: the seam **HELD** and confirms #18's grading transfers, but
+    the genuinely new content — once "real binary session" deflates to "#18 with a duplicated handle and a
+    `RefCell` between the copies" — is **two sharpenings of the liveness map**: binary duality gives only
+    **per-session** progress, and the leakpocalypse double-bind **deepens** the #17/#18 linearity gap. The probe
+    earned its keep by **refuting its own headline** while confirming the grading. N stays **9** modes; liveness
+    stays the **third** domain (its partial-match now bounded to *per-session*); the FAILED broken-seam tally
+    stays **seven** (this one *survived*).
 
 ## Artifacts
 
-- Specs (attacked as text): `SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat,take,drain,selfref,validity,secret,labeled,ordered_locks,lock_registry,linear,session,restore,reseat,crdt,wcet}.md`
-- Cold verdicts: `REPORT_SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat,take,drain,selfref,validity,secret,labeled,ordered_locks,lock_registry,linear,session,restore,reseat,crdt,wcet}.md` (+ raw transcripts in `runs_seam/`)
+- Specs (attacked as text): `SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat,take,drain,selfref,validity,secret,labeled,ordered_locks,lock_registry,linear,session,restore,reseat,crdt,wcet,binary_session}.md`
+- Cold verdicts: `REPORT_SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat,take,drain,selfref,validity,secret,labeled,ordered_locks,lock_registry,linear,session,restore,reseat,crdt,wcet,binary_session}.md` (+ raw transcripts in `runs_seam/`)
 - Real Rust (rustc-checked, `#![no_std]`): `../seam/` — `src/lib.rs` (SPSC), `src/mmio.rs`,
   `src/intrusive.rs`, `src/slab.rs`, `src/branded.rs`, `src/refined.rs`, `src/shared.rs` (the lone
   `alloc` user), `src/typed_nat.rs` (eighth-axis probe 1 — sound, no new axis), `src/take.rs`
@@ -722,8 +761,8 @@ The adversarial process earned its keep eighteen times:
   time; it is Danielsson's 2008 cost monad and deflates to `typed_nat` #8 + an uninstalled `mmio`-shaped
   axiom + liveness's partial-match — the second fourth-domain candidate that fails to open a fourth domain);
   consumer code is `#![forbid(unsafe_code)]`; laundering paths are `compile_fail`
-  doctests (84 `tests/` integration tests + 49 doctests = 133 total in the default `no_std` build; with
-  `--features lockdep` the runtime registry adds its tests for **140 total**).
+  doctests (87 `tests/` integration tests + 52 doctests = 139 total in the default `no_std` build; with
+  `--features lockdep` the runtime registry adds its tests for **146 total**).
 - Seam-width instrument: `SEAM_WIDTH.md`; full face lattice: `REALIZABILITY.md`
 - Mechanization: `../proof/SeamGap.lean` — `seam_closes_iff_factors` + the
   `spsc`/`intrusive`/`slab`/`branded`/`refined`/`shared`/`typed_nat`/`take`/`drain`/`selfref`/`validity` instances,
@@ -743,7 +782,11 @@ The adversarial process earned its keep eighteen times:
   `restore_ownership_core_closes` (the nineteenth seam *holds* with a horn-3 cost — its affine-ownership core
   closes; the restore cost is modeling-dictionary, the same #17 gap that only *costs* once soundness is
   decoupled from the closure; its forced counterpart `reseat_typed_discipline_factors` *breaks* once the
-  value is borrowed) (propext-only).
+  value is borrowed) and `binary_session_progress_core_closes` (the twenty-third seam *holds* with a horn-3
+  cost — its order + *per-session* relative-progress core closes via affine typestate + the `HasDual`
+  duality; the completion cost is modeling-dictionary, now peer-observable across two real endpoints, and the
+  per-session-only deadlock-freedom and the non-actionable `Err` from the leaked `Rc` live in the prose)
+  (propext-only).
 
 ## The one-sentence upgrade to the trilemma
 

@@ -370,7 +370,7 @@ the second alone. A 0/N adversarial result is only as good as your ability to ru
 "the proposer was just weak," and the cleanest way to do that is to *hand the proposer
 the known-good sub-component and watch the failure move, not disappear.*
 
-## 10. The constructive phase — build and break twenty-two real seams
+## 10. The constructive phase — build and break twenty-three real seams
 
 The trilemma is a map, so the next step was to stop arguing in the abstract and **build**.
 A different harness shape: the negative half used cold instances to *propose* (and they
@@ -666,6 +666,36 @@ worse than MMIO, whose axiom is faithful *and* present), and liveness's partial-
 algebraic law, real-time by an unsound physical-time proxy — and the three confirmed domains (memory / IFC /
 liveness) look increasingly **special**. **N stays 9**; the FAILED broken-seam tally rises to **seven**.
 
+**Back to a confirmed domain — the real binary session, and a headline that refuted itself.** With the
+fourth-domain door looking shut, a *twenty-third* primitive (`binary_session.rs`) went the other way: it
+**deepened** the third confirmed domain (liveness) by removing the eighteenth seam's most-cited limitation. The
+r25 panel's deflation #1 of the session seam was "*not a binary session — a single-handle typestate walk*": one
+`&mut Transport` cannot hold two concurrently-live dual endpoints (`E0499`), so #18's motivating "*a peer waits
+forever*" hazard was inexpressible. This built the real thing — `session::<P>()` vends `(Chan<P>, Chan<P::Dual>)`,
+two affine endpoints *both live* over `Rc<RefCell<Transport>>` (the `alloc` + interior mutability the duality
+costs). The cold panel (r30) ruled **SEAM-COSTS [horn 3], TRADEOFF — it HOLDS**, and #18's component-wise
+grading **survives**: order closes (typestate), *per-session* relative progress closes (the `HasDual` duality
+relation), decidability holds (`HasDual` is `Θ(depth)`, no SMT), and completion costs horn 3 — now
+*peer-observable* (a second party starves), where #18's was only self-observable. But the panel substantially
+**deflated the "real binary session" framing** — every attacker granting no-UB, three converging on the same
+over-claim — to "*#18 with a duplicated handle and a `RefCell` between the copies*," and five corrections were
+accepted. The sharpest: **relative progress closes only *per session*** — two interleaved `session()` calls
+type-check a mutual-wait deadlock (the Kobayashi/Padovani fact), so the flat "mutual-wait deadlock is a type
+error you cannot write" is false, narrowed to *one* session's two endpoints; **global** deadlock-freedom is out
+of reach of binary session types and needs multiparty/Kobayashi typing. The witness is single-threaded (so "peer
+waits forever" stays *self-abandonment-flavored* — only the *static* two-live-endpoint limitation is lifted, not
+`session_types`-2015's real two-thread concurrency); it expresses only straight-line `i32` protocols (no choice,
+delegation, or recursion — without delegation "binary session" *is* #18 doubled); and — the decisive
+ergonomic finding — the forced-fallible `recv`'s `Err` is **non-actionable**, because `mem::forget` *leaks* the
+`Rc` (skips `Drop`, strong count undecremented), so a starved dual cannot distinguish "not-yet" from "never."
+That is the **leakpocalypse double-bind**: the same gap that *costs* completion also *denies* an actionable
+abandonment signal (an `mpsc`-style disconnect-`Err` would need `Drop` to fire). So the probe **earned its keep
+by refuting its own headline** while confirming the grading transfers — and it sharpened the liveness map twice:
+binary duality gives only *per-session* progress, and the linearity gap (#17/#18) runs deeper than non-completion
+(it forecloses *detecting* the abandonment too). Liveness stays the third domain; **N stays 9**; the FAILED tally
+stays **seven** (this survived). *(A citation the panel corrected, for the record: ECOOP 2022 "Stay Safe Under
+Panic" is Lagaillardie–Neykova–Yoshida.)*
+
 **Decontamination, across primitives.** The seamful2 theorem predicted that a failing seam's
 obstruction *relocates* to the re-import boundary rather than vanishing. SPSC: it **vanished**
 (precondition factors through the witness). MMIO: it **moved and stayed decidable** (the
@@ -694,7 +724,7 @@ was the whole verdict — including the one mirage (the fuel knob), the two genu
 the one *real-but-inseparable* destination (immovability), and the one that landed *on coordinates already
 on the map* (validity) — the last of which is what closes the basis.
 
-**The adversary earned its keep — twenty-two times.** On MMIO it named the axiom's category correctly
+**The adversary earned its keep — twenty-three times.** On MMIO it named the axiom's category correctly
 (a TCB boundary, not a horn) and surfaced a horn-3 cost the builder had under-weighted. On the
 intrusive list it proved something *worse* than the builder predicted: branding does not restore
 soundness at all (a brand is an *access* capability, not a *storage* lifetime), correcting a real
@@ -814,8 +844,8 @@ cold review had flagged to a genuine characterization — `seam_closes_iff_facto
 closes **iff** its precondition factors through the safe witness — with the regimes as
 machine-checked instances (`spsc_seam_closes`, `intrusive_seam_does_not_close`, the slab's
 `slab_runtime_closes_but_static_does_not`: the same precondition closes through a *runtime*
-witness but not the *static* one, and `branded_seam_closes`/`refined_seam_closes`/`shared_seam_closes`/`typed_nat_seam_closes`/`take_seam_closes`/`drain_seam_closes`/`selfref_seam_closes`/`validity_seam_closes`/`secret_typed_discipline_factors`/`labeled_typed_discipline_factors`/`ordered_locks_typed_discipline_factors`/`lock_registry_typed_discipline_factors`/`linear_typed_discipline_factors`/`restore_ownership_core_closes`/`reseat_typed_discipline_factors`/`crdt_typed_discipline_factors`/`wcet_typed_discipline_factors`:
-all close like SPSC in the kernel — the recovered axes, the seven broken seams' domain gaps, the graded floor-match, the non-monotone floor-upgrade, the structural-logic (affine-vs-linear) break, the forced borrowed-slot double-free, and the unsound real-time op-count proxy alike invisible to it), `propext` only. Honest bound unchanged: the
+witness but not the *static* one, and `branded_seam_closes`/`refined_seam_closes`/`shared_seam_closes`/`typed_nat_seam_closes`/`take_seam_closes`/`drain_seam_closes`/`selfref_seam_closes`/`validity_seam_closes`/`secret_typed_discipline_factors`/`labeled_typed_discipline_factors`/`ordered_locks_typed_discipline_factors`/`lock_registry_typed_discipline_factors`/`linear_typed_discipline_factors`/`restore_ownership_core_closes`/`reseat_typed_discipline_factors`/`crdt_typed_discipline_factors`/`wcet_typed_discipline_factors`/`binary_session_progress_core_closes`:
+all close like SPSC in the kernel — the recovered axes, the seven broken seams' domain gaps, the graded floor-match, the non-monotone floor-upgrade, the structural-logic (affine-vs-linear) break, the forced borrowed-slot double-free, the unsound real-time op-count proxy, and the real binary session's order+per-session-progress core (whose horn-3 completion cost and per-session-only deadlock-freedom it cannot see) alike invisible to it), `propext` only. Honest bound unchanged: the
 *math* is now a real characterization, but the faithfulness of "precondition" and "witness" to
 actual Rust primitives — *which axis a closing seam spends* (zero-cost, API-locality, legibility,
 solver-freedom, bare-metal, unwind-safety, leak-freedom), and whether that "axis" is even *separable*

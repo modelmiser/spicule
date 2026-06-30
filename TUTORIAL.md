@@ -9,7 +9,7 @@ languages"; and (c) what newlang discovered and *why it matters*.
 **What newlang is.** Not a language. It is a research project that asked "what would the
 perfect systems language look like?", listed seven properties such a language should have,
 and then **proved — adversarially — that the seven cannot coexist**, mapped exactly where the
-wall is, and then **built twenty-two real things that live right up against the wall (seven that close, plus fifteen probes — ending by showing the closed basis is *per soundness domain*, that which seams close is *graded* by the *floor-precondition match* (full for memory safety, none for information flow, partial then none for liveness), that *upgrading the floor is non-monotone* — the granularity gap is a ladder — that a floor can be the *wrong structural logic* (affine vs linear) no upgrade fixes, and finally that the *same* danger is a soundness *break* or a mere concentration *cost* depending on how the re-import rule **packages** it — a dial that proves **real but bounded**: a controlled probe moved one identical danger across horns, yet the move only works where soundness can be *decoupled* from the un-compellable closure, and a clean single-variable follow-up confirmed the fence is *forced* — the same packaging over a borrowed slot breaks — and that a *fourth domain* (replicated convergence) need not even be one: the candidate **deflated** into the generic unchecked-typeclass-law gap, projecting onto an existing basis — and that a *second* fourth-domain try (real-time/WCET) **failed** too, its op-count an *unsound* proxy for cycles (a cost monad), so two candidates in a row open no new domain and the three confirmed domains look **special**)** to show what
+wall is, and then **built twenty-three real things that live right up against the wall (eight that close, plus fifteen probes — ending by showing the closed basis is *per soundness domain*, that which seams close is *graded* by the *floor-precondition match* (full for memory safety, none for information flow, partial then none for liveness), that *upgrading the floor is non-monotone* — the granularity gap is a ladder — that a floor can be the *wrong structural logic* (affine vs linear) no upgrade fixes, and finally that the *same* danger is a soundness *break* or a mere concentration *cost* depending on how the re-import rule **packages** it — a dial that proves **real but bounded**: a controlled probe moved one identical danger across horns, yet the move only works where soundness can be *decoupled* from the un-compellable closure, and a clean single-variable follow-up confirmed the fence is *forced* — the same packaging over a borrowed slot breaks — and that a *fourth domain* (replicated convergence) need not even be one: the candidate **deflated** into the generic unchecked-typeclass-law gap, projecting onto an existing basis — and that a *second* fourth-domain try (real-time/WCET) **failed** too, its op-count an *unsound* proxy for cycles (a cost monad), so two candidates in a row open no new domain and the three confirmed domains look **special** — and finally that a *real binary session* **deepened** liveness: it held (removing #18's single-handle limit and confirming the grading transfers), but its "real session" framing deflated to *per-session-only* progress, global deadlock-freedom needing *multiparty* typing)** to show what
 you *can* do. The deliverables are an impossibility result, a theorem (the *Seam Trilemma*),
 a Lean proof, and a small Rust crate of worked examples.
 
@@ -498,7 +498,7 @@ doesn't exist.
 
 ---
 
-# Part 9 — Build and break: twenty-two real seams (the heart of it)
+# Part 9 — Build and break: twenty-three real seams (the heart of it)
 
 Theory in hand, the project stopped arguing and *built*. Crucial design of the experiment:
 **build and break are different machines.** Construction is continuity, so a *stateful builder*
@@ -1326,6 +1326,53 @@ and **neither opens a fourth domain**, by *different* mechanisms. The three conf
 information flow / liveness) look increasingly **special**. N stays **nine** verdict modes; the FAILED
 broken-seam tally rises to **seven** (this one failed).
 
+### Primitive 23 — a real binary session, deepening liveness → HELD (`seam/src/binary_session.rs`)
+
+Two fourth-domain candidates having deflated, the twenty-third stops bidding for a fourth domain and
+**deepens the third** (liveness). It removes the most-cited limitation of the eighteenth seam: the r25 panel's
+deflation #1 of `session` was *"not a binary session — a single-handle typestate walk"* — one `&mut Transport`
+cannot split into two concurrently-live dual endpoints (`E0499`), so #18's motivating *"a peer waits forever"*
+hazard was inexpressible (only *self*-abandonment of one handle). So build the real thing: `session::<P>()`
+returns `(Chan<P>, Chan<P::Dual>)` — two affine endpoints, **both live**, sharing the wire through
+`Rc<RefCell<Transport>>` (the `alloc` + interior mutability the duality costs). A `HasDual` trait maps
+`Tx<C> ↔ Rx<C::Dual>`, `End ↔ End`. No `unsafe`: the danger is liveness, and `Rc`/`RefCell` mediate sharing.
+
+It **HELD** (cold panel r30, **SEAM-COSTS [horn 3], TRADEOFF**) — every attacker granted Horn 1 / no-UB (the
+worst case is a starved, memory-safe handle). Order **closes** (typestate, as #18), *per-session* relative
+progress **closes** (duality), decidability holds (`HasDual` is Θ(depth), no SMT), and completion **costs horn
+3**, now peer-observable. So **#18's component-wise grading survives** removing the single-handle limitation.
+But three "BREAKS" attackers converged on one thing — the *framing* overclaimed — and the five corrections all
+landed:
+
+> - **Relative progress closes only *per session* (the sharpest).** Two interleaved `session()` calls
+>   type-check a **mutual-wait deadlock** (Kobayashi/Padovani): each session is individually dual, the
+>   composition has no terminating schedule. So the flat "mutual-wait deadlock is a type error you cannot
+>   write" is *false* — narrowed to the two endpoints of *one* session, where it is near-trivial (two endpoints
+>   can't both be `Rx`). **Global deadlock-freedom is out of reach of binary session types — it needs
+>   multiparty/Kobayashi typing.**
+> - **The single-threaded witness makes "peer waits forever" self-abandonment-flavored.** One thread owns
+>   *both* handles, so only the *static* two-live-endpoint limitation is lifted — not `session_types` (2015),
+>   which had real two-thread concurrency a decade earlier. The contribution is *locating* the binary session
+>   on the lattice, not out-realing prior art.
+> - **The forced-fallible `recv`'s `Err` is *non-actionable* — the decisive sharpening.** `recv` must be
+>   fallible (the value comes from a peer who may never send), but `mem::forget` **leaks the `Rc`** (skips
+>   `Drop`, strong count not decremented), so a starved dual cannot tell "not-yet" from "abandoned"
+>   (`strong_count` still sees the peer; no closed-flag is set). `Err` conflates *not ready* with *never*, and
+>   the design forecloses the fix — an *actionable* signal (`mpsc`'s disconnect `Err`) needs `Drop` to fire.
+>   The **leakpocalypse double-bind**: the *same* gap that costs completion *also* denies an actionable
+>   abandonment signal. Honest at the type level (vs #18's hidden `.expect`), but actionability is absent.
+> - **Only straight-line `i32` protocols** — no `offer`/`choose`, no **delegation** (channel-over-channel, *the*
+>   feature distinguishing session types from coupled typestate), no recursion. Without delegation it is "#18
+>   doubled."
+> - **Citation fix:** ECOOP 2022 "Stay Safe Under Panic" is **Lagaillardie–Neykova–Yoshida** (corrected in #18
+>   too).
+
+So the probe **earned its keep by refuting its own headline** while confirming the grading. The genuinely new
+content, once "real binary session" deflates to "#18 with a duplicated handle and a `RefCell` between the
+copies," is two sharpenings of the liveness map: binary duality gives only **per-session** progress, and the
+**leakpocalypse double-bind** deepens the #17/#18 linearity gap. N stays **nine** modes; liveness stays the
+**third** domain; the FAILED broken-seam tally **stays seven** (this survived).
+
 ### The taxonomy (the whole point, in one table)
 
 | Primitive | What the missing conjunct *is* | Fate | Pays with |
@@ -1351,6 +1398,7 @@ broken-seam tally rises to **seven** (this one failed).
 | Borrowed-slot take-and-reseat (`take_mut` as guard) | #19's *identical* packaging (a guard with `into_inner`/Drop-restore) but over a **borrowed slot**, not an owned value — single ownership across the transient `ptr::read` duplicate | **breaks (horn 1)** | **FORCING THE HORN — the fence is real** — `into_inner` (sound for #19's owned value) is a safe-code **double-free** here (returns the value while the slot keeps the duplicate — two owners; a 4-line `String` witness, no `unsafe`). The single-variable flip #19→#20 (only owned→borrowed) is **clean**, repairing #19's confound; and the fence is **forced** (the `into_inner`-less sound subset is degenerate, dominated by `&mut T`, so every *usable* packaging breaks). Closes the trilogy: the horn is movable **iff** soundness can decouple from the un-compellable closure. Not novel (`take_mut`+`scopeguard`+RFC 1066). No new mode |
 | State-based CRDT merge (`Replica<T: JoinSemilattice>`) | replicas must *converge* — `join` must obey the semilattice laws (commutative/associative/idempotent — **not UB**) | **breaks (floor-mismatch), but DEFLATES** | **FOURTH-DOMAIN PROBE — NO NEW DOMAIN** — the `T: JoinSemilattice` bound is a *syntactic proxy, not a witness*; a safe lawless `join` type-checks and diverges replicas (double-counts on redelivery; undecidable by Rice). But the candidate fourth domain **deflated**: the blessed-CRDT TCB rescue is *not* MMIO-shaped (open lattice space → trust recurs per CRDT), 'dischargeable' only at the model level (no Rust pass checks model-to-shipped-code), and the gap is the *generic* unchecked-typeclass-law phenomenon (`Ord`/`Eq`/`Hash`/`Monoid`/semilattice — signatures checked, laws not), so convergence **projects onto `restore`'s application-correctness basis**. The map stays at three domains + application-correctness; scored a TRADEOFF survival, FAILED tally stays 6. No new mode |
 | Cost-typed computation (`Timed<C, T>`, a graded cost monad) | a computation must meet a *cycle deadline* — real elapsed time ≤ budget (real-time/WCET — **not UB**) | **breaks (horn 1), FAILED** | **SECOND FOURTH-DOMAIN PROBE — FAILED, no new domain** — `step` charges +1 *decoupled* from its closure, so a 10⁶-iteration loop is cost 1 and `within::<1>` admits it (the op-count is an *unsound* proxy for cycles; my §4 over-claimed the deadline). All five attackers landed: Horn 3 is *false* (non-unifying `if`-branches force manual step-padding); the unary cost is O(C), uncompilable at real budgets; no additive composition; and it is **Danielsson's 2008 cost monad** — "op-count ≠ cycles" is WCET's *founding premise*, so *pick a lane* (abstract cost xor physical deadline). Deflates: cost monad / `typed_nat` #8 for the static part, an `mmio`-shaped-but-*uninstalled* axiom #2 for the physical claim, liveness's partial-match for data-dependent loops. The map stays at three domains + application-correctness; FAILED tally rises to **7**. No new mode |
+| Real binary session (`session()` → two dual `Chan` over `Rc<RefCell>`) | two peers' protocol run in order *and to completion* — neither abandons, starving its dual (liveness — **not UB**) | **costs (holds)** | **LIVENESS DEEPENING — #18's grading survives, framing deflated** — removes #18's single-handle limitation (two concurrently-live dual endpoints, the `E0499` #18 hit); order **closes** + *per-session* relative progress **closes** (duality, `HasDual`), completion **costs horn 3** (now peer-observable). But the panel deflated the "real binary session" framing in five accepted ways: relative progress closes only **per session** (two interleaved `session()`s type-check a mutual-wait deadlock — Kobayashi/Padovani; global deadlock-freedom needs *multiparty* typing); the single-threaded witness makes "peer waits forever" self-abandonment-flavored (only the *static* limitation lifted, not `session_types` 2015's real concurrency); the fallible `recv`'s `Err` is **non-actionable** because `mem::forget` leaks the `Rc` (the **leakpocalypse double-bind** — the gap that costs completion also denies an actionable abandonment signal); only straight-line `i32` protocols (no choice/delegation/recursion). Net: two sharpenings of the liveness map; refuted its own headline, confirmed the grading. FAILED tally stays 7; N stays 9. No new mode |
 
 The decontamination signal (Part 6) held across all twelve **memory-safety** primitives: the obstruction
 *vanished* (SPSC), *moved and stayed decidable* (MMIO), *moved onto a runtime witness* (slab), *moved onto
@@ -1408,12 +1456,15 @@ sees only whether a Boolean witness suffices — which is *exactly* why the axis
 adjudicated by the cold panel in prose, not the kernel: the kernel certifies that all of
 `typed_nat`/`take`/`drain`/`selfref`/`validity` *close*, and says nothing about the fact that one spends a
 confounded non-axis, two spend clean distinct axes, one spends a real-but-inseparable danger, and one
-spends a coordinate *already on the map* — the last of which is how you know the basis is closed). Two more
-*close* in the kernel but **hold-with-a-cost** in prose — `session_order_safety_closes` and
-`restore_ownership_core_closes` (the eighteenth and nineteenth seams): the kernel sees their sound
-*order-safety* / *ownership-core* component factor through the witness, but not the horn-3 concentration cost
-the cold panel charged each (the session's un-completable protocol; the restore guard's un-compellable
-closure — the #17 gap re-packaged so it costs instead of breaks). The
+spends a coordinate *already on the map* — the last of which is how you know the basis is closed). Three more
+*close* in the kernel but **hold-with-a-cost** in prose — `session_order_safety_closes`,
+`restore_ownership_core_closes`, and `binary_session_progress_core_closes` (the eighteenth, nineteenth, and
+twenty-third seams): the kernel sees their sound *order-safety* / *ownership-core* / *order-plus-per-session-
+progress* component factor through the witness, but not the horn-3 concentration cost the cold panel charged
+each (the session's un-completable protocol; the restore guard's un-compellable closure — the #17 gap
+re-packaged so it costs instead of breaks; and the binary session's un-compellable *peer*, whose `mem::forget`
+starves the dual — the #17/#18 gap now across a two-party boundary, the real-binary-session deepening of #18
+that survives but whose "real session" framing the panel deflated to per-session-only progress). The
 last five, the out-of-memory-safety primitives, are the sharpest illustration: their Lean instances are
 named `secret_typed_discipline_factors`, `labeled_typed_discipline_factors`,
 `ordered_locks_typed_discipline_factors`, `lock_registry_typed_discipline_factors`, and
@@ -1480,7 +1531,7 @@ You can forget every primitive and keep these.
    the professional move is to (a) put it in one place (concentration), (b) make the obligation
    at it as visible as possible, and (c) choose *consciously* whether the boundary costs you
    soundness, decidability, concentration, runtime, API surface, a solver in your toolchain, or
-   exception-safety, leak-freedom. The twenty-two-primitive taxonomy is a decision procedure for that choice.
+   exception-safety, leak-freedom. The twenty-three-primitive taxonomy is a decision procedure for that choice.
 
 4. **Adversarial separation of build and break.** Construction wants continuity; demolition wants
    a cold, context-free skeptic. Keeping them as separate machines — and *calibrating* your
@@ -1624,6 +1675,22 @@ witness, and the honest move is to drop the claim.
     break cannot be given a coherent "usable" spec; the incoherence *is* the break**, surfacing wherever you
     paper over it, which is exactly what a cold adversary is *for*.
 
+11. **A probe can survive its soundness gauntlet and still have its *headline* deflated — the adversary
+    refutes framing, not just soundness.** The twenty-third primitive built *the real binary session* the
+    eighteenth could not — two concurrently-live dual endpoints over `Rc<RefCell>` — explicitly to remove a
+    prior deflation ("not a binary session, just a single-handle walk"). It **held**: order and *per-session*
+    progress close, completion costs horn 3, no UB, the #18 grading transfers. Yet every "BREAKS" attacker
+    granted soundness and instead refuted the *story*: relative progress closes only **per session** (interleaved
+    sessions deadlock and type-check — global deadlock-freedom needs *multiparty* typing); the single-threaded
+    witness lifts only the *static* limitation, not the real concurrency `session_types` (2015) already had; the
+    forced-fallible `recv`'s `Err` is **non-actionable**, because the very `mem::forget` that costs completion
+    *also leaks the `Rc`*, denying any abandonment signal (a *double-bind*, not a fixable API). The lesson: when
+    you build "the real thing" to answer a critic, point the cold adversary at the *claim*, not only the code —
+    a primitive can pass "is it sound?" and fail "is it what you said it was?" The honest yield was not the
+    headline ("real binary session built") but the two sharpenings the deflation forced (per-session-only
+    progress; the leakpocalypse double-bind). The instrument is calibrated when it can ratify your soundness and
+    reject your sales pitch in the same verdict.
+
 ---
 
 # Part 12 — Do it yourself: exercises and a reading path
@@ -1635,16 +1702,22 @@ witness, and the honest move is to drop the claim.
 - `lean proof/SeamGap.lean` — read the characterization; change a definition and watch it break.
 - Skim `design_seam/REPORT_SEAM_SPEC_*.md` — the cold attackers' actual verdicts, in their words.
 
-**Build a twenty-third primitive — and the fourth-domain door now looks hard to open.** (The packaging
-trilogy is *closed*: #18 found the horn moves, #19 that it moves within a fence, #20 that the fence is
-*forced* — see below; a further packaging probe will only re-confirm. And **both** fourth-domain attempts have
-now failed to open a fourth domain: #21, **distributed/replicated convergence** via a state-based CRDT,
-**deflated** — it breaks floor-relatively but folded into the *generic unchecked-typeclass-law* gap, projecting
-onto `restore`'s application-correctness basis; and #22, **real-time / WCET** via a cost-typed computation,
-**FAILED** outright — the op-count is an *unsound* proxy for cycles, the construct is Danielsson's 2008 cost
-monad, and it deflates onto `typed_nat` #8 + an uninstalled `mmio`-shaped axiom + liveness's partial-match.
-*Two* candidates, *two* non-domains, by different mechanisms — the meta-finding is that the three confirmed
-domains (memory safety / information flow / liveness) look **special**, and a would-be fourth keeps reducing
+**Build a twenty-fourth primitive — the fourth-domain door looks hard to open, and the twenty-third just
+deepened liveness instead.** (The packaging trilogy is *closed*: #18 found the horn moves, #19 that it moves
+within a fence, #20 that the fence is *forced* — see below; a further packaging probe will only re-confirm. And
+**both** fourth-domain attempts failed to open a fourth domain: #21, **distributed/replicated convergence** via
+a state-based CRDT, **deflated** — it breaks floor-relatively but folded into the *generic
+unchecked-typeclass-law* gap, projecting onto `restore`'s application-correctness basis; and #22, **real-time /
+WCET** via a cost-typed computation, **FAILED** outright — the op-count is an *unsound* proxy for cycles, the
+construct is Danielsson's 2008 cost monad, and it deflates onto `typed_nat` #8 + an uninstalled `mmio`-shaped
+axiom + liveness's partial-match. Then #23, a **real binary session** — the very next move proposed below — was
+*built* and **held** (SEAM-COSTS [horn 3]), deepening liveness rather than opening a domain: it removed #18's
+single-handle limitation and confirmed the component-wise grading transfers, but the panel deflated the "real
+binary session" framing — relative progress closes only *per session* (interleaved sessions deadlock; global
+deadlock-freedom needs *multiparty* typing), and the fallible `recv`'s `Err` is non-actionable because
+`mem::forget` leaks the `Rc` (the leakpocalypse double-bind). *Two* fourth-domain candidates, *two* non-domains,
+by different mechanisms — the meta-finding is that the three confirmed domains (memory safety / information flow
+/ liveness) look **special**, and a would-be fourth keeps reducing
 to an existing basis or failing on an unsound proxy.) The memory-safety basis is closed; a within-memory-safety probe will
 *project*, not extend. Primitives 13–21 opened the live frontiers. Primitive
 13 showed information flow is a *distinct*
@@ -1658,16 +1731,22 @@ how the rule **packages** it; 19, that this packaging dial is **real but bounded
 where soundness *decouples* from the danger, and is **forceable** where it does not; and 20, that the fence is
 **forced** — the *same* packaging over a *borrowed slot* (vs #19's owned value) breaks horn 1, the clean
 single-variable confirmation #19's confound could not give; 21, that the first **fourth-domain** attempt
-(replicated convergence) *deflated* into the generic unchecked-typeclass-law gap; and 22, that the second
+(replicated convergence) *deflated* into the generic unchecked-typeclass-law gap; 22, that the second
 (real-time/WCET) **FAILED** — the op-count is an unsound proxy for cycles (Danielsson's cost monad), opening
-no new domain either. So the twenty-third has two honest directions and a warning (the third, *forcing the
-horn*, the twentieth already did) — but the fourth-domain door is looking hard to open. (i) **Grade a FOURTH
-domain — but the two cleanest candidates have now both failed** (convergence deflated to application-
-correctness; WCET's op-count is an unsound proxy that reduces to a cost monad). The remaining live shape is
-the *liveness/deadlock* bite at distributed scale: a **real binary session** with two dual endpoints (needs
-`alloc`/interior-mut, leaving `core` purity) to express the "peer waits forever" hazard the #18 single-handle
-walk could not — a precondition whose gap is *structural progress*, not a missing typeclass-law check or an
-unsound proxy. (Convergence and WCET are now settled non-domains.) (ii) **Probe another STRUCTURAL LOGIC** (linear was the first
+no new domain either; and 23, that a **real binary session** *deepened* liveness — it **held**, removing #18's
+single-handle limitation and confirming the grading transfers, but its "real session" framing deflated to
+*per-session-only* progress (interleaved sessions deadlock; global deadlock-freedom needs *multiparty* typing)
+and a non-actionable `recv` `Err` (the leakpocalypse double-bind). So the twenty-fourth has two honest
+directions and a warning (the third, *forcing the horn*, the twentieth already did) — but the fourth-domain
+door is looking hard to open. (i) **Deepen liveness further — #23 just opened two sub-frontiers.** The binary
+session shipped only a *straight-line `i32`* fragment; the session-type features it lacked are the obvious next
+probes — `offer`/`choose` (external/internal choice, where the continuation *type depends on a received
+value*), **delegation** (channel-over-channel — *the* feature that distinguishes session types from coupled
+typestate), or recursion. Sharper still, #23's deflation named the real bite: binary duality gives only
+*per-session* progress, so **multiparty session types** (Honda–Yoshida–Carbone; Kobayashi's deadlock typing)
+are the floor a *global* deadlock-freedom seam would need — does that floor *close* the global-progress gap, or
+relocate it? (Grading a genuinely *fourth* domain is settled-hard: convergence deflated to application-
+correctness; WCET's op-count is an unsound proxy that reduces to a cost monad.) (ii) **Probe another STRUCTURAL LOGIC** (linear was the first
 *wrong-structural-logic* verdict): a **relevant**-type precondition — *must-use-at-least-once with an error
 channel*, i.e. fallible must-run, the exact gap Primitive 17's infallible scope exposed — or an **ordered /
 session-typed** protocol where the floor's substructural logic is again the mismatch. Write the spec + a
@@ -1712,7 +1791,7 @@ mode.)
    shared ownership trades *unbounded dynamic allocation* against *caller-provided bounded storage*.
 8. **Verus** and **Creusot** docs — what "Rust but `unsafe` is proof" actually looks like when
    someone ships it (the productive horn from Part 8).
-9. This repo's `WRITEUP.md` (the full result), `design_seam/SYNTHESIS.md` (the twenty-two-primitive map),
+9. This repo's `WRITEUP.md` (the full result), `design_seam/SYNTHESIS.md` (the twenty-three-primitive map),
    `design_seam/REALIZABILITY.md` (the face lattice / 3-of-N proof), and `THE-SAME-WALL.md` (the
    cross-field boundary/veil discipline).
 

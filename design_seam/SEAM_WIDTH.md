@@ -263,3 +263,29 @@ whose axiom is faithful *and* present), and liveness's partial-match. The FAILED
 (unlike `crdt`, which *survived*); N stays **nine** modes. **The meta-finding:** *two* fourth-domain candidates
 probed, **neither opens a fourth domain** — convergence by an unchecked algebraic law, real-time by an unsound
 physical-time proxy — and the three confirmed domains (memory / IFC / liveness) look increasingly **special**.
+
+**The twenty-third seam: the only one of the last three with a width row — and removing the limitation *widened*
+it.** The real binary session (`seam/src/binary_session.rs`, two dual affine endpoints `Chan<P>`/`Chan<P::Dual>`
+both live over `Rc<RefCell<Transport>>`, `alloc` + interior mutability, no `unsafe`) is **not** a fourth-domain
+bid — it stays in the **liveness** domain and *deepens* it, removing #18's most-cited limitation (one `&mut
+Transport` could not hold two concurrently-live endpoints, `E0499`). Unlike `crdt`/`wcet` it **holds**: the
+cold panel (r30) ruled **SEAM-COSTS [horn 3], TRADEOFF, survived** — every attacker granted no-UB — so it *does*
+sit on the width map, and its core profile mirrors #18: each op (`send`/`recv`/`close`) is **O(1)**, order and
+*per-session* relative progress are **fully concentrated in the type** (the affine typestate + the `HasDual`
+duality relation, `Θ(depth)` to resolve, no SMT), so the order/progress core is **zero seam width**. As in #18
+the **completion** half is the width: an undischargeable "don't abandon" obligation recurring at every
+`?`/panic/early-return on *either* side — now **peer-observable** (a real second endpoint starves), where #18's
+was self-observable. **The new width finding — removing the single-handle limitation *increased* consumer
+width.** Forcing a real peer forces `recv` fallible (`Result<…, Self>`), and its `Err` is **non-actionable**:
+`mem::forget` *leaks* the `Rc` (skips `Drop`, strong count not decremented), so a starved dual cannot
+distinguish "not-yet" from "abandoned" (an actionable signal, like `mpsc`'s disconnect-`Err`, would need `Drop`
+to fire). So the consumer now writes *more* protocol bookkeeping than #18's infallible `recv` had — (a) a manual
+two-endpoint interleaving/scheduler (the witness is single-threaded, no runtime) and (b) a dead-or-spinning
+`match` at every `recv` site — the **leakpocalypse double-bind**: the same gap that *costs* completion also
+*denies* an actionable `Err`. And the width is measured over a **narrow fragment**: relative progress closes
+only **per session** (two interleaved `session()` calls type-check a mutual-wait deadlock — Kobayashi/Padovani;
+global deadlock-freedom needs multiparty typing), and only straight-line `i32` protocols are expressible (no
+choice / delegation / recursion). The probe **held** (FAILED count stays **seven**; N stays **nine** modes; Lean
+`binary_session_progress_core_closes`, a `..._closes`) yet **refuted its own headline**: the "real binary
+session" is #18 with a duplicated handle and a `RefCell` between the copies — the order/progress core's width is
+still zero, but the completion cost is now wider, not narrower.

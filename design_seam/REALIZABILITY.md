@@ -105,7 +105,15 @@ this seam **never installs** (worse than MMIO — the cost model is a fiction *a
 gap onto liveness's **partial-match**. The op-count is an **unsound** proxy — *sharper* than `secret`'s
 sound-but-incomplete one. **Meta:** two fourth-domain candidates (`crdt` deflated+survived, `wcet`
 deflated+FAILED), **neither opens a fourth domain** — the three confirmed domains look **special**. N stays 9;
-the FAILED broken-seam count **rises to seven**. (Phases L–U.)*
+the FAILED broken-seam count **rises to seven**. Then a **liveness-deepening** probe — a **real binary session**
+(two dual affine endpoints, both live, over `Rc<RefCell<Transport>>`; `binary_session`, r30) — removed #18's
+single-handle limitation and **HOLDS WITH COST** (SEAM-COSTS [horn3], TRADEOFF): #18's component-wise grading
+**survives** (order closes, *per-session* relative progress closes, completion costs horn-3, now
+peer-observable), but the "real binary session" framing **deflated** — relative progress closes only **per
+session** (global deadlock-freedom needs multiparty typing), the single-threaded witness makes "peer waits
+forever" self-abandonment-flavored, and the fallible `recv`'s `Err` is **non-actionable** (the leakpocalypse
+double-bind: `mem::forget` leaks the `Rc`). Liveness stays the third domain, now **deepened**; N stays 9; the
+FAILED broken-seam count **stays seven** (this survived). (Phases L–V.)*
 
 > **A note on the "#5/#6/#7" shorthand (and a numbering collision).** `#6` (zero-cost) and `#7`
 > (AI-legible) are the literal seed-property numbers. The "**#5⟂#7 cell**" shorthand, coined for the
@@ -790,6 +798,28 @@ restore │  CONTROLLED PACKAGING probe  ⇒ HOLDS WITH COST: SEAM-COSTS [horn3]
         │                              candidates, NEITHER opens a fourth domain — the three domains look SPECIAL.
         │                              No new mode; N stays 9; broken-seam count → SEVEN (this FAILED).
         ▼
+ binary │  LIVENESS DEEPENING (NOT a    ⇒ HOLDS. SEAM-COSTS [horn3], TRADEOFF (r30): #18's component-wise
+session │  fourth-domain bid): a REAL    grading SURVIVES removing the single-handle limitation. Two dual affine
+        │  binary session — two dual     endpoints (Chan<P>/Chan<P::Dual>), BOTH live, over Rc<RefCell<Transport>>
+        │  endpoints, both live, over    (alloc + interior mut); E0499 forbade this in #18. Every attacker granted
+        │  Rc<RefCell<Transport>>        Horn 1 / no-UB (worst case a starved memory-safe handle). Order CLOSES,
+        │                              per-session relative progress CLOSES (HasDual duality), decidable (Θ(depth),
+        │                              no SMT), completion COSTS horn-3 (now PEER-observable). BUT the "real binary
+        │                              session" framing DEFLATED, 5 corrections: (1) sharpest — relative progress
+        │                              closes only PER SESSION (two interleaved session()s type-check a mutual-wait
+        │                              deadlock, Kobayashi/Padovani; global deadlock-freedom needs MULTIPARTY
+        │                              typing); (2) single-threaded witness → "peer waits forever" self-abandonment-
+        │                              flavored, only the STATIC two-live-endpoint limitation lifted (not session_
+        │                              types-2015's real concurrency); (3) the fallible recv's Err is NON-ACTIONABLE
+        │                              — mem::forget LEAKS the Rc, so the leakpocalypse DOUBLE-BIND (the gap that
+        │                              costs completion also denies an actionable abandonment signal); (4) only
+        │                              straight-line i32 protocols (no choice/delegation/recursion); (5) citation fix
+        │                              (ECOOP'22 = Lagaillardie–Neykova–Yoshida). Net NEW content = two liveness-map
+        │                              sharpenings: binary duality gives only PER-SESSION progress; the double-bind
+        │                              deepens the #17/#18 linearity gap. No new mode; N stays 9; broken-seam count
+        │                              STAYS SEVEN (this survived as TRADEOFF). Liveness DEEPENED, partial-match now
+        │                              bounded to per-session.
+        ▼
 Realizability table         MEMORY-SAFETY domain (on a MATCHED affine floor): N ≥ 9 CLOSED axes (sound,
                             decidable, concentration, API-locality, #6, #7, bare-metal, unwind-safety,
                             leak-freedom) + INSEPARABLE (move-stability, validity) + 2 outside-the-axes
@@ -833,6 +863,20 @@ Realizability table         MEMORY-SAFETY domain (on a MATCHED affine floor): N 
                             → liveness partial-match. The op-count is an UNSOUND proxy, sharper than secret's. So the
                             domain map STILL stays at THREE (memory / IFC / liveness) + the application-correctness
                             basis — TWO fourth-domain candidates probed, NEITHER opens one; the three look SPECIAL.
+                            And a LIVENESS-DEEPENING probe (a REAL binary session — two dual affine endpoints, both
+                            live, over Rc<RefCell<Transport>>, r30) removed #18's single-handle limitation and
+                            HOLDS WITH COST (SEAM-COSTS [horn3], TRADEOFF): #18's component-wise grading SURVIVES —
+                            order CLOSES, per-session relative progress CLOSES (HasDual), completion COSTS horn-3,
+                            now PEER-observable. But the "real binary session" framing DEFLATED to "#18 with a
+                            duplicated handle and a RefCell between the copies": relative progress closes only PER
+                            SESSION (two interleaved sessions type-check a mutual-wait deadlock — global deadlock-
+                            freedom needs MULTIPARTY/Kobayashi typing), the single-threaded witness makes "peer waits
+                            forever" self-abandonment-flavored (only the STATIC two-live-endpoint limitation is
+                            lifted), and the fallible recv's Err is NON-ACTIONABLE because mem::forget leaks the Rc
+                            (the leakpocalypse DOUBLE-BIND: the gap that costs completion also denies an actionable
+                            abandonment signal). Net new content = two liveness-map sharpenings (binary duality gives
+                            only per-session progress; the double-bind deepens the #17/#18 linearity gap). Liveness
+                            stays the THIRD domain, now DEEPENED; N stays 9; broken-seam count STAYS SEVEN (survived).
                             The Seam Trilemma is DOMAIN-GENERAL, the cost-basis
                             PER-DOMAIN, and WHICH SEAMS CLOSE depends on the FLOOR-DOMAIN MATCH — GRADED (full /
                             partial / none), set per PRECONDITION not per domain, and not monotonically liftable.
@@ -946,7 +990,7 @@ The axes are not independent toggles you can set freely — **two trades and a d
   invisible in non-leak code), yet still real — a reminder that "deflatable" and "not an axis" are
   different verdicts (the rejected checker-tractability probe is the latter; leak-freedom the former).
 - The Lean kernel (`../proof/SeamGap.lean`) sees only whether a precondition factors through a
-  Boolean witness — so it certifies *closure* (`spsc`/`branded`/`refined`/`shared`/`typed_nat`/`take`/`drain`/`selfref`/`validity` — and `session_order_safety_closes`, the eighteenth seam, whose *order-safety* component closes like a holding seam (it HOLDS with a horn-3 completion cost the kernel cannot see), and `restore_ownership_core_closes`, the nineteenth seam, whose *ownership* core closes the same way (it HOLDS with a horn-3 restore cost — the controlled-packaging probe: the same `mem::forget` gap that broke #17 only costs here, but bounded — the horn is forceable in a borrowed-slot/`take_mut` packaging) — (+ `secret`/`labeled`/`ordered_locks`/`lock_registry`/`linear`/`reseat`, which certify only the trivial typed sub-fact — the two IFC seams break, three liveness-domain seams break (the static lock-ordering one partially-matches, the runtime registry shows the floor-upgrade is non-monotone, and the must-run-cleanup one is a clean NONE breaking on wrong-structural-logic, affine≠linear), and `reseat_typed_discipline_factors`, the twentieth seam, breaks on a forced horn-1 double-free — the controlled counterpart to #19 that proves the packaging fence FORCED at owned-vs-borrowed: `into_inner` over a borrowed slot hands out the value while the slot keeps the `ptr::read` duplicate, so the same packaging that *held* for #19's owned value breaks here), and `crdt_typed_discipline_factors`, the twenty-first seam, breaks *floor-relatively* — the first probe at a fourth domain (distributed convergence), where a safe lawless `join` diverges replicas because `T: JoinSemilattice` is a syntactic proxy not a witness; but the candidate fourth domain DEFLATED — convergence is the generic unchecked-typeclass-law phenomenon, projecting onto `restore`'s application-correctness basis, not new ground (the domain map stays at three + application-correctness; the FAILED broken-seam count stays six — this one survived as a TRADEOFF), and `wcet_typed_discipline_factors`, the twenty-second seam, breaks *and FAILED* — the second probe at a fourth domain (real-time / WCET), where `step` charges one unit decoupled from its closure's work so `within::<1>` admits a million-cycle computation (the op-count is an unsound proxy for real time, sharper than `secret`'s); this candidate fourth domain DEFLATED too — onto Danielsson's 2008 cost monad / `typed_nat` #8 (which does not scale), an `mmio`-shaped #2 axiom never installed, and liveness's partial-match — so two fourth-domain candidates yield no fourth domain (the FAILED broken-seam count rises to seven; the `..._factors` family is now eight, but `crdt` is the deflation-survival, so the FAILED tally is seven)
+  Boolean witness — so it certifies *closure* (`spsc`/`branded`/`refined`/`shared`/`typed_nat`/`take`/`drain`/`selfref`/`validity` — and `session_order_safety_closes`, the eighteenth seam, whose *order-safety* component closes like a holding seam (it HOLDS with a horn-3 completion cost the kernel cannot see), and `restore_ownership_core_closes`, the nineteenth seam, whose *ownership* core closes the same way (it HOLDS with a horn-3 restore cost — the controlled-packaging probe: the same `mem::forget` gap that broke #17 only costs here, but bounded — the horn is forceable in a borrowed-slot/`take_mut` packaging), and `binary_session_progress_core_closes`, the twenty-third seam — the real-binary-session liveness deepening — whose *order + per-session relative-progress* core closes the same way (it HOLDS with a horn-3 completion cost the kernel cannot see; the panel deflated the "real binary session" framing — per-session-only progress since interleaved sessions deadlock, a non-actionable `Err` from the leaked `Rc`, a single-threaded straight-line witness — but that lives in the prose, not the checked sub-fact) — (+ `secret`/`labeled`/`ordered_locks`/`lock_registry`/`linear`/`reseat`, which certify only the trivial typed sub-fact — the two IFC seams break, three liveness-domain seams break (the static lock-ordering one partially-matches, the runtime registry shows the floor-upgrade is non-monotone, and the must-run-cleanup one is a clean NONE breaking on wrong-structural-logic, affine≠linear), and `reseat_typed_discipline_factors`, the twentieth seam, breaks on a forced horn-1 double-free — the controlled counterpart to #19 that proves the packaging fence FORCED at owned-vs-borrowed: `into_inner` over a borrowed slot hands out the value while the slot keeps the `ptr::read` duplicate, so the same packaging that *held* for #19's owned value breaks here), and `crdt_typed_discipline_factors`, the twenty-first seam, breaks *floor-relatively* — the first probe at a fourth domain (distributed convergence), where a safe lawless `join` diverges replicas because `T: JoinSemilattice` is a syntactic proxy not a witness; but the candidate fourth domain DEFLATED — convergence is the generic unchecked-typeclass-law phenomenon, projecting onto `restore`'s application-correctness basis, not new ground (the domain map stays at three + application-correctness; the FAILED broken-seam count stays six — this one survived as a TRADEOFF), and `wcet_typed_discipline_factors`, the twenty-second seam, breaks *and FAILED* — the second probe at a fourth domain (real-time / WCET), where `step` charges one unit decoupled from its closure's work so `within::<1>` admits a million-cycle computation (the op-count is an unsound proxy for real time, sharper than `secret`'s); this candidate fourth domain DEFLATED too — onto Danielsson's 2008 cost monad / `typed_nat` #8 (which does not scale), an `mmio`-shaped #2 axiom never installed, and liveness's partial-match — so two fourth-domain candidates yield no fourth domain (the FAILED broken-seam count rises to seven; the `..._factors` family is now eight, but `crdt` is the deflation-survival, so the FAILED tally is seven)
   all close, like SPSC) but is blind to *which axis a closing seam spends* — or whether that "axis" is
   even separable (the self-ref cell closes in the kernel exactly like the rest; its inseparability is
   pure modeling-dictionary). Every column past
