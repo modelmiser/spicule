@@ -854,35 +854,42 @@ theorem multiparty_role_order_core_closes :
   rw [seam_closes_iff_factors]
   exact ⟨id, fun _ => rfl⟩
 
-/-- Priority-typed session (rung-(b)) shape — the probe built to *confirm* #25's surviving weaker thesis. Read
-    `Pr`/`Wt` by analogy: the kernel models only the component the seam CLOSES — the *per-channel priority order*
-    core (`Pprio` is definitionally `V`): a forwarder's recv-then-send is gated by the const bound `Pi: Lt<Po>`
-    (Kobayashi/Dardha–Gay), discharged by `typed_nat`'s sealed `Lt` (Peano `<`, no reflexive `Lt<N>`), decidable
-    and per-call. It CLOSES; soundness is intact (no UB — the worst case is still a memory-safe starved/leaked
-    session; the priority discipline only *adds* rejections).
+/-- Priority-typed session (rung-(b)) shape — built to *confirm* #25's weaker thesis, but it **BREAKS**: the
+    *eighth* seam to break, and the **session face** of `ordered_locks` #15's *lock* face (same shape, one
+    soundness sub-domain over). Read `Pr`/`Wt` by analogy: the precondition is *deadlock-freedom of a
+    priority-typed assembly* and the witness is a per-channel const bound `Pi: Lt<Po>` (Kobayashi/Dardha–Gay) on
+    `typed_nat`'s sealed `Lt`. In the kernel the typed discipline factors (`Pprio` is definitionally `V`), as
+    always.
 
-    What the kernel does NOT model is the deliverable's subject: whether this rung carries **global progress**
-    per-call or whole-program. The witness shows the deadlocking ring #25's bare floor accepted is now
-    *untypable* — going around the cycle forces `p: Lt<p>`, which has no instance for any concrete assignment.
-    But the per-channel `Lt` bounds are *local*; their joint satisfiability (an acyclic, globally-consistent
-    priority assignment exists) is a **whole-program** obligation the type system only *checks*, never *searches*,
-    and edge-priority consistency across endpoints is the constructor's invariant (a mini-projection). So priority
-    typing CONFIRMS #25: global progress is not concentrable per-call; it needs strictly more than the per-edge
-    floor — here, the local `Lt` bounds *plus* a whole-program assignment. This unifies progress's faces with
-    `ordered_locks` #15/#16 (type-level rank carries local order; whole-program lock-acyclicity escapes) and
-    reuses `typed_nat` #8's `Lt`. No new domain (liveness), coordinate (progress, from #24), or mode (N stays 9).
-    Like every column past concentration, the horn-3 cost (the assignment) is modeling-dictionary; the kernel sees
-    only that the per-channel priority-order witness suffices. -/
+    But the cold panel (REPORT_SEAM_SPEC_priority, r33) ruled **SEAM-BREAKS [horn 1]** — the re-import rule's own
+    §6 horn-1 falsifier ("a typed cyclic assembly that deadlocks") is met by **safe code**. The §3 untypability
+    argument (the cyclic chain collapses to `p: Lt<p>`) silently assumes **edge-priority consistency** — that the
+    `Nat` A *sends* on edge AB equals the one B *receives* on AB — which the proposal itself concedes is "the
+    constructor's invariant, **not a per-endpoint type fact**." Rust does no transitive reasoning; it checks each
+    `Pi: Lt<Po>` in isolation. So the public `role::<Pi, Po>` constructor lets three `role::<N1, N2>` relays
+    (every bound `N1: Lt<N2>`, 1 < 2, discharges) wire into the ring `A→B→C→A`: it **compiles, no `unsafe`, and
+    deadlocks**. Deadlock-freedom therefore rests **entirely on the trusted `relay()` constructor** threading one
+    `Nat` per edge (a mini-projection in the TCB), not on the `Lt` discipline — so §4.3's "deadlock-freedom of
+    *any* well-typed assembly" is unsound as written.
+
+    This is the same break as `ordered_locks` #15/#16, one domain over: a type-level order carries the **local**
+    bound (per-token rank there; per-role priority here) while the **whole-program** consistency/acyclicity
+    escapes the types (the wrong-granularity gap). It thus **confirms** #25's weaker thesis — global progress
+    needs strictly more than the per-channel floor; the local discipline alone carries nothing global — but by
+    BREAKING (the advertised guarantee is false) rather than merely costing. The contribution salvages to
+    SEAM-COSTS [horn 3] **only** if `role()` is hidden and roles are minted solely by a trusted
+    edge-consistent constructor (`relay`). `..._factors` (not `..._closes`) certifies only the trivial typed
+    sub-fact, as `ordered_locks`/`secret`/`labeled` do; the kernel sees none of the liveness or the
+    edge-consistency gap. No new domain (liveness), coordinate (progress, from #24), or mode (SEAM-BREAKS
+    [horn 1] is one of the nine); the broken-seam tally rises to 8. -/
 def Pprio (p : Prog) : Bool := V p
 
-/-- The sound core CLOSES (SEAM-COSTS [horn 3]): the *per-channel priority-order* core closes via the decidable
-    `Pi: Lt<Po>` bound (Kobayashi/Dardha–Gay, on `typed_nat`'s sealed `Lt`), exactly as a closing seam does in
-    the kernel — reusing #8's machinery. The uncarried component — the **whole-program acyclic priority
-    assignment** that the deadlock-freedom *guarantee* rests on (local `Lt` bounds checked per-call; their joint
-    consistency searched whole-program, by the programmer or an inference pass) — lives in the prose, invisible
-    to the kernel. This is the rung (b) #25's rejection named, and it CONFIRMS #25's weaker thesis: progress is a
-    whole-program obligation strictly above the per-edge floor, here dischargeable without a global type. -/
-theorem priority_order_core_closes :
+/-- Trivial sub-fact only (see the docstring): the *typed* per-channel priority discipline factors. The real
+    seam BREAKS [horn 1] — the public `role::<Pi, Po>` constructor accepts a fully priority-typed cyclic
+    assembly (three `role::<N1, N2>` relays) that compiles and deadlocks, because edge-priority consistency is a
+    trusted-constructor invariant, not a per-endpoint type fact. The session face of `ordered_locks` #15's lock
+    face; confirms #25's weaker thesis by breaking, not costing. -/
+theorem priority_typed_discipline_factors :
     ∃ d : Prog → Bool, SoundW Pprio d ∧ UsableW Pprio d ∧ ConcW V d := by
   rw [seam_closes_iff_factors]
   exact ⟨id, fun _ => rfl⟩

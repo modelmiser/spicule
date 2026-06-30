@@ -402,15 +402,20 @@ pub mod multiparty;
 /// no global type. This seam encodes it: over #23's binary edges and #8's sealed `typed_nat::Lt` (Peano `<`,
 /// no reflexive `Lt<N>`), a forwarder [`priority::Relay`]`<Pi, Po>` recv-then-sends under the bound `Pi: Lt<Po>`.
 /// The deadlocking ring — which #25's bare floor *type-checked* — forces `p_CA < p_AB < p_BC < p_CA`, i.e.
-/// `p: Lt<p>`, which has no instance for any assignment: **the ring is untypable** (a `compile_fail`), while the
-/// acyclic relay (`p_AB=N0 < p_BC=N1`) types and completes. HYPOTHESIS (gauntlet-adjudicated): built to
-/// **confirm** #25's surviving weaker thesis, not extend it — priority typing carries the deadlock-freedom
-/// *check* into the types (the `Lt` bounds, decidable, per-call) but the deadlock-freedom *guarantee* still rests
-/// on a **whole-program** obligation: the programmer must supply a globally-consistent acyclic assignment (the
-/// type system only checks it, never searches), and edge-priority consistency across endpoints is the
-/// constructor's invariant — a mini-projection. Unifies progress's faces with `ordered_locks` #15/#16 (type-level
-/// rank carries local order; whole-program acyclicity escapes). Expected: SEAM-COSTS [horn 3] (the assignment is
-/// the cost). See `priority`.
+/// `p: Lt<p>` — **but only when one `Nat` is shared per edge**, which I assumed and did not enforce. The cold
+/// panel (r33) ruled **SEAM-BREAKS [horn 1] — the EIGHTH broken seam**: I exposed the public `role::<Pi, Po>`
+/// constructor carrying only the *local* bound `Pi: Lt<Po>`, so a caller wires three `role::<N1, N2>` relays
+/// (every bound `N1: Lt<N2>`, 1 < 2, discharges) into the ring `A→B→C→A` — it **compiles, no `unsafe`, and
+/// deadlocks**, falsifying §4.3's "deadlock-freedom of any well-typed assembly." Edge-priority consistency is a
+/// trusted-constructor invariant (`relay` threads one `Nat`/edge), **not a per-endpoint type fact** — the spec
+/// admitted this and shipped it anyway; the soundness attacker quoted my own words. This **confirms** #25's
+/// weaker thesis by BREAKING not costing: the per-channel `Lt` discipline carries **nothing global** (it never
+/// names the dual endpoint); deadlock-freedom rests entirely on the trusted edge-consistent constructor — a
+/// mini-projection. **Same break as `ordered_locks` #15/#16, one soundness sub-domain over** (type-level order
+/// carries the local bound; whole-program consistency/acyclicity escapes — the wrong-granularity gap): progress's
+/// *lock face* and *session face* break the same way. Salvages to SEAM-COSTS [horn 3] only if `role()` is hidden.
+/// N stays 9 (SEAM-BREAKS [horn 1] is one of the nine); liveness stays the third domain; Lean
+/// `priority_typed_discipline_factors` (a `..._factors`, like `ordered_locks`). See `priority`.
 pub mod priority;
 
 use core::cell::UnsafeCell;

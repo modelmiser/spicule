@@ -35,38 +35,55 @@
 //! **untypable** (a `compile_fail`, below). The acyclic relay `A→B→C` (a source, no cycle) types with `p_AB=N0 <
 //! p_BC=N1` and runs to completion.
 //!
-//! ### The cyclic role is untypable — the priority discipline rejects the deadlock the bare floor accepted:
+//! ### A *locally-inconsistent* cyclic role is untypable — but this catches only LOCAL violations (see verdict):
 //! ```compile_fail
 //! # use seam_spsc::priority::role;
 //! # use seam_spsc::typed_nat::{N0, N2};
 //! # use seam_spsc::binary_session::{session, Tx, End};
-//! let (_tx, rx) = session::<Tx<End>>();    // some inbound edge, here at priority N2
-//! let (tx2, _rx2) = session::<Tx<End>>();   // some outbound edge, here at priority N0
-//! // A ring role receiving at priority N2 and sending at N0 — the cyclic step `p_BC < p_CA` (N2 < N0):
-//! let _c = role::<N2, N0>(rx, tx2);          // ERROR: `S<S<Z>>: Lt<Z>` is not satisfied — cycle untypable
+//! let (_tx, rx) = session::<Tx<End>>();    // some inbound edge, here labelled priority N2
+//! let (tx2, _rx2) = session::<Tx<End>>();   // some outbound edge, here labelled priority N0
+//! // A role receiving at N2 and sending at N0 violates its OWN bound `Pi: Lt<Po>` (N2 < N0 is false):
+//! let _c = role::<N2, N0>(rx, tx2);          // ERROR: `S<S<Z>>: Lt<Z>` is not satisfied
 //! ```
 //!
-//! ### The acyclic relay types and runs — see `tests/priority_use.rs`.
+//! ### The acyclic relay types and runs — and the BREAK: a uniform `N1<N2` ring also compiles and deadlocks.
+//! See `tests/priority_use.rs`.
 //!
-//! ## HYPOTHESIS (pre-gauntlet — the §6 deliverable is what the cold panel adjudicates)
+//! ## The cold panel's verdict (REPORT_SEAM_SPEC_priority, r33): SEAM-BREAKS [horn 1] — the EIGHTH broken seam.
+//! ## A public-`role()`-built ring of identical `N1 < N2` relays compiles and deadlocks; §4.3 is unsound.
 //!
-//! This seam is built to **confirm**, not extend, #25's surviving weaker thesis — a deliberate departure after
-//! three deliverable rejections (#8, #24, #25) caused by building "the recognized feature" to crown a *new*
-//! claim. The expected finding: priority typing (rung b) **does** carry the deadlock-freedom *check* into Rust's
-//! types — the ring is genuinely untypable, where #25's bare floor accepted it — at the **cost** that (1) the
-//! programmer must **supply a globally-consistent, acyclic priority assignment** (the `Lt` bounds are local and
-//! per-call, but their joint satisfiability is the *whole-program acyclicity* obligation the type system only
-//! *checks*, never *searches*), and (2) edge-priority **consistency across the two endpoints** of each edge is
-//! maintained by the *constructor* ([`relay`] threads the same `Nat`), not by any per-endpoint type — so the
-//! guarantee still rests on a trusted whole-program assignment, a mini-projection. This **confirms** #25: global
-//! progress is not concentrable per-call; it needs strictly more than the per-edge floor, dischargeable here by
-//! rung (b)'s local bounds **plus** a whole-program assignment. It **unifies** progress's faces: the same shape
-//! as `ordered_locks` #15/#16 (type-level rank carries local order; whole-program lock-acyclicity escapes) and
-//! reuses `typed_nat` #8's `Lt`. Expected verdict: **SEAM-COSTS [horn 3]** — the priority discipline closes the
-//! local order/acyclicity *check*; the consistent-acyclic *assignment* is the horn-3 whole-program cost. Limits
-//! (pre-conceded): only static, fixed-shape, assignable protocols (recursion/dynamic-N need inference, as
-//! Scribble automates); a programmer can always drop to the bare floor (#25) and rebuild the deadlock — the
-//! guarantee is conditional on opting into the discipline.
+//! I built this to **confirm** #25's weaker thesis humbly — and the panel confirmed it, but by **breaking the
+//! seam on soundness**, not costing it. The horn-classifier ruled **SEAM-BREAKS [horn 1]**: the re-import rule's
+//! own §6 horn-1 falsifier ("a typed cyclic assembly that deadlocks") is met by **safe code**.
+//!
+//! **The flaw — which the spec admitted and then shipped anyway.** The "ring is untypable" argument (§3) secretly
+//! assumes **edge-priority consistency**: that the `Nat` role A *sends* on edge `AB` is the *same* `Nat` role B
+//! *receives* on `AB`. The compiler does **no** transitive reasoning — it checks each `Pi: Lt<Po>` in isolation
+//! against the concrete `Nat`s written. The chain `p_CA < p_AB < p_BC < p_CA` only forms when one `Nat` is shared
+//! per edge, which **only [`relay`] enforces**. The priority lives on the *role wrapper*, not on the #23 edge
+//! endpoint — exactly as this module's own draft conceded ("a trusted whole-program assignment, a mini-projection")
+//! — yet [`role`] is **public**, so the caller bypasses the constructor's invariant entirely. Three
+//! `role::<N1, N2>` relays — every bound `N1: Lt<N2>` (1 < 2) discharges — wire into the ring `A→B→C→A`, which
+//! **compiles, has no `unsafe`, and deadlocks** (every role is recv-first; no source). The deadlock-freedom of
+//! §4.3 rests **entirely on the trusted `relay()` constructor** threading one `Nat` per edge — a mini-projection
+//! in the TCB — **not** on the `Lt` discipline. So "deadlock-freedom of any well-typed assembly" is false.
+//!
+//! **What this CONFIRMS (the salvageable truth, by breaking not costing).** It is precisely #25's surviving
+//! weaker thesis: global progress is **not** carried by the per-channel discipline alone; it needs strictly more
+//! than the local floor — here, a trusted edge-consistent constructor. The per-role `Lt` bound carries **nothing
+//! global**, because it relates a role's two priorities but says nothing about the *dual endpoint*. And this is
+//! the **same break** as `ordered_locks` #15/#16, one soundness sub-domain over: a type-level order carries the
+//! **local** bound (per-token rank there; per-role priority here) while the **whole-program** consistency/
+//! acyclicity escapes the types — the wrong-granularity gap (Boyapati–Lee–Rinard's per-object vs per-thread, now
+//! per-role vs per-edge). Progress's **lock face** (#15/#16) and **session face** (this) break the *same way*.
+//!
+//! **The contribution salvages to SEAM-COSTS [horn 3] only if [`role`] is hidden** and roles are minted solely by
+//! an edge-consistent constructor (`relay`-style) — i.e. the priority discipline is sound only *atop* a trusted
+//! whole-program assignment, never standalone. **Verdict: SEAM-BREAKS [horn 1]** (8th broken seam); N stays 9
+//! (one of the nine modes, not new); liveness stays the third domain; progress stays its coordinate (lock face
+//! #15/#16, session face here). Lean `priority_typed_discipline_factors` (a `..._factors`, like `ordered_locks`).
+//! Prior art (Kobayashi; Dardha–Gay FoSSaCS 2018; Scribble inference) confirmed — and it is exactly why real
+//! systems generate consistent priorities from a global type rather than letting roles pick.
 
 use crate::binary_session::{session, Chan, End, Rx, Tx};
 use crate::typed_nat::{Lt, N0, N1};

@@ -2031,10 +2031,73 @@
       "outcome": "FAILED",
       "cost_usd": 1.662,
       "timestamp": "2026-06-30T07:43:16+00:00"
+    },
+    {
+      "round": 33,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_priority.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 priority-typed sessions (rung-(b)) (re-import rule under attack)\n\nThis is a **design proposal** for a twenty-sixth *seam*. It is **NOT a fourth-domain bid** \u2014 it stays inside the\n**third confirmed domain (liveness)** and builds the exact rung the twenty-fifth seam's rejection handed back.\n`REPORT_SEAM_SPEC_multiparty.md` (r32) ruled that `SEAM_SPEC_multiparty.md`'s deliverable staked a **false\ndichotomy** \u2014 that global progress lives *only* whole-protocol in a *generative* global-type projection \u2014 and\nnamed the omitted middle rung: **per-channel priority/obligation typing** (Kobayashi linear-\u03c0; Padovani;\n**Dardha\u2013Gay, FoSSaCS 2018**; Kokke\u2013Dardha), which rejects the source-less ring *compositionally, with no global\ntype*. This seam **builds that rung** and asks where on the trilemma it sits.\n\nYou are attacking a **text specification** backed by real `rustc`-checked code (`seam/src/priority.rs`, default\n`no_std` build \u2014 `core` + `alloc`, **no `unsafe`**, built on `binary_session` #23 and `typed_nat` #8). 150 tests\npass (default).\n\n---\n\n## 0. The floor (stipulated, not under attack)\n\nRust as shipped: affine ownership; nominal typing + private fields; **const trait-bound",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Absolute type-level priorities break separate compilation/composition and can't express dynamic topologies; SEAM-COSTS worse than the Scribble framing admits.",
+          "strongest_point": "Priorities are concrete type constants welded into compiled crates, so no two separately-compiled session components compose without a whole-program renumber you cannot perform on a dependency \u2014 Rust's core modularity story fails exactly at the 'safe composition' the re-import rule advertises."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Three Relays each with Pi=1<Po=2 type-check into a deadlocking ring; untypability needs edge consistency, which is not a type fact.",
+          "strongest_point": "\u00a73's transitive collapse to p:Lt<p> secretly assumes each edge's send/recv priorities are the same Nat \u2014 an invariant only relay() enforces, so role()-built rings of identical Pi<Po roles compile and deadlock, falsifying \u00a74.3's 'deadlock-freedom of any well-typed assembly.'"
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Trait solver stays decidable; no undecidable/super-poly pass. Only crack: 'untypable' enforced at monomorphization, not definition site.",
+          "strongest_point": "Lt has no transitivity impl, so generic cyclic where-bounds compile fine and the ring is rejected only at monomorphization \u2014 making deadlock-freedom whole-program/per-use, which corroborates #25 rather than refuting it."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "No send-then-recv role; RPC, token rings, recursive relays inexpressible \u2014 over-rejects deadlock-free programs, forcing escape to the floor.",
+          "strongest_point": "The three shapes admit no send-then-recv role, so ordinary deadlock-free request/response and live cyclic protocols can only be written by dropping to the unguarded floor, and the edge-indexed fragment is strictly weaker than the Dardha\u2013Gay rung it claims to locate."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Mischaracterizes its named precedent: Dardha\u2013Gay priority typing checks acyclicity compositionally via the Cycle rule, no trusted constructor; the Rust port is a weaker, cycle-rejecting regression.",
+          "strongest_point": "Dardha\u2013Gay's PCP admits deadlock-free cyclic structures and enforces priority consistency inside the type system, so the proposal's 'whole-program obligation + trusted constructor (mini-projection)' is an artifact of Rust's const bounds, not a property of rung (b) \u2014 it sits below the rung it claims to locate."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "tradeoff",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "SEAM-COSTS[horn 3]: global acyclic-assignment is a real cost, worse than the Scribble framing \u2014 absolute per-edge type-level priorities break separate compilation, cannot be renumbered in a compiled dependency, and cannot type runtime-many (dynamic-topology) sessions",
+          "Expressiveness: no send-then-recv role; RPC, deadlock-free token rings, and recursive/priority-reset relays are over-rejected, forcing ordinary safe code to the unguarded floor (#25)",
+          "Horn-2: '\u0398(depth)' is unary depth \u2014 \u0398(K) type size / \u0398(K\u00b2) work, tripping recursion_limit near K\u2248128; and ring rejection is monomorphization-deferred, not definition-site"
+        ],
+        "headline": "Re-import rule overclaims: deadlock-freedom is a trusted-relay property, not a type guarantee; sits below Dardha\u2013Gay.",
+        "rationale": "A public-role()-built ring of identical N1<N2 relays compiles and deadlocks, falsifying \u00a74.3's 'any well-typed assembly' \u2014 the guarantee rests on the trusted relay constructor, not the Lt types. Prior-art further refutes deliverable 5: the fragment is strictly below the cycle-admitting, constructor-free rung it claims to locate. Revise."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 3.1465,
+      "timestamp": "2026-06-30T08:56:24+00:00"
     }
   ],
   "settled": [],
   "incompatibilities": [],
   "blind_spot_flags": [],
-  "total_cost_usd": 65.9928
+  "total_cost_usd": 69.1393
 }
