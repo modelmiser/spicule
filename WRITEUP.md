@@ -370,7 +370,7 @@ the second alone. A 0/N adversarial result is only as good as your ability to ru
 "the proposer was just weak," and the cleanest way to do that is to *hand the proposer
 the known-good sub-component and watch the failure move, not disappear.*
 
-## 10. The constructive phase — build and break twenty-nine real seams
+## 10. The constructive phase — build and break thirty real seams
 
 The trilemma is a map, so the next step was to stop arguing in the abstract and **build**.
 A different harness shape: the negative half used cold instances to *propose* (and they
@@ -886,6 +886,33 @@ the **extremes** when the truth is a **cost between**. The Lean witness `must_co
 closes the scoped construction. No new domain (**liveness stays the third**), no new mode (**N stays 9** —
 rejection's sixth firing); twenty-nine primitives. So the FAILED broken-seam tally **stays eight** (SEAM-COSTS,
 not a break — my 8→9 prediction was wrong).
+
+**The scoped salvage — building the witness the rejection promised.** #29's r36 rejection *reversed* my finding
+but left a debt: it asserted a scoped-closure / CPS combinator **compels completion** without building one,
+exactly as #26→#27 left the `binary_session` salvage to a later primitive. The *thirtieth* primitive pays that
+debt. `must_scoped.rs` ships the `with_session` witness as a self-contained two-endpoint `session_scope(a, b)`:
+there is **no free `start`** — the *only* way to obtain a `Session` is to hand `session_scope` two **dual role
+closures**, each given a brand-trapped endpoint and each **required to return a `Done<'scope>`**, a completion
+certificate mintable *only* by `finish()` at `End`. #29's *forgettable destructor* obligation becomes an
+*unforgeable return-type* obligation: `mem::forget` defangs a `Drop` bomb but cannot fabricate a `Done`. The cold
+panel (r37) **CONFIRMED** it — **SEAM-COSTS [horn 3, concentration]**, judge → **TRADEOFF**, **HELD 1/1** — a
+recorded cost like `restore` #19 / `binary_session` #23, *not* a rejection and *not* a break (rejection-mode
+count stays six). The forcing is real: every attacker **conceded** no safe `Done` is forged, smuggled, or
+forgotten (a return-type obligation, not a destructor, is what defangs `mem::forget`), and horns 1 (no UB) and 2
+(Θ(depth), no SMT) stay intact. The #17–#28 completion residue was the **price of the free-handle API**, bought
+back here by surrendering the free handle. **But the salvage closes completion only per *endpoint*, not per
+*session*** — the merits-strongest attacker point, and the builder had already hedged it in the residue, so *the
+caveat is the finding*. `session_scope` forces only each **returning** closure's own endpoint to reach `End`;
+under a sequential **run-a-then-b** schedule, `a` can `finish` while `b` **diverges**, starving the peer — global
+completion **escapes via peer divergence**, the #23/#27 *per-session-vs-global* gap recurring one step on.
+Secondary cost: the **synchronous trap** is understated — a sequential two-closure form can't express concurrent
+or interleaved sessions. The meta repeats #29's exactly: I overstated the **extreme** again — #29 called
+completion *irreducible*, the spec §2 called it *whole-session global* — and the truth is the **per-endpoint cost
+between**. Deflation, conceded: **no new mechanism** — `thread::scope` + generativity (the invariant `'scope`
+brand lifted verbatim from branded-index #5, the same trick) + #29's `finish`/`End` typestate. The Lean witness
+`must_scoped_completion_closes` closes the scoped construction. No new domain (**liveness stays the third**), no
+new mode (**N stays 9**); **thirty primitives**. So the FAILED broken-seam tally **stays eight** (SEAM-COSTS, a
+held cost — not a break).
 
 **Decontamination, across primitives.** The seamful2 theorem predicted that a failing seam's
 obstruction *relocates* to the re-import boundary rather than vanishing. SPSC: it **vanished**
