@@ -854,4 +854,37 @@ theorem multiparty_role_order_core_closes :
   rw [seam_closes_iff_factors]
   exact ⟨id, fun _ => rfl⟩
 
+/-- Priority-typed session (rung-(b)) shape — the probe built to *confirm* #25's surviving weaker thesis. Read
+    `Pr`/`Wt` by analogy: the kernel models only the component the seam CLOSES — the *per-channel priority order*
+    core (`Pprio` is definitionally `V`): a forwarder's recv-then-send is gated by the const bound `Pi: Lt<Po>`
+    (Kobayashi/Dardha–Gay), discharged by `typed_nat`'s sealed `Lt` (Peano `<`, no reflexive `Lt<N>`), decidable
+    and per-call. It CLOSES; soundness is intact (no UB — the worst case is still a memory-safe starved/leaked
+    session; the priority discipline only *adds* rejections).
+
+    What the kernel does NOT model is the deliverable's subject: whether this rung carries **global progress**
+    per-call or whole-program. The witness shows the deadlocking ring #25's bare floor accepted is now
+    *untypable* — going around the cycle forces `p: Lt<p>`, which has no instance for any concrete assignment.
+    But the per-channel `Lt` bounds are *local*; their joint satisfiability (an acyclic, globally-consistent
+    priority assignment exists) is a **whole-program** obligation the type system only *checks*, never *searches*,
+    and edge-priority consistency across endpoints is the constructor's invariant (a mini-projection). So priority
+    typing CONFIRMS #25: global progress is not concentrable per-call; it needs strictly more than the per-edge
+    floor — here, the local `Lt` bounds *plus* a whole-program assignment. This unifies progress's faces with
+    `ordered_locks` #15/#16 (type-level rank carries local order; whole-program lock-acyclicity escapes) and
+    reuses `typed_nat` #8's `Lt`. No new domain (liveness), coordinate (progress, from #24), or mode (N stays 9).
+    Like every column past concentration, the horn-3 cost (the assignment) is modeling-dictionary; the kernel sees
+    only that the per-channel priority-order witness suffices. -/
+def Pprio (p : Prog) : Bool := V p
+
+/-- The sound core CLOSES (SEAM-COSTS [horn 3]): the *per-channel priority-order* core closes via the decidable
+    `Pi: Lt<Po>` bound (Kobayashi/Dardha–Gay, on `typed_nat`'s sealed `Lt`), exactly as a closing seam does in
+    the kernel — reusing #8's machinery. The uncarried component — the **whole-program acyclic priority
+    assignment** that the deadlock-freedom *guarantee* rests on (local `Lt` bounds checked per-call; their joint
+    consistency searched whole-program, by the programmer or an inference pass) — lives in the prose, invisible
+    to the kernel. This is the rung (b) #25's rejection named, and it CONFIRMS #25's weaker thesis: progress is a
+    whole-program obligation strictly above the per-edge floor, here dischargeable without a global type. -/
+theorem priority_order_core_closes :
+    ∃ d : Prog → Bool, SoundW Pprio d ∧ UsableW Pprio d ∧ ConcW V d := by
+  rw [seam_closes_iff_factors]
+  exact ⟨id, fun _ => rfl⟩
+
 end SeamGap

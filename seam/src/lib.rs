@@ -395,6 +395,24 @@ pub mod delegation;
 /// seams #15/#16 = lock face, delegation = session face, multiparty = global-topology face). See `multiparty`.
 pub mod multiparty;
 
+/// Twenty-sixth seam (Phase Y — PRIORITY-TYPED sessions, the rung-(b) probe): builds the exact rung #25's
+/// rejection handed back. #25 (`multiparty`) staked a false dichotomy (global progress lives *only*
+/// whole-protocol in a generative projection); the panel named the omitted middle rung — **per-channel
+/// priority/obligation typing** (Kobayashi; Dardha–Gay FoSSaCS 2018) — which rejects the source-less ring with
+/// no global type. This seam encodes it: over #23's binary edges and #8's sealed `typed_nat::Lt` (Peano `<`,
+/// no reflexive `Lt<N>`), a forwarder [`priority::Relay`]`<Pi, Po>` recv-then-sends under the bound `Pi: Lt<Po>`.
+/// The deadlocking ring — which #25's bare floor *type-checked* — forces `p_CA < p_AB < p_BC < p_CA`, i.e.
+/// `p: Lt<p>`, which has no instance for any assignment: **the ring is untypable** (a `compile_fail`), while the
+/// acyclic relay (`p_AB=N0 < p_BC=N1`) types and completes. HYPOTHESIS (gauntlet-adjudicated): built to
+/// **confirm** #25's surviving weaker thesis, not extend it — priority typing carries the deadlock-freedom
+/// *check* into the types (the `Lt` bounds, decidable, per-call) but the deadlock-freedom *guarantee* still rests
+/// on a **whole-program** obligation: the programmer must supply a globally-consistent acyclic assignment (the
+/// type system only checks it, never searches), and edge-priority consistency across endpoints is the
+/// constructor's invariant — a mini-projection. Unifies progress's faces with `ordered_locks` #15/#16 (type-level
+/// rank carries local order; whole-program acyclicity escapes). Expected: SEAM-COSTS [horn 3] (the assignment is
+/// the cost). See `priority`.
+pub mod priority;
+
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 use core::sync::atomic::{AtomicUsize, Ordering};
