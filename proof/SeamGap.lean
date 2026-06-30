@@ -1030,22 +1030,30 @@ theorem must_complete_scoped_completion_closes :
     where the consumer never holds a forgettable handle, and the only normal exit is a `Done` certificate mintable
     solely by `finish` at `End` — *closes* completion. The destructor obligation (forgettable) becomes a
     return-type obligation (not forgettable); the invariant `'scope` brand (branded #5's generativity, reused on
-    purpose) traps the session in the closure, which **is** the horn-3 **API-locality** cost. The HYPOTHESIS (the
-    cold panel adjudicates, not the builder): **SEAM-COSTS [horn3-concentration]**, HOLDING — completion is
-    concentrable at that cost, with an honest residue that is *not* a break (forcing is **modulo divergence**: a
-    diverging body hangs observably rather than abandoning silently; and **per-endpoint**: global completion needs
-    every endpoint scoped). So the #17–#28 residue was the price of the *free-handle API*, and paying API-locality
-    buys it back. A `..._closes` (like `session`/`projected`/`must_complete`'s scoped reading): the scoped witness
-    suffices; the API-locality cost is modeling-dictionary the kernel cannot see. Tally stays 8 (this holds); N
-    stays 9. If the panel instead finds a safe escape (a forgeable/smuggleable `Done`, or divergence re-opening the
-    #29 NONE), this becomes a `..._factors`/break — but the pre-registered prediction is that it closes. -/
+    purpose) traps the session in the closure, which **is** the horn-3 **API-locality** cost.
+
+    The cold panel (REPORT_SEAM_SPEC_must_scoped, r37) ruled **SEAM-COSTS [horn3-concentration]** and the JUDGE
+    ruled **TRADEOFF — HELD (survival 1/1)**, like `restore` #19 / `binary_session` #23 (NOT the rejection mode #29
+    was). **This closes the #29 reversal as predicted:** every attacker conceded **no safe `Done` is forged,
+    smuggled, or forgotten** (the return-type obligation defangs `mem::forget`), so completion *is* concentrable —
+    the #17–#28 residue was the price of the free-handle API, recoverable by surrendering the free handle. Horn 1
+    (no UB) and Horn 2 (Θ(depth), no SMT) intact. The panel **sharpened** it (merits-strongest, soundness):
+    concentration is **per-endpoint, not whole-session** — `session_scope` forces only each *returning* closure's
+    own endpoint, so under run-`a`-then-`b` a finishes while a diverging peer is starved, and **global completion
+    escapes via peer divergence** (the #23/#27 per-session-vs-global gap, one step on). The headline closes
+    *per-endpoint*; the *global* obligation stays uncarried, exactly the caveat the builder hedged. A `..._closes`
+    (like `session`/`projected`/`must_complete`'s scoped reading): the scoped witness suffices to close completion
+    per-endpoint; the API-locality + synchronous-trap cost, and the global escape, are modeling-dictionary the
+    kernel cannot see. Tally stays 8 (this HELD); N stays 9. -/
 def Pmustscoped (p : Prog) : Bool := V p
 
-/-- The sound core CLOSES (HYPOTHESIS: SEAM-COSTS [horn3-concentration], HOLDING): completion closes through the
-    **scoped-closure** witness (`session_scope`, the `thread::scope` analogue) — the consumer never holds a
-    forgettable handle, the only normal exit is a `finish`-minted `Done`, so the obligation is carried at an
-    API-locality cost the kernel cannot see. The concrete witness the #29 reversal promised; it closes the #29
-    finding that completion is concentrable, not the irreducible NONE the free-handle bomb suggested. -/
+/-- The sound core CLOSES (SEAM-COSTS [horn3-concentration]; the gauntlet ruled TRADEOFF/HELD, not a break):
+    completion closes **per-endpoint** through the **scoped-closure** witness (`session_scope`, the `thread::scope`
+    analogue) — the consumer never holds a forgettable handle, the only normal exit is a `finish`-minted `Done`, so
+    the (local) completion obligation is carried at an API-locality cost the kernel cannot see. The concrete witness
+    the #29 reversal promised; it closes the #29 finding that completion is concentrable, not the irreducible NONE
+    the free-handle bomb suggested — while the *global* (all-endpoints) obligation escapes via peer divergence,
+    living in the prose, invisible to the kernel. -/
 theorem must_scoped_completion_closes :
     ∃ d : Prog → Bool, SoundW Pmustscoped d ∧ UsableW Pmustscoped d ∧ ConcW V d := by
   rw [seam_closes_iff_factors]

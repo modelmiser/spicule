@@ -499,18 +499,23 @@ pub mod must_complete;
 /// **complete** (finish ⇒ `Done`), **diverge** (`loop`/`panic` ⇒ never returns), or **nothing** — it cannot
 /// return without a `Done` and cannot fabricate one (`mem::forget` conjures no certificate; the invariant
 /// `'scope` brand — lifted verbatim from branded #5 — blocks smuggling a foreign one). The destructor obligation
-/// of #29 (forgettable) becomes a **return-type** obligation (not forgettable). HYPOTHESIS (pre-registered; the
-/// cold panel rules): **SEAM-COSTS [horn3-concentration / API-locality], that HOLDS** — completion is genuinely
-/// concentrable at the cost of surrendering the free movable handle (the session is trapped in the closure, the
-/// `thread::scope` ergonomic tax = branded #5's "the API-locality tax IS the soundness mechanism"). Honest residue
-/// (not a break): forcing is **modulo divergence** (a `loop {}` body hangs — *observable* — rather than silently
-/// `mem::forget`-ing, so the residue shrinks from silent abandonment to non-termination) and **per-endpoint**
-/// (global completion needs every endpoint scoped — the #23/#27 per-session-vs-global theme). Deflation (conceded):
-/// no new mechanism — `thread::scope` + generativity (branded #5) + the #29 `finish`/`End` typestate; the
-/// contribution is *locating* completion as concentrable-at-API-locality-cost, the concrete witness closing the
-/// #29 reversal. Predicted: no new domain/coordinate/mode; tally stays 8; N stays 9. Lean (HYPOTHESIS)
-/// `must_scoped_completion_closes` (a `..._closes`: the scoped witness closes completion, as #29's renamed
-/// theorem records the free-handle witness only factored). See `must_scoped`.
+/// of #29 (forgettable) becomes a **return-type** obligation (not forgettable). VERDICT (cold panel, r37):
+/// **SEAM-COSTS [horn3-concentration], TRADEOFF — HELD (survival 1/1)**, like `restore` #19 / `binary_session` #23
+/// (NOT the rejection mode #29 was). **The #29 reversal is CLOSED as predicted:** every attacker conceded **no safe
+/// `Done` is forged, smuggled, or forgotten** — the return-type obligation defangs `mem::forget` (it mints no
+/// certificate) — so completion *is* concentrable and the #17–#28 residue **was** the price of the free-handle API.
+/// Horn 1 (no UB) and Horn 2 (Θ(depth), no SMT) intact. The panel **sharpened** it (merits-strongest, soundness):
+/// concentration is **PER-ENDPOINT, not whole-session** — my §2 over-claimed "every session runs to `End`," but
+/// `session_scope` forces only each *returning* closure's own endpoint; under run-`a`-then-`b`, **`a` finishes while
+/// `b` diverges, starving the peer**, so global completion **escapes via peer divergence** (the #23/#27
+/// per-session-vs-global gap, one step on). I hedged this correctly in the "per-endpoint"/"modulo divergence"
+/// residue, so the **caveat is the finding**; secondary, the **synchronous-trap** cost (sequential run-`a`-then-`b`,
+/// no genuine concurrency) was understated. META (consistent with #29): I overstated the extreme again — there
+/// "irreducible," here "whole-session global"; the truth is the per-endpoint cost between. Deflation (conceded): no
+/// new mechanism — `thread::scope` + generativity (branded #5) + #29's `finish`/`End` typestate. No new
+/// domain/coordinate/mode; tally **STAYS 8**; N stays 9. Lean `must_scoped_completion_closes` (a `..._closes`:
+/// completion closes through the scoped witness, *per-endpoint*; the free-handle #29 witness only factored). See
+/// `must_scoped`.
 pub mod must_scoped;
 
 use core::cell::UnsafeCell;

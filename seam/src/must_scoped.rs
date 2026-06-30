@@ -32,30 +32,49 @@
 //! `thread::scope` ergonomic tax, which is exactly branded #5's "the API-locality tax **is** the soundness
 //! mechanism."
 //!
-//! ## What it does *not* claim (the honest residue)
+//! ## VERDICT (cold panel, REPORT_SEAM_SPEC_must_scoped.md, r37): SEAM-COSTS [horn3-concentration], TRADEOFF — HELD
+//!
+//! Horn-classifier: **SEAM-COSTS [horn3-concentration]** — *"Sound and decidable; completion concentrates
+//! **per-endpoint only** — global completion escapes via peer divergence."* Judge: **TRADEOFF (survival 1/1)** — the
+//! seam **HELD with a recorded cost**, like `restore` #19 and `binary_session` #23 (NOT the rejection mode #29 was;
+//! the deliverable was substantially delivered). **This closes the #29 reversal as predicted:** completion *is*
+//! concentrable — the scoped combinator carries the obligation every free-handle session seam (#17/#18/#23/#27/#28/
+//! #29) left on the consumer, so the #17–#28 residue **was** the price of the free-handle API, and paying the
+//! API-locality price buys it back.
+//!
+//! What every attacker conceded (the forcing is **real**): **no safe `Done` can be forged, smuggled, or
+//! forgotten.** The return-type obligation (not a destructor) genuinely defangs `mem::forget` — forgetting mints no
+//! certificate; the private fields forbid forging; the invariant brand forbids smuggling one from another scope.
+//! Horn 1 (sound — worst case a hung/leaked session, no UB) and Horn 2 (decidable — Θ(depth) typestate, brand
+//! resolved by the compiler, no SMT) are **intact**. The obstruction stayed at the **re-import boundary**.
+//!
+//! What the panel **sharpened** (the merits-strongest attacker point, soundness): **concentration is PER-ENDPOINT,
+//! not whole-session.** My §2 over-claimed "every session a scope opens runs to `End`" — but `session_scope` forces
+//! only **each *returning* closure's own endpoint**. Under the single-threaded run-`a`-then-`b` witness, **`a` can
+//! `finish` while `b` *diverges*, starving the peer** — global (both-endpoint) completion **escapes via peer
+//! divergence**. This is the #23 (relative progress closes only *per session*) / #27 (the *execution* obligation
+//! never leaves the consumer) **per-session-vs-global gap recurring**, one structural step on: the scoped combinator
+//! carries *local* completion (this endpoint), never *global* completion (every endpoint actually runs). I **did**
+//! hedge this correctly in the "modulo divergence" + "per-endpoint" residue below and in spec §3/§6.3 — the verdict
+//! is that my §2/§4 headline contradicted my own caveat, so the **caveat is the finding**. (Secondary: the
+//! **synchronous-trap** cost was *understated* — `session_scope` imposes a sequential run-`a`-then-`b` schedule, so
+//! it cannot express genuinely *concurrent/interleaved* sessions; the horn-3 price is heavier than "the handle
+//! can't escape.")
+//!
+//! ## The honest residue (now the CONFIRMED core of the finding, not a footnote)
 //!
 //! - **Modulo divergence.** Forcing applies to *terminating* closures. A body may `loop {}` forever and never
 //!   `finish` — the peer still starves, but the program now **hangs** (observable) rather than terminating with a
 //!   silent `mem::forget` (invisible). The residue shrinks from *silent abandonment* to *non-termination*; it does
-//!   not vanish.
-//! - **Per-endpoint.** `session_scope` forces *both* endpoints because it owns both closures. A session whose peer
-//!   lives outside any scope is only as forced as its own side — global completion needs *every* endpoint scoped
-//!   (the per-session-vs-global theme of #23/#27).
+//!   not vanish — and (the r37 sharpening) a *diverging peer* is exactly how **global** completion escapes.
+//! - **Per-endpoint, not global.** `session_scope` forces each *returning* endpoint; a *diverging* endpoint starves
+//!   its peer. Global completion needs *every* endpoint to actually run — the per-session-vs-global theme of #23/#27.
 //!
-//! ## HYPOTHESIS (pre-registered; the cold panel adjudicates, not the builder)
-//!
-//! **SEAM-COSTS [horn3-concentration / API-locality], that HOLDS** — completion *is* concentrable: the scoped
-//! combinator carries the completion obligation that every free-handle session seam (#17/#18/#23/#27/#28/#29) left
-//! on the consumer, at the cost of surrendering the free movable handle (the brand traps the session in the
-//! closure). This is the concrete witness the r36 reversal promised, closing the #29 finding: completion was the
-//! price of the **free-handle API**, and paying the **API-locality** price buys it back. Horn 1 holds (no
-//! `unsafe`; the worst case is a hung/leaked session, not UB). Horn 2 holds (the typestate is Θ(depth); the brand
-//! is resolved by the compiler, no SMT). The open rulings I ask the panel to make: (a) is the forcing **real** or
-//! is there a safe escape I have not seen (a way to mint or smuggle a `Done` without finishing)? (b) is "modulo
-//! divergence" the *honest* boundary, or does a diverging body re-open the same NONE #29 had? (c) does this
-//! **deflate** onto `thread::scope` / generativity / branded #5 (a re-application, not a new mechanism — which I
-//! concede), so the contribution is *locating* completion as concentrable-at-API-locality-cost, not a new device?
-//! (d) is the broken-seam tally unchanged (this HOLDS, tally stays 8) and N still 9?
+//! META (consistent with #29's lesson): I overstated the *extreme* again — there "irreducible," here "whole-session
+//! global." The truth is the cost between: completion concentrates **locally, per-endpoint**, at an API-locality +
+//! synchronous-trap cost. No new domain (liveness), coordinate (completion), or mode (N stays 9); the seam **HELD**,
+//! so the broken-seam tally **STAYS 8**. Lean `must_scoped_completion_closes` (a `..._closes` — completion closes
+//! through the scoped witness, *per-endpoint*; the free-handle #29 witness only factored).
 //!
 //! ### CF1 — the forcing: a body that does **not** `finish` cannot return a `Done` (so cannot terminate normally).
 //! `core::mem::forget` is safe and skips any destructor — but it conjures no `Done`, so the closure's return type

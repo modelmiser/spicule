@@ -2281,10 +2281,73 @@
       "outcome": "FAILED",
       "cost_usd": 2.8512,
       "timestamp": "2026-06-30T16:17:10+00:00"
+    },
+    {
+      "round": 37,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_must_scoped.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 scoped session (does a *scoped-closure* combinator **concentrate** completion?) (re-import rule under attack)\n\nThis is a **design proposal** for a thirtieth *seam*, the **direct salvage of the twenty-ninth** (`must_complete`),\nmirroring the #26\u2192#27 break\u2192salvage rhythm. #29 built a **free-handle** `Session<P>` with a `Drop` **completion\nbomb** and over-claimed it forced run-to-`End`; the r36 panel **reversed** that: `core::mem::forget` skips the bomb\n(the free handle is forgettable), **yet completion is NOT irreducible** \u2014 a **scoped-closure / CPS combinator** (the\n`std::thread::scope` analogue) compels it *modulo divergence*, by moving the obligation to the **re-import boundary**\nso the consumer **never holds a forgettable handle**. This seam builds that combinator concretely and asks whether\nthe #29 reversal **closes**. It is **NOT a fourth-domain bid**; it stays inside the **third confirmed domain\n(liveness)**, on the **completion** coordinate.\n\nYou are attacking a **text specification** backed by real `rustc`-checked code (`seam/src/must_scoped.rs`, default\n`no_std` build \u2014 `core` + `alloc`, **no `unsafe`**, self-contained over the #23/#29 two-endpoint model). Tes",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Completion is forced only by trapping the endpoint in a synchronous, non-escaping, fixed-depth scope \u2014 excluding async, multiplexing, round-trips, and loops; Horn-3 cost is grossly understated.",
+          "strongest_point": "The escape-free synchronous scope that mints completion is structurally incompatible with async I/O multiplexing and even with a single round-trip under the run-a-then-b witness, so the 'API-locality cost' is actually loss of every real protocol shape."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "No safe forged/smuggled Done; forcing holds modulo divergence, but global session completion is only per-endpoint.",
+          "strongest_point": "Closure a can finish and return its Done while peer closure b diverges, so the session-level \u00a72 invariant (whole session completes) is not enforced \u2014 only the per-returning-endpoint claim is, leaving global completion uncarried."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "All implied passes (typestate, HasDual, HRTB, monomorphization) are linear/decidable; recursion and higher-order sessions excluded, so no blow-up.",
+          "strongest_point": "The two vectors that would force undecidability/HO-unification \u2014 recursive protocols and channel-over-channel delegation \u2014 are explicitly excluded from the fixed-depth, value-only witness, leaving only rank-1 thread::scope-shaped HRTB and linear structural dual computation that rustc provably handles."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Forcing is sound modulo divergence; no safe Done forgery, but the cost is understated, not a break.",
+          "strongest_point": "The combinator forces completion only for protocols that fit in one non-yielding synchronous closure; all event-driven/async/long-lived sessions must fall back to #29's unforced free handle, so 'API-locality cost' understates that completion is unavailable exactly where it matters."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Mechanism is runST + Linear Haskell's resource bracket, under-cited; soundness and divergence caveat hold, but novelty overstated.",
+          "strongest_point": "The rank-2-trap-returning-a-must-mint-token combinator, with the identical 'modulo divergence' residue, was fully built by runST (1994) and Linear Haskell's linear resource bracket (2018) \u2014 cited only via weaker analogues (thread::scope/GhostCell)."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "tradeoff",
+          "attacker-implementation": "argued-past",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "TRADEOFF",
+        "tradeoffs": [
+          "Horn-3 cost is far above 'API-locality': completion is forced only for synchronous, non-escaping, fixed-depth, terminating protocols \u2014 async multiplexing, run-a-then-b round-trips, and long-lived loops are excluded by the same mechanism that mints completion.",
+          "Scope-of-claim: \u00a72's 'every session runs to End' over-reaches; forcing is per-returning-endpoint only. Peer divergence (b loops while a finishes) leaves global session completion uncarried \u2014 narrow the wording and record global completion as an open coordinate.",
+          "Attribution: cite runST (1994, rank-2 escape trap) and Linear Haskell's linear resource bracket (2018, must-return-token modulo divergence) as the direct ancestors; thread::scope/GhostCell are weaker analogues."
+        ],
+        "headline": "Re-import soundly forces per-endpoint completion modulo divergence, at understated cost.",
+        "rationale": "No attacker produced a safe escape; soundness and decidability hold. But the synchronous-trap cost is grossly understated, \u00a72 falsely claims whole-session completion when only per-endpoint is forced, and the mechanism is older (runST/Linear Haskell) than cited \u2014 all recordable, none fatal."
+      },
+      "outcome": "TRADEOFF",
+      "cost_usd": 1.8341,
+      "timestamp": "2026-06-30T17:07:57+00:00"
     }
   ],
   "settled": [],
   "incompatibilities": [],
   "blind_spot_flags": [],
-  "total_cost_usd": 77.5586
+  "total_cost_usd": 79.3927
 }
