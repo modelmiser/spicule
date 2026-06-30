@@ -939,4 +939,35 @@ theorem projected_schedulability_closes :
   rw [seam_closes_iff_factors]
   exact ⟨id, fun _ => rfl⟩
 
+/-- Choice (offer/select, `&`/`⊕`) shape — the *branching* connective, the last unprobed core session-type
+    feature. Read `Pr`/`Wt` by analogy: the kernel models the component the seam CLOSES — the *order +
+    branch-safety* core (`Pchoice` is definitionally `V`): `offer` returns a `Branch<L, R>` sum the consumer must
+    exhaustively `match` (handle every label — carried by the floor's sum types), and each variant carries the
+    correctly-typed continuation (label–continuation correlation — can't take one label and continue as the
+    other); `HasDual` threads choice so the selector's options are exactly the offerer's branches. It CLOSES;
+    soundness is intact (no UB — the worst case is a starved/leaked memory-safe session).
+
+    The cold panel (REPORT_SEAM_SPEC_choice, r35) ruled [VERDICT — to be filled on adjudication]. The
+    pre-registered reading: choice adds **no new coordinate** — the branching connective deflates onto Rust's sum
+    types + exhaustive `match`; order + branch-safety close, but **completion does NOT** — choice carries *which*
+    branch is taken safely, not that the chosen branch runs to `End`. A peer can `mem::forget` after selecting (or
+    inside a branch), starving its dual: the same #17/#18/#23/#27 completion residue, unchanged by branching
+    (choice carries branch-*safety*, not branch-*completion*). No new domain (liveness), coordinate (progress,
+    from #24), or mode (N stays 9). Deflates onto deep folklore (Honda 1993's `&`/`⊕`; the `session_types`
+    crate's `offer!`/`choose!`). Like every column past concentration, the horn-3 completion cost is
+    modeling-dictionary; the kernel sees only that the order + branch-safety witness suffices. -/
+def Pchoice (p : Prog) : Bool := V p
+
+/-- The sound core CLOSES (SEAM-COSTS [horn 3]): the *order + branch-safety* core closes via the floor's sum
+    types — `offer`'s `Branch<L, R>` forces an exhaustive `match` (handle every label) and each variant pins the
+    correctly-typed continuation (label–continuation correlation), with `HasDual` threading the branch set. The
+    uncarried component — *completion* (the chosen branch is not forced to run to `End`; a peer's `mem::forget`
+    starves its dual, the #17/#18/#23/#27 residue) — lives in the prose, invisible to the kernel. Choice carries
+    branch-*safety*, not branch-*completion*; the branching connective adds no new coordinate, deflating onto the
+    floor's sum types. -/
+theorem choice_branch_safety_closes :
+    ∃ d : Prog → Bool, SoundW Pchoice d ∧ UsableW Pchoice d ∧ ConcW V d := by
+  rw [seam_closes_iff_factors]
+  exact ⟨id, fun _ => rfl⟩
+
 end SeamGap

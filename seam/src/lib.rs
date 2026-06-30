@@ -443,6 +443,22 @@ pub mod priority;
 /// `..._closes`, the first since #25). See `projected`.
 pub mod projected;
 
+/// Twenty-eighth seam (Phase AA — CHOICE, offer/select, `&`/`⊕`): the last unprobed core session-type feature —
+/// the *branching* connective, orthogonal to the *sequencing/progress* axis every prior session seam (#18,
+/// #23–#27) probed. Self-contained over #23's `Rc<RefCell<Transport>>` dual endpoints. `Offer<L, R>` (external
+/// choice) receives a label and branches; `Chan::offer` returns a [`choice::Branch`]`<L, R>` sum the consumer
+/// must `match`. `Select<L, R>` (internal choice) sends a label; `select_left`/`select_right` commit to a branch.
+/// `HasDual` threads choice: `Offer<L, R> ↔ Select<L::Dual, R::Dual>` (the selector's options are exactly the
+/// offerer's branches). Two safety facts, both carried by the floor's SUM TYPES: (1) handle every label (the
+/// `Branch` enum + exhaustive `match`); (2) label–continuation correlation (each variant carries the correctly-
+/// typed continuation — can't take one label and continue as the other). HYPOTHESIS (gauntlet-adjudicated):
+/// SEAM-COSTS [horn 3], **no new coordinate** — choice deflates onto sum types; order + branch-safety close, but
+/// completion does NOT (a peer can `mem::forget` after selecting / inside a branch, the #17/#18/#23/#27
+/// completion residue — choice carries branch-*safety*, not branch-*completion*). Deflates onto folklore (Honda
+/// 1993's `&`/`⊕`; `session_types`' `offer!`/`choose!`). Lean `choice_branch_safety_closes` (a `..._closes`).
+/// See `choice`.
+pub mod choice;
+
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 use core::sync::atomic::{AtomicUsize, Ordering};
