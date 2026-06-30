@@ -44,34 +44,42 @@
 //!    branch** (a livelock: choose "recurse" forever). Forcing termination is the **halting problem** — undecidable
 //!    (Rice), so it is a clean **NONE**, not a floor-mismatch break and not concentrable.
 //!
-//! ## What this seam claims, and what it CONCEDES (stated up front to avoid the arc's recurring over-claim)
+//! ## VERDICT (cold panel, REPORT_SEAM_SPEC_recursion.md, r38): SEAM-COSTS [horn3-concentration], FAILED — I OVER-CONCEDED
 //!
-//! - **Claims (and asks the panel to confirm):** order-through-unfolding **closes** (affine typestate threads
-//!   soundly across `enter`/`recur`; no UB; `Var` is sound by the environment discipline); duality **closes**
-//!   (`Rec`/`Var` thread `HasDual`); the typestate stays **decidable** (the *type* is finite even though runtime
-//!   depth is not — Θ(type-size), no SMT); and recursion **bounds** #30's completion-forcing (it needs a reachable
-//!   `End`).
-//! - **Concedes as clean undecidable NONEs (does NOT claim to carry):** **termination** (a recursive session need
-//!   not, and without choice cannot, reach `End`; forcing a loop to exit is the halting problem); **productivity /
-//!   guardedness** (`Rec<Var>` — unguarded — type-checks but is a no-op spin loop; Rust's floor cannot enforce that
-//!   every `Var` sits under a communication action). These are not floor *mismatches* (no decidable checker carries
-//!   them either); they are domain-independent undecidability.
+//! Horn-classifier: **SEAM-COSTS [horn3-concentration]** — *"`Var` sound, no UB; but guardedness is decidable — a
+//! `Guarded` bound owed, not an undecidable NONE."* Judge: **FAILED** on the §6 deliverable — the **rejection mode,
+//! 7th firing** (after `typed_nat` #8, `delegation` #24, `multiparty` #25, `projected` #27, `choice` #28,
+//! `must_complete` #29). Sound — so the broken-seam tally **STAYS 8** (a deliverable rejection, not a soundness
+//! break) — but my central concession was **wrong**, and (the recurring sting) it was refuted **from my own cited
+//! prior art** again.
 //!
-//! ## HYPOTHESIS (pre-registered; the cold panel adjudicates, not the builder)
+//! What HELD (every attacker confirmed): **Horn 1 — the `Var`/environment encoding is sound.** No safe path
+//! produces an ill-formed unfolding; the worst case is a starved peer (a non-terminating or dropped loop), not UB —
+//! the `recur`-only-under-`Rec<P>` discipline genuinely traps `Var`. **Horn 2 — decidable** (Θ(type-size), no SMT).
+//! And the **#30-bounding finding HELD**: a protocol with no reachable `End` (`Rec<Tx<Var>>`) makes #30's
+//! `Done`-forcing vacuous — recursion does expose #30's unstated precondition (a reachable terminal).
 //!
-//! **SEAM-COSTS [horn3-concentration]** — order + duality concentrate per-unfolding (closes); the new loop-level
-//! obligations (termination, productivity) are **conceded undecidable NONEs**, not breaks. Recursion adds **no new
-//! domain** (liveness) and **no new coordinate** — it adds a **termination/fairness FACE** to the existing progress
-//! coordinate and **bounds** #30's forcing. The completion story **decomposes once more**, consistent with #27
-//! (topology closes / execution residue stays) and #30 (per-endpoint closes / global escapes): **per-unfolding
-//! order closes / whole-loop termination is an undecidable NONE.** Deflation (conceded): the encoding is standard
-//! (`session_types`/`dejavu` `Rec`/`Var`; Honda–Yoshida–Carbone `μ`-types); "can't force a loop to halt" is the
-//! halting problem; guardedness is Coq/Agda folklore — so the contribution is **locating** recursion as the
-//! boundary of #30's forcing, not a new mechanism. The open rulings I ask for: (a) is the `Var`/environment
-//! encoding **sound** (no UB, no ill-formed unfolding), or is there a safe escape (a `Var` reachable with a wrong
-//! or absent `Rec`)? (b) is conceding termination/productivity as NONEs **right**, or does the floor carry/break
-//! one of them? (c) does recursion **deflate entirely** onto #17's completion residue + the halting problem (a
-//! redundant re-run), or does the #30-vacuity finding earn its keep? (d) tally stays 8, N stays 9?
+//! What was REJECTED (the killer — soundness + prior-art): **I conflated two obligations and over-conceded one.** I
+//! filed **productivity / guardedness** as an *undecidable NONE* alongside termination. It is **not** — it is a
+//! **decidable cost** at the re-import boundary. `Rec<Var>` = `µX.X` is the **non-contractive** type that *every
+//! system I cited* (Coq/Agda **guarded corecursion**, contractive recursive types) rejects **syntactically**. A
+//! sealed **`Guarded` marker** (implemented for `Tx`/`Rx`/`End`/`Rec`, **not** for `Var`) required by
+//! `enter`/`Rec`-formation carries guardedness in **Θ(type-size), no SMT — the same machinery as order**. So
+//! productivity **CONCENTRATES (horn 3)**; it is a cost, not a NONE. **Only *termination* is the genuine undecidable
+//! NONE** (forcing a loop to take an `End` branch is the halting problem). I cited guarded corecursion as prior art
+//! and then mis-ruled the very thing it *decides* — the #24/#25/#29 pattern (refuted from my own lineage), 7th time.
+//!
+//! META — the inverse of the arc's usual over-claim, but the **same shape**: where the rejections #8/#24/#25/#27/#28
+//! over-claimed concentration is *total* and #29/#30 over-claimed the danger is *irreducible/global*, here I
+//! **over-conceded** — put guardedness at the *undecidable* extreme when the truth is a **decidable cost in
+//! between**. The unifying lesson sharpens: **I flee the middle (a decidable, partial cost) toward whichever
+//! extreme is rhetorically cleaner** — total concentration, or total impossibility. The corrected ruling: order +
+//! duality + **guardedness** all CLOSE (concentrable, decidable); **termination alone** is the undecidable NONE; the
+//! completion story decomposes once more (per-unfolding order + guardedness close / whole-loop termination is the
+//! NONE). No new domain (liveness), coordinate, or mode (N stays 9); tally STAYS 8. Lean `recursion_guarded_order_
+//! closes` (renamed from `recursion_order_unfolding_closes`: guardedness joins the closing core, the over-conceded
+//! part the kernel still cannot see). The natural **#32** is the concrete salvage — add the sealed `Guarded` marker
+//! so `Rec<Var>` will not form — mirroring #26→#27 and #29→#30.
 //!
 //! ### CF1 — a top-level `Var` is inert: no enclosing `Rec`, so no `recur` (an unbound loop variable cannot loop):
 //! ```compile_fail

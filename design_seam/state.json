@@ -2344,10 +2344,74 @@
       "outcome": "TRADEOFF",
       "cost_usd": 1.8341,
       "timestamp": "2026-06-30T17:07:57+00:00"
+    },
+    {
+      "round": 38,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_recursion.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 recursive session (`Rec`/`Var`: can the floor force a *loop* to ever leave?) (re-import rule under attack)\n\nThis is a **design proposal** for a thirty-first *seam* \u2014 the last unbuilt **structural** session-type feature,\n**recursion** (`\u03bcX.T`), the looping connective orthogonal to sequencing (#18/#23), choice (#28), and completion\n(#29/#30). The session arc is otherwise closed. This seam asks what an **unbounded-depth** protocol does to the\nfindings the arc settled at finite depth \u2014 especially **#30's completion-forcing**, which mints a `Done` only at\n`End`. It is **NOT a fourth-domain bid**; it stays inside the **third confirmed domain (liveness)**, and it\ndeliberately tests the **boundary** of #30 rather than opening new ground.\n\nYou are attacking a **text specification** backed by real `rustc`-checked code (`seam/src/recursion.rs`, default\n`no_std` build \u2014 `core` + `alloc`, **no `unsafe`**, self-contained over the #23/#29/#30 two-endpoint model). Tests\npass (default), including two `compile_fail` doctests (CF1 a top-level `Var` has no `recur`; CF2 a `Rec` head must\nbe `enter`-ed before its body is walked).\n\n---\n\n## 0. The floor (stipulated, not under attack)\n\nRust a",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Sound; infinite single-level loops are ergonomically clean, costs (no exit, no nesting) are pre-conceded scope cuts.",
+          "strongest_point": "Without #28 you cannot express even an optional loop exit \u2014 the most common protocol pattern (read-until-close) \u2014 and that gap is mislabeled 'undecidable termination' when it is just unbuilt decidable choice."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Var encoding is sound, but conceding productivity/guardedness as undecidable is wrong: guardedness is decidable and floor-carriable.",
+          "strongest_point": "Guardedness is a decidable syntactic condition (Coq/Agda) the floor enforces in \u0398(type-size) by withholding `enter` from `Rec<Var>` via a marker trait, so productivity is a COST, not a clean undecidable NONE."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Productivity/guardedness mis-conceded as undecidable; it is a decidable linear syntactic check the floor can carry via a trivial marker trait.",
+          "strongest_point": "Guardedness \u2014 the criterion Coq/Agda decide and the proposal itself cites \u2014 is decidable and floor-carriable (forbid `Rec<Var>` with a `Cont: Guarded` bound), so it is a COST, not a clean undecidable NONE; only termination genuinely is."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Productivity/guardedness is decidable (contractivity, cited in HYC & Coq/Agda), so conceding it as an undecidable NONE is wrong.",
+          "strongest_point": "Guardedness is a decidable syntactic check that standard \u03bc-session-types and the cited Coq/Agda productivity checkers already carry \u2014 and this minimal core can enforce it with the same typestate it uses for order \u2014 so it is a COST, not a clean undecidable NONE."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Productivity/guardedness is decidable contractiveness (Gay-Hole; guarded corecursion), not an undecidable NONE; floor carries it via a trait bound.",
+          "strongest_point": "Rec<Var> is the non-contractive \u00b5X.X that every cited session-type system rejects syntactically, so guardedness is a one-trait-bound floor-carry (SEAM-COSTS), not a clean undecidable NONE beside termination."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "argued-past",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "genuine-flaw",
+          "attacker-expressiveness": "genuine-flaw",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Confirmed (not flaws), carry forward: Var/environment encoding is sound \u2014 Horn 1 holds, broken-seam tally stays 8.",
+          "Single-slot env's soundness is load-bearing on the absence of choice (#28): no execution can reach an outer Var under a clobbered binder only because no loop can exit. Record as an explicit precondition.",
+          "Recursion does bound #30: a reachable End is #30's unstated completion precondition \u2014 non-trivial, confirmed.",
+          "After revision, productivity/guardedness becomes a recorded COST: a decidable contractivity check the floor can carry via a `Cont: Guarded` marker bound, deliberately not built."
+        ],
+        "headline": "Var encoding sound, but conceding decidable guardedness as an undecidable NONE is a misclassification the proposer must fix.",
+        "rationale": "Soundness (Horn 1) and the #30-bounding hold. But four attackers, using the proposal's own cited guarded-corecursion/contractivity prior art and its own typestate trick, refute 'the floor cannot require a communication action': guardedness is decidable. Termination stays a NONE; productivity must be rebranded a COST."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.8086,
+      "timestamp": "2026-06-30T19:17:18+00:00"
     }
   ],
   "settled": [],
   "incompatibilities": [],
   "blind_spot_flags": [],
-  "total_cost_usd": 79.3927
+  "total_cost_usd": 82.2013
 }
