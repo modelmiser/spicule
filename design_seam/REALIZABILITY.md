@@ -90,7 +90,22 @@ MMIO-shaped* — the lattice space is open-ended, so law-trust recurs per user C
 'dischargeable' holds only at the *model* level — no Rust pass checks model-to-shipped-code.) So the
 soundness-domain map **stays at three** (memory / IFC / liveness) + the application-correctness basis, into
 which convergence folds; the **FAILED broken-seam count stays six** (this one survived/deflated); N stays 9.**
-(Phases L–T.)*
+And a twenty-second — a *cost-typed computation* (`Timed<C, T>`, a graded cost monad reusing `typed_nat`'s
+type-level `Nat`) — was the **second** probe aimed at a fourth domain, this time **real-time / WCET**, and it
+too **found no fourth domain — but it FAILED** where convergence merely deflated. The cold panel (r29) ruled
+**SEAM-BREAKS [horn 1], FAILED — the SEVENTH broken seam**: `step` charges `+1` *decoupled from its closure*,
+so a million-iteration loop is cost `1` and `within::<1>` admits it (my §4 over-claimed the deadline
+guarantee — the spec defect that made this FAIL rather than survive). All five attackers landed: **Horn 3 is
+false** (non-unifying `if`-branches force manual step-padding); the unary cost **does not scale** (O(C)
+blow-up, uncompilable at real 10³–10⁷-cycle budgets); **no additive composition**; and the primitive is
+**Danielsson's 2008 cost monad** — "op-count ≠ cycles" is WCET's *founding premise*, so **pick a lane**
+(abstract cost xor physical deadline). WCET **deflates** multiply: the static cost monad onto Danielsson /
+`typed_nat` (#8 — which does not even *scale*); the physical-deadline claim onto an `mmio`-shaped axiom (#2)
+this seam **never installs** (worse than MMIO — the cost model is a fiction *and* absent); the data-dependent
+gap onto liveness's **partial-match**. The op-count is an **unsound** proxy — *sharper* than `secret`'s
+sound-but-incomplete one. **Meta:** two fourth-domain candidates (`crdt` deflated+survived, `wcet`
+deflated+FAILED), **neither opens a fourth domain** — the three confirmed domains look **special**. N stays 9;
+the FAILED broken-seam count **rises to seven**. (Phases L–U.)*
 
 > **A note on the "#5/#6/#7" shorthand (and a numbering collision).** `#6` (zero-cost) and `#7`
 > (AI-legible) are the literal seed-property numbers. The "**#5⟂#7 cell**" shorthand, coined for the
@@ -758,6 +773,23 @@ restore │  CONTROLLED PACKAGING probe  ⇒ HOLDS WITH COST: SEAM-COSTS [horn3]
         │                              stays at THREE + app-correctness. No new mode; N stays 9; broken-seam count
         │                              stays SIX (this survived/deflated).
         ▼
+   wcet │  SECOND FOURTH-DOMAIN probe    ⇒ candidate domain DEFLATED again, and this one FAILED. BREAKS [horn 1],
+        │  (cost-typed computation =     FAILED (r29), the SEVENTH broken seam: step charges +1 DECOUPLED from its
+        │   Timed<C,T>, a graded cost    closure, so a 1M-iteration loop is cost 1 and within::<1> admits it — the
+        │   monad reusing typed_nat)     op-count is no bound on cycles (my §4 over-claimed the deadline guarantee →
+        │                              FAILED, not a TRADEOFF like crdt). All 5 attackers landed: (1) soundness —
+        │                              op-count ≠ cycles; (2) ergonomics — Horn 3 FALSE (non-unifying if-branches
+        │                              force step-padding); (3) impl — unary Peano is O(C), UNCOMPILABLE at real
+        │                              10³–10⁷-cycle budgets, only compilable path IS the break; (4) expressiveness
+        │                              — no type-level addition, no compositional sequencing; (5) prior-art — this
+        │                              is Danielsson's 2008 cost monad; "op-count ≠ cycles" is WCET's FOUNDING
+        │                              PREMISE → pick a lane (abstract cost XOR physical deadline). DEFLATES: static
+        │                              cost → Danielsson/typed_nat #8 (doesn't even scale); physical claim → an mmio-
+        │                              shaped #2 axiom NEVER INSTALLED (worse than MMIO); data-dependent → liveness
+        │                              partial-match. Unsound proxy, SHARPER than secret. META: two fourth-domain
+        │                              candidates, NEITHER opens a fourth domain — the three domains look SPECIAL.
+        │                              No new mode; N stays 9; broken-seam count → SEVEN (this FAILED).
+        ▼
 Realizability table         MEMORY-SAFETY domain (on a MATCHED affine floor): N ≥ 9 CLOSED axes (sound,
                             decidable, concentration, API-locality, #6, #7, bare-metal, unwind-safety,
                             leak-freedom) + INSEPARABLE (move-stability, validity) + 2 outside-the-axes
@@ -790,9 +822,18 @@ Realizability table         MEMORY-SAFETY domain (on a MATCHED affine floor): N 
                             syntactic proxy; a safe lawless join diverges replicas), but the candidate domain
                             DEFLATED — the gap is the GENERIC unchecked-typeclass-law phenomenon (Rust checks the
                             signatures of Ord/Eq/Hash/Monoid/semilattice, none of their laws), so convergence
-                            PROJECTS ONTO restore's application-correctness basis, NOT new ground. The domain map
-                            stays at THREE (memory / IFC / liveness) + the application-correctness basis. The Seam
-                            Trilemma is DOMAIN-GENERAL, the cost-basis
+                            PROJECTS ONTO restore's application-correctness basis, NOT new ground. And a SECOND
+                            FOURTH-DOMAIN probe (cost-typed computation, r29) looked for real-time / WCET and found
+                            NONE — but FAILED where convergence deflated: BREAKS [horn 1], FAILED, the SEVENTH broken
+                            seam (step charges +1 decoupled from its closure, so within::<1> admits a million-cycle
+                            computation — §4 over-claimed the deadline). Five-fold break (Horn 3 FALSE; unary cost
+                            O(C)-uncompilable at real budgets; no additive composition; Danielsson 2008 cost monad —
+                            "op-count ≠ cycles" is WCET's founding premise). DEFLATES: static cost → typed_nat #8
+                            (doesn't scale); physical claim → an mmio-shaped #2 axiom never installed; data-dependent
+                            → liveness partial-match. The op-count is an UNSOUND proxy, sharper than secret's. So the
+                            domain map STILL stays at THREE (memory / IFC / liveness) + the application-correctness
+                            basis — TWO fourth-domain candidates probed, NEITHER opens one; the three look SPECIAL.
+                            The Seam Trilemma is DOMAIN-GENERAL, the cost-basis
                             PER-DOMAIN, and WHICH SEAMS CLOSE depends on the FLOOR-DOMAIN MATCH — GRADED (full /
                             partial / none), set per PRECONDITION not per domain, and not monotonically liftable.
                             Nine method modes:
@@ -905,7 +946,7 @@ The axes are not independent toggles you can set freely — **two trades and a d
   invisible in non-leak code), yet still real — a reminder that "deflatable" and "not an axis" are
   different verdicts (the rejected checker-tractability probe is the latter; leak-freedom the former).
 - The Lean kernel (`../proof/SeamGap.lean`) sees only whether a precondition factors through a
-  Boolean witness — so it certifies *closure* (`spsc`/`branded`/`refined`/`shared`/`typed_nat`/`take`/`drain`/`selfref`/`validity` — and `session_order_safety_closes`, the eighteenth seam, whose *order-safety* component closes like a holding seam (it HOLDS with a horn-3 completion cost the kernel cannot see), and `restore_ownership_core_closes`, the nineteenth seam, whose *ownership* core closes the same way (it HOLDS with a horn-3 restore cost — the controlled-packaging probe: the same `mem::forget` gap that broke #17 only costs here, but bounded — the horn is forceable in a borrowed-slot/`take_mut` packaging) — (+ `secret`/`labeled`/`ordered_locks`/`lock_registry`/`linear`/`reseat`, which certify only the trivial typed sub-fact — the two IFC seams break, three liveness-domain seams break (the static lock-ordering one partially-matches, the runtime registry shows the floor-upgrade is non-monotone, and the must-run-cleanup one is a clean NONE breaking on wrong-structural-logic, affine≠linear), and `reseat_typed_discipline_factors`, the twentieth seam, breaks on a forced horn-1 double-free — the controlled counterpart to #19 that proves the packaging fence FORCED at owned-vs-borrowed: `into_inner` over a borrowed slot hands out the value while the slot keeps the `ptr::read` duplicate, so the same packaging that *held* for #19's owned value breaks here), and `crdt_typed_discipline_factors`, the twenty-first seam, breaks *floor-relatively* — the first probe at a fourth domain (distributed convergence), where a safe lawless `join` diverges replicas because `T: JoinSemilattice` is a syntactic proxy not a witness; but the candidate fourth domain DEFLATED — convergence is the generic unchecked-typeclass-law phenomenon, projecting onto `restore`'s application-correctness basis, not new ground (the domain map stays at three + application-correctness; the FAILED broken-seam count stays six — this one survived as a TRADEOFF)
+  Boolean witness — so it certifies *closure* (`spsc`/`branded`/`refined`/`shared`/`typed_nat`/`take`/`drain`/`selfref`/`validity` — and `session_order_safety_closes`, the eighteenth seam, whose *order-safety* component closes like a holding seam (it HOLDS with a horn-3 completion cost the kernel cannot see), and `restore_ownership_core_closes`, the nineteenth seam, whose *ownership* core closes the same way (it HOLDS with a horn-3 restore cost — the controlled-packaging probe: the same `mem::forget` gap that broke #17 only costs here, but bounded — the horn is forceable in a borrowed-slot/`take_mut` packaging) — (+ `secret`/`labeled`/`ordered_locks`/`lock_registry`/`linear`/`reseat`, which certify only the trivial typed sub-fact — the two IFC seams break, three liveness-domain seams break (the static lock-ordering one partially-matches, the runtime registry shows the floor-upgrade is non-monotone, and the must-run-cleanup one is a clean NONE breaking on wrong-structural-logic, affine≠linear), and `reseat_typed_discipline_factors`, the twentieth seam, breaks on a forced horn-1 double-free — the controlled counterpart to #19 that proves the packaging fence FORCED at owned-vs-borrowed: `into_inner` over a borrowed slot hands out the value while the slot keeps the `ptr::read` duplicate, so the same packaging that *held* for #19's owned value breaks here), and `crdt_typed_discipline_factors`, the twenty-first seam, breaks *floor-relatively* — the first probe at a fourth domain (distributed convergence), where a safe lawless `join` diverges replicas because `T: JoinSemilattice` is a syntactic proxy not a witness; but the candidate fourth domain DEFLATED — convergence is the generic unchecked-typeclass-law phenomenon, projecting onto `restore`'s application-correctness basis, not new ground (the domain map stays at three + application-correctness; the FAILED broken-seam count stays six — this one survived as a TRADEOFF), and `wcet_typed_discipline_factors`, the twenty-second seam, breaks *and FAILED* — the second probe at a fourth domain (real-time / WCET), where `step` charges one unit decoupled from its closure's work so `within::<1>` admits a million-cycle computation (the op-count is an unsound proxy for real time, sharper than `secret`'s); this candidate fourth domain DEFLATED too — onto Danielsson's 2008 cost monad / `typed_nat` #8 (which does not scale), an `mmio`-shaped #2 axiom never installed, and liveness's partial-match — so two fourth-domain candidates yield no fourth domain (the FAILED broken-seam count rises to seven; the `..._factors` family is now eight, but `crdt` is the deflation-survival, so the FAILED tally is seven)
   all close, like SPSC) but is blind to *which axis a closing seam spends* — or whether that "axis" is
   even separable (the self-ref cell closes in the kernel exactly like the rest; its inseparability is
   pure modeling-dictionary). Every column past

@@ -241,3 +241,25 @@ so convergence is **not** a fourth domain: it **projects onto `restore`'s applic
 The refined finding: **no clean fourth domain here** — the soundness-domain map stays at **three** (memory
 safety / information flow / liveness) plus the application-correctness basis, into which convergence folds.
 The broken count **stays six** (this one *survived*, floor-relative break and all); N stays **nine** modes.
+
+**The twenty-second seam: the second fourth-domain probe — and it FAILS off the width edge.** The cost-typed
+computation (`seam/src/wcet.rs`, a `Timed<C, T>` graded cost monad reusing `typed_nat`'s sealed `Nat`/`Lt`,
+core-only, no `unsafe`) tried the cleaner candidate the convergence post-mortem named: **real-time / worst-case
+execution time**, whose danger is a *deadline miss* and whose bound is a **quantitative resource** (cycles), not
+an algebraic law. It earns no width row for the breaking reason: the cold panel (r29) ruled **SEAM-BREAKS
+[horn 1], FAILED — the *seventh* broken seam**, all five attackers landing, because §4 over-claimed — `within::<D>`
+was promised to prove the *deadline* but the type tracks the *op-count*, and `step` charges `+1` decoupled from
+its closure, so `pure(()).step(|_| for _ in 0..1_000_000 {…}).within::<1>()` type-checks, admitting a
+million-cycle computation under a one-unit deadline. The op-count is an **unsound** proxy — *sharper* than
+`secret`'s, whose proxy foreclosed *some* leaks (sound but incomplete); this one can be **arbitrarily far** from
+the truth. Four breaks compound it: Horn 3 is **false** (non-unifying `if`-branch `Timed` types force manual
+step-padding); the unary cost is **uncompilable** at real 10³–10⁷-cycle budgets (`typed_nat`'s `O(C)` blow-up,
+now fatal — and the only compilable path, folding work into one `step`, *is* the break); no type-level
+**addition**, so nothing composes; and the primitive is **Danielsson's 2008 cost monad**, for which *op-count ≠
+cycles* is the **founding premise**, not a finding — *pick a lane*: abstract cost (sound, not real time) **xor**
+physical deadline (needs a machine the floor lacks). So real-time **does not open a fourth domain** either: it
+deflates onto the cost monad / `typed_nat` (#8), an **MMIO-shaped-but-uninstalled** axiom (#2 — worse than MMIO,
+whose axiom is faithful *and* present), and liveness's partial-match. The FAILED broken count rises to **seven**
+(unlike `crdt`, which *survived*); N stays **nine** modes. **The meta-finding:** *two* fourth-domain candidates
+probed, **neither opens a fourth domain** — convergence by an unchecked algebraic law, real-time by an unsound
+physical-time proxy — and the three confirmed domains (memory / IFC / liveness) look increasingly **special**.

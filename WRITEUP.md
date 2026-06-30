@@ -370,7 +370,7 @@ the second alone. A 0/N adversarial result is only as good as your ability to ru
 "the proposer was just weak," and the cleanest way to do that is to *hand the proposer
 the known-good sub-component and watch the failure move, not disappear.*
 
-## 10. The constructive phase — build and break twenty-one real seams
+## 10. The constructive phase — build and break twenty-two real seams
 
 The trilemma is a map, so the next step was to stop arguing in the abstract and **build**.
 A different harness shape: the negative half used cold instances to *propose* (and they
@@ -642,6 +642,30 @@ fourth-domain probe found **no clean fourth domain here** — the soundness-doma
 the supply-side break stands (the affine floor does not carry the laws — the IFC-shaped mismatch), but the
 *structural* result is a deflation, not new ground; **N stays 9**, and the FAILED broken-seam tally stays six.
 
+**The second fourth domain that wasn't — real-time deflates, and FAILS.** A *twenty-second* primitive
+(`wcet.rs`) tried the cleaner candidate the convergence post-mortem named: **real-time / worst-case execution
+time**, whose danger is a *deadline miss* and whose bound is a *quantitative resource* (cycles), not an
+algebraic law. A `Timed<C, T>` tracks a static op-count (the *exact* `typed_nat` machinery) and `within::<D>`
+proves `C ≤ D` — but this time the panel ruled **SEAM-BREAKS [horn 1], FAILED — the seventh broken seam**, all
+five attackers landing. Unlike convergence (which deflated *and survived*), this one **failed**, because §4
+over-claimed: `within` was promised to prove the *deadline*, but the type tracks the *op-count*, and `step`
+charges `+1` decoupled from its closure — so `pure(()).step(|_| for _ in 0..1_000_000 {…}).within::<1>()`
+type-checks, admitting a million-cycle computation under a one-unit deadline. The op-count is an **unsound**
+proxy — *sharper* than the secret seam's, whose proxy foreclosed *some* leaks (sound but incomplete); this one
+can be **arbitrarily far** from the truth. Four more breaks compound it: Horn 3 is **false** (an `if` whose
+arms do different work yields non-unifying `Timed` types, forcing manual step-padding); the unary cost is
+**uncompilable** at real 10³–10⁷-cycle budgets (`typed_nat`'s `O(C)` blow-up, now fatal — and the only
+compilable path, folding work into one `step`, *is* the soundness break); there is no type-level *addition*,
+so nothing composes; and the primitive is **Danielsson's 2008 cost monad**, for which *op-count ≠ cycles* is
+the **founding premise**, not a finding — every precedent (RaML, gas, aiT) bought soundness only by dropping
+the physical-cycle claim or installing a defining machine. *Pick a lane*: abstract cost (sound, not real time)
+**xor** physical deadline (needs a machine the floor lacks). So real-time **does not open a fourth domain**
+either: it deflates onto the cost monad / `typed_nat` (#8), an **MMIO-shaped-but-uninstalled** axiom (#2 —
+worse than MMIO, whose axiom is faithful *and* present), and liveness's partial-match. **The meta-finding:**
+*two* fourth-domain candidates probed, **neither opens a fourth domain** — convergence by an unchecked
+algebraic law, real-time by an unsound physical-time proxy — and the three confirmed domains (memory / IFC /
+liveness) look increasingly **special**. **N stays 9**; the FAILED broken-seam tally rises to **seven**.
+
 **Decontamination, across primitives.** The seamful2 theorem predicted that a failing seam's
 obstruction *relocates* to the re-import boundary rather than vanishing. SPSC: it **vanished**
 (precondition factors through the witness). MMIO: it **moved and stayed decidable** (the
@@ -670,7 +694,7 @@ was the whole verdict — including the one mirage (the fuel knob), the two genu
 the one *real-but-inseparable* destination (immovability), and the one that landed *on coordinates already
 on the map* (validity) — the last of which is what closes the basis.
 
-**The adversary earned its keep — twenty-one times.** On MMIO it named the axiom's category correctly
+**The adversary earned its keep — twenty-two times.** On MMIO it named the axiom's category correctly
 (a TCB boundary, not a horn) and surfaced a horn-3 cost the builder had under-weighted. On the
 intrusive list it proved something *worse* than the builder predicted: branding does not restore
 soundness at all (a brand is an *access* capability, not a *storage* lifetime), correcting a real
@@ -790,8 +814,8 @@ cold review had flagged to a genuine characterization — `seam_closes_iff_facto
 closes **iff** its precondition factors through the safe witness — with the regimes as
 machine-checked instances (`spsc_seam_closes`, `intrusive_seam_does_not_close`, the slab's
 `slab_runtime_closes_but_static_does_not`: the same precondition closes through a *runtime*
-witness but not the *static* one, and `branded_seam_closes`/`refined_seam_closes`/`shared_seam_closes`/`typed_nat_seam_closes`/`take_seam_closes`/`drain_seam_closes`/`selfref_seam_closes`/`validity_seam_closes`/`secret_typed_discipline_factors`/`labeled_typed_discipline_factors`/`ordered_locks_typed_discipline_factors`/`lock_registry_typed_discipline_factors`/`linear_typed_discipline_factors`/`restore_ownership_core_closes`/`reseat_typed_discipline_factors`/`crdt_typed_discipline_factors`:
-all close like SPSC in the kernel — the recovered axes, the six broken seams' domain gaps, the graded floor-match, the non-monotone floor-upgrade, the structural-logic (affine-vs-linear) break, and the forced borrowed-slot double-free alike invisible to it), `propext` only. Honest bound unchanged: the
+witness but not the *static* one, and `branded_seam_closes`/`refined_seam_closes`/`shared_seam_closes`/`typed_nat_seam_closes`/`take_seam_closes`/`drain_seam_closes`/`selfref_seam_closes`/`validity_seam_closes`/`secret_typed_discipline_factors`/`labeled_typed_discipline_factors`/`ordered_locks_typed_discipline_factors`/`lock_registry_typed_discipline_factors`/`linear_typed_discipline_factors`/`restore_ownership_core_closes`/`reseat_typed_discipline_factors`/`crdt_typed_discipline_factors`/`wcet_typed_discipline_factors`:
+all close like SPSC in the kernel — the recovered axes, the seven broken seams' domain gaps, the graded floor-match, the non-monotone floor-upgrade, the structural-logic (affine-vs-linear) break, the forced borrowed-slot double-free, and the unsound real-time op-count proxy alike invisible to it), `propext` only. Honest bound unchanged: the
 *math* is now a real characterization, but the faithfulness of "precondition" and "witness" to
 actual Rust primitives — *which axis a closing seam spends* (zero-cost, API-locality, legibility,
 solver-freedom, bare-metal, unwind-safety, leak-freedom), and whether that "axis" is even *separable*

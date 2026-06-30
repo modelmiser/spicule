@@ -68,7 +68,15 @@ safe lawless `join` diverges replicas), but the gap is the *generic* unchecked-t
 checks the *signatures* of `Ord`/`Eq`/`Hash`/`Monoid`/semilattice, none of their *laws*), so convergence
 **projects onto `restore`'s application-correctness basis** rather than opening a fourth domain — the
 soundness-domain map stays at **three** (memory / information-flow / liveness) plus application-correctness.
-N stays **9** modes; the FAILED broken-seam tally stays **six** (this *survived* as a TRADEOFF).
+N stays **9** modes; the FAILED broken-seam tally stays **six** (this *survived* as a TRADEOFF). And a
+twenty-second — a *cost-typed computation* (`Timed<C,T>`, a graded cost monad) — aimed at the **second**
+fourth-domain candidate, **real-time/WCET**, and **FAILED** (SEAM-BREAKS [horn 1], the **seventh** broken
+seam): `step` charges one unit decoupled from its closure, so `within::<1>` admits a million-cycle
+computation — the op-count is an **unsound** proxy for real time, and the construct is **Danielsson's 2008
+cost monad** (op-count ≠ cycles is WCET's *founding premise*). It deflates too — to `typed_nat` (#8, which
+does not even scale), an uninstalled `mmio`-shaped axiom (#2), and liveness's partial-match. So **two**
+fourth-domain candidates have now deflated (`crdt` survived, `wcet` FAILED), **neither opening a fourth
+domain** — the three confirmed domains look **special**. FAILED tally now **seven**.
 
 ## The headline result
 
@@ -654,11 +662,33 @@ The adversarial process earned its keep eighteen times:
     stands (the affine floor does not carry the semilattice laws — the IFC-shaped mismatch), but the
     *structural* result is a **deflation**, not new ground. N stays **9** modes; the FAILED broken-seam tally
     stays **six** (this one *survived*).
+21. **Cost-typed computation (the second fourth-domain probe — FAILED):** a `Timed<C, T>` graded cost monad
+    (reusing `typed_nat`'s sealed `Nat`/`Lt`) over **real-time / WCET** — the *second* probe aimed at a fourth
+    soundness domain, after convergence deflated. A cleaner candidate (a cycle budget is a *quantitative
+    resource bound*, not an algebraic law); no `unsafe`, the danger is a **deadline miss**. The panel ruled
+    **SEAM-BREAKS [horn 1], FAILED** (r29) — the **seventh broken seam**, and unlike `crdt` it did **not**
+    survive: my §4 re-import rule **over-claimed** (it promised `within` returns a value only on a met
+    deadline, but the type tracks the **op-count**, not the time). All five attackers landed: (a) **soundness
+    (fatal)** — `step` charges `+1` *decoupled from its closure*, so a million-iteration loop is cost `1` and
+    `within::<1>` admits it; `C ≤ D` bounds the op-count, not the cycles; (b) **ergonomics — Horn 3 is FALSE**
+    — non-unifying `if`-branches force manual step-padding, so the cost index is *heavy* bookkeeping; (c)
+    **implementation** — the unary Peano cost is **O(C)**, uncompilable at real 10³–10⁷-cycle budgets, and the
+    only compilable path (bundling work into one `step`) *is* the soundness break; (d) **expressiveness** — no
+    type-level addition, so no compositional sequencing; (e) **prior-art** — this is **Danielsson's 2008 cost
+    monad**, and *op-count ≠ cycles* is **WCET's founding premise, not a finding**; **pick a lane** (abstract
+    cost xor physical deadline — the latter needs a defining machine the floor lacks). The finding: **WCET does
+    not open a fourth domain either.** It **deflates** multiply — the cost monad onto Danielsson / `typed_nat`
+    (#8, which does not even *scale*), the physical-deadline claim onto an `mmio`-shaped axiom (#2) the seam
+    **never installs** (worse than MMIO — a fiction, and absent), the data-dependent-loop gap onto liveness's
+    **partial-match**. The op-count is an **unsound** proxy — *sharper* than `secret`'s sound-but-incomplete
+    one. **Meta:** two fourth-domain candidates probed (`crdt` deflated + *survived*; `wcet` deflated +
+    *FAILED*), **neither opens a fourth domain** — the three confirmed domains (memory safety / information
+    flow / liveness) look **special**. N stays **9** modes; the FAILED broken-seam tally rises to **seven**.
 
 ## Artifacts
 
-- Specs (attacked as text): `SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat,take,drain,selfref,validity,secret,labeled,ordered_locks,lock_registry,linear,session,restore,reseat,crdt}.md`
-- Cold verdicts: `REPORT_SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat,take,drain,selfref,validity,secret,labeled,ordered_locks,lock_registry,linear,session,restore,reseat,crdt}.md` (+ raw transcripts in `runs_seam/`)
+- Specs (attacked as text): `SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat,take,drain,selfref,validity,secret,labeled,ordered_locks,lock_registry,linear,session,restore,reseat,crdt,wcet}.md`
+- Cold verdicts: `REPORT_SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat,take,drain,selfref,validity,secret,labeled,ordered_locks,lock_registry,linear,session,restore,reseat,crdt,wcet}.md` (+ raw transcripts in `runs_seam/`)
 - Real Rust (rustc-checked, `#![no_std]`): `../seam/` — `src/lib.rs` (SPSC), `src/mmio.rs`,
   `src/intrusive.rs`, `src/slab.rs`, `src/branded.rs`, `src/refined.rs`, `src/shared.rs` (the lone
   `alloc` user), `src/typed_nat.rs` (eighth-axis probe 1 — sound, no new axis), `src/take.rs`
@@ -685,10 +715,15 @@ The adversarial process earned its keep eighteen times:
   floor-relatively* — SEAM-BREAKS [floor-mismatch], a TRADEOFF survival — but the candidate fourth domain
   **DEFLATED**: the trait bound checks only the signature so a safe lawless `join` diverges replicas, yet the
   gap is the *generic* unchecked-typeclass-law phenomenon, so convergence projects onto `restore`'s
-  application-correctness basis, not a new domain); consumer code is
-  `#![forbid(unsafe_code)]`; laundering paths are `compile_fail`
-  doctests (80 `tests/` integration tests + 45 doctests = 125 total in the default `no_std` build; with
-  `--features lockdep` the runtime registry adds its tests for **132 total**).
+  application-correctness basis, not a new domain), `src/wcet.rs` (the *second fourth-domain* probe —
+  `core`-only, no `unsafe`; a `Timed<C, T>` cost monad over **real-time/WCET**; *breaks and FAILED* —
+  SEAM-BREAKS [horn 1], the **seventh broken seam**: `step` charges one unit decoupled from its closure's
+  work, so `within::<1>` admits a million-cycle computation — the op-count is an **unsound** proxy for real
+  time; it is Danielsson's 2008 cost monad and deflates to `typed_nat` #8 + an uninstalled `mmio`-shaped
+  axiom + liveness's partial-match — the second fourth-domain candidate that fails to open a fourth domain);
+  consumer code is `#![forbid(unsafe_code)]`; laundering paths are `compile_fail`
+  doctests (84 `tests/` integration tests + 49 doctests = 133 total in the default `no_std` build; with
+  `--features lockdep` the runtime registry adds its tests for **140 total**).
 - Seam-width instrument: `SEAM_WIDTH.md`; full face lattice: `REALIZABILITY.md`
 - Mechanization: `../proof/SeamGap.lean` — `seam_closes_iff_factors` + the
   `spsc`/`intrusive`/`slab`/`branded`/`refined`/`shared`/`typed_nat`/`take`/`drain`/`selfref`/`validity` instances,
@@ -698,7 +733,11 @@ The adversarial process earned its keep eighteen times:
   liveness seams' + the borrowed-slot reseat's trivial sub-facts — all six break), and
   `crdt_typed_discipline_factors` (the fourth-domain probe's trivial sub-fact — it breaks *floor-relatively*
   but DEFLATED to a TRADEOFF survival, projecting onto `restore`'s application-correctness basis, so it is
-  **not** one of the six FAILED breaks), plus
+  **not** one of the FAILED breaks), and `wcet_typed_discipline_factors` (the *second* fourth-domain probe —
+  it breaks **and FAILED**, the **seventh** broken seam: the op-count is an unsound proxy for real cycles;
+  Danielsson's 2008 cost monad, deflating to `typed_nat` #8 + an uninstalled `mmio`-shaped axiom + liveness's
+  partial-match — so the `..._factors` family is now eight, of which **seven** are FAILED breaks and `crdt` is
+  the lone TRADEOFF-survival deflation), plus
   `session_order_safety_closes` (the eighteenth seam *holds* with a horn-3 cost — its
   order-safety component closes like a closing seam; the completion cost is modeling-dictionary) and
   `restore_ownership_core_closes` (the nineteenth seam *holds* with a horn-3 cost — its affine-ownership core
