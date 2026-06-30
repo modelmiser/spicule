@@ -258,6 +258,20 @@ pub mod session;
 /// unchanged (this holds). See `restore`.
 pub mod restore;
 
+/// Twentieth seam (Phase S — *forcing the horn*, the Phase-R fence): a take-and-reseat guard over a
+/// **borrowed slot** (`take_mut` in guard form). The **controlled counterpart** to #19 (`restore`): it keeps
+/// #19's packaging **byte-for-byte identical** — a guard with `Deref`/`DerefMut`/`into_inner`/Drop-restore —
+/// and changes **only** the decoupling property, owned value → borrowed slot, the single-variable experiment
+/// #19's confound forbade. Strikingly, the guard form is **unwind-safe** (Drop reseats during unwinding — no
+/// abort-bomb, unlike the eager ninth seam `take`) and **forget-safe** (`mem::forget` leaks the mutation but
+/// the slot keeps valid original bits — a leak, not a double-free). The horn-1 break is **isolated to
+/// `into_inner`**: the API that was *sound* for #19's owned value (one owner) is a **double-free** over a
+/// borrowed slot (it returns `owned` while the slot keeps the read duplicate — two owners). Same packaging,
+/// flipped decoupling, flipped horn (cost 3 → break 1). The spec poses: is the horn *forced* (confirming the
+/// fence at owned-vs-borrowed) or merely *movable to a different API* (the `into_inner`-less subset appears to
+/// hold with a horn-3 leak cost, pushing the fence to soundness-load-bearing-vs-leak-tolerant)? See `reseat`.
+pub mod reseat;
+
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 use core::sync::atomic::{AtomicUsize, Ordering};
