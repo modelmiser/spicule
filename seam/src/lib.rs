@@ -518,6 +518,34 @@ pub mod must_complete;
 /// `must_scoped`.
 pub mod must_scoped;
 
+/// Thirty-first seam (Phase AD — RECURSION, the last unbuilt structural session feature): single-level recursive
+/// sessions (`Rec<P>`/`Var`, `μX.T`), the looping connective orthogonal to sequencing (#18/#23), choice (#28), and
+/// completion (#29/#30). A `Session<P, E>` threads a type-level recursion environment `E` (default `NoRec`):
+/// [`recursion::Session::enter`] unfolds `Rec<P>` (setting `E := Rec<P>`), and [`recursion::Session::recur`] exists
+/// **only** for `Session<Var, Rec<P>>` — so a top-level `Var` (env `NoRec`) has **no `recur`** and is inert, the
+/// recursion analogue of branded #5 trapping an index in its scope (`Var` sound by construction, no UB).
+/// `HasDual` threads recursion (`Rec<P> ↔ Rec<P::Dual>`, `Var ↔ Var`), so the infinite producer `Rec<Tx<Var>>` is
+/// dual to the infinite consumer `Rec<Rx<Var>>`. THE SHARP POINT: without a choice connective inside the loop,
+/// single-level recursion is **necessarily non-terminating** — `Rec<Tx<Var>>` has **no reachable `End`** — so (1)
+/// **#30's completion-forcing is VACUOUS** here (a `Done` is mintable only at `End`; with no `End`, the scoped
+/// salvage cannot force anything — recursion exposes #30's unstated precondition, a reachable terminal, and turns
+/// its "modulo divergence" caveat into the whole protocol), and (2) **leaving a loop needs CHOICE (#28)** — a
+/// terminating loop is `Rec<Offer<End, …Var>>`, which the floor types but **cannot force the consumer to ever exit**
+/// (livelock = the halting problem). HYPOTHESIS (pre-registered; the cold panel rules): **SEAM-COSTS
+/// [horn3-concentration]** — order-through-unfolding + duality **close** (affine typestate threads soundly across
+/// `enter`/`recur`; `Var` is sound; Θ(type-size), decidable even though runtime depth is not), but the new
+/// loop-level obligations — **termination** (a loop need not, and without choice cannot, reach `End`) and
+/// **productivity/guardedness** (`Rec<Var>` type-checks but is a no-op spin loop) — are **conceded undecidable
+/// NONEs** (halting/Rice), not floor-mismatch breaks and not concentrable. No new domain (liveness), no new
+/// coordinate — a **termination/fairness FACE** on the existing progress coordinate, plus the bounding of #30. The
+/// completion story **decomposes once more** (consistent with #27 topology/execution and #30 per-endpoint/global):
+/// **per-unfolding order closes / whole-loop termination is an undecidable NONE.** Deflation (conceded): standard
+/// `Rec`/`Var` encoding (`session_types`/`dejavu`; Honda–Yoshida–Carbone μ-types) + halting + guardedness folklore;
+/// the contribution is *locating* recursion as the boundary of #30's forcing. Predicted: tally stays 8; N stays 9.
+/// Lean (HYPOTHESIS) `recursion_order_unfolding_closes` (a `..._closes`: order/duality close per-unfolding; the
+/// termination/productivity NONEs live in the prose, invisible to the kernel). See `recursion`.
+pub mod recursion;
+
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 use core::sync::atomic::{AtomicUsize, Ordering};

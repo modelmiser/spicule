@@ -1059,4 +1059,37 @@ theorem must_scoped_completion_closes :
   rw [seam_closes_iff_factors]
   exact ⟨id, fun _ => rfl⟩
 
+/-- Recursive-session shape — the **thirty-first** seam, the last unbuilt structural session feature
+    (`Rec<P>`/`Var`, `μX.T`). Read `Pr`/`Wt` by analogy: the precondition that the floor *does* carry is
+    *order-through-unfolding* (each `enter`/`recur` advances the affine typestate soundly, the loop variable `Var`
+    kept sound by a type-level recursion environment so an unbound `Var` is inert) together with duality
+    (`Rec<P> ↔ Rec<P::Dual>`). In the kernel the discipline factors (`Precursion` is definitionally `V`), as always.
+
+    The HYPOTHESIS (the cold panel adjudicates, not the builder): **SEAM-COSTS [horn3-concentration]**, a *holding*
+    seam — order + duality concentrate per-unfolding and close, exactly as the prior session seams' order cores do
+    (`session`/`binary_session`/`projected`/`choice`). The genuinely new obligations recursion poses —
+    **termination** (a recursive protocol need not, and without a choice connective *cannot*, reach `End`:
+    `Rec<Tx<Var>>` has no terminal, so #30's completion-forcing is VACUOUS and "modulo divergence" becomes the whole
+    protocol) and **productivity/guardedness** (`Rec<Var>` type-checks but is a no-op spin loop) — are **conceded
+    undecidable NONEs** (the halting problem / Rice), not floor-mismatch breaks and not concentrable: no decidable
+    checker carries them either, so they are domain-independent undecidability, not a liveness-floor gap. So
+    recursion adds no new domain and no new coordinate — a **termination/fairness face** on the progress coordinate,
+    plus the *bounding* of #30 (its forcing needs a reachable `End`). A `..._closes` (the order/duality core closes,
+    like `session`/`projected`/`must_scoped`); the conceded termination/productivity NONEs and the #30-vacuity
+    finding live in the prose, invisible to the kernel. Tally stays 8 (this holds — the NONEs are conceded, not
+    broken); N stays 9. If the panel instead finds the `Var`/environment encoding unsound (a `Var` reachable with a
+    wrong/absent `Rec`), this becomes a `..._factors`/break — but the pre-registered prediction is that it closes. -/
+def Precursion (p : Prog) : Bool := V p
+
+/-- The sound core CLOSES (HYPOTHESIS: SEAM-COSTS [horn3-concentration], holding): order-through-unfolding and
+    duality close per-unfolding through the affine typestate (`enter`/`recur` advance soundly; `Var` is sound by the
+    recursion-environment discipline, so an unbound loop variable is inert, not a hole). The new loop-level
+    obligations — termination and productivity/guardedness — are conceded undecidable NONEs (halting/Rice), so the
+    seam holds at a horn-3 cost rather than breaking; recursion bounds #30's completion-forcing (it needs a reachable
+    `End`) but opens no new domain or coordinate. -/
+theorem recursion_order_unfolding_closes :
+    ∃ d : Prog → Bool, SoundW Precursion d ∧ UsableW Precursion d ∧ ConcW V d := by
+  rw [seam_closes_iff_factors]
+  exact ⟨id, fun _ => rfl⟩
+
 end SeamGap
