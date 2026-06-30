@@ -30,25 +30,46 @@
 //!    falsified for closures: `core::mem::forget` is **safe**, consumes the value by one affine move, and skips
 //!    `Drop` (the leakpocalypse, RFC 1066). `ManuallyDrop`, `Box::leak`, and `Rc`-cycles do the same.
 //!
-//! ## HYPOTHESIS (pre-gauntlet — the §6 deliverable is what the cold panel adjudicates)
+//! ## VERDICT (cold panel, REPORT_SEAM_SPEC_must_complete.md, r36): SEAM-COSTS [horn3-concentration], FAILED
 //!
-//! **SEAM-BREAKS** — the must-complete guarantee is **false in safe code**, the **session face of `linear` #20's
-//! must-run break**, just as `priority` #26 was the session face of `ordered_locks` #15/#16's lock-order break.
-//! `core::mem::forget(session)` skips the bomb with no `unsafe`, abandoning the session and **starving the peer**
-//! with no abort (`tests/must_complete_use.rs` shows it). The pre-registered claims the panel should test: (a)
-//! the **peer / two-endpoint** dimension does **not** change the break — `mem::forget` skips `Drop` whether the
-//! effect is local (#20) or remote (here); (b) even the **abort-bomb** (the #9 `take` discharge — sound, paying a
-//! non-recoverable abort) **cannot** force completion, because `mem::forget` bypasses `Drop` *before* the bomb
-//! can fire (it is not an unwind the bomb can catch). So "must complete" is a **clean NONE** at the type level —
-//! "runs to `End`" is a **linear** requirement and Rust's floor is **affine** (*at most* once), the same
-//! *wrong-structural-logic* (affine vs linear) verdict as #20, not a domain mismatch. This **unifies** the whole
-//! session arc's completion residue (#17/#18/#23/#27/#28) as **one** irreducible linear gap: there is no
-//! discipline — not even a cost-paying abort — that compels a session to `End` on an affine floor. No new domain
-//! (liveness), coordinate (completion is the #17 residue, not new), or mode (SEAM-BREAKS is one of the nine).
-//! Deflates onto deep folklore (the leakpocalypse / RFC 1066; the removal of `thread::scoped`, RFC 1084;
-//! `session_types`/Jespersen–Munksgaard–Larsen 2015's affine-vs-linear gap). Lean
-//! `must_complete_typed_discipline_factors` (a `..._factors`, like `linear`/`priority` — the affine *walk*
-//! factors; the linear *completion* does not).
+//! Horn-classifier: **SEAM-COSTS [horn3-concentration]** — *"No UB; the free-handle Drop-bomb can't force
+//! completion, but a decidable scoped-closure restores it at the re-import boundary."* Judge: **FAILED** on the §6
+//! deliverable — *"the universal NONE is refuted in-scope; downgrade NONE to SEAM-COSTS/partial-forcing."* The
+//! **rejection mode, 6th firing** — and the **most instructive yet**, because it does not relabel my finding, it
+//! **reverses** it.
+//!
+//! What is confirmed, and what the panel overturned:
+//! - **The mechanism break is real but is NOT the finding** (soundness attacker, BREAKS/fatal): my §4 clause-2 is
+//!   false — `core::mem::forget` skips the bomb in safe code, peer starved. Self-confirmed by the test. But this
+//!   only shows the **free-handle** witness is wrong, not that completion is unforceable.
+//! - **My "universal NONE" is REFUTED** (expressiveness attacker, decisive): a **scoped-closure / CPS combinator**
+//!   — `with_session(|s| { …; s.finish() })`, the **`std::thread::scope` analogue** — **compels completion modulo
+//!   divergence, no `unsafe`**, by moving the obligation to the **re-import / construction boundary** so the
+//!   consumer never holds a forgettable free handle ("return `End` or diverge"). THE STING (6th refutation from my
+//!   own lineage): I cited `thread::scoped`'s *removal* (RFC 1084) as proof completion can't be forced — and
+//!   ignored its *actual fix*, **`thread::scope`** (stable 1.63), which does exactly this.
+//! - **So completion is NOT an irreducible linear gap — it is CONCENTRABLE**, at a horn-3 **API-locality** cost
+//!   (surrender the free movable handle; run the session inside a scope). The whole #17–#28 completion residue was
+//!   the price of the **free-handle API**, never an inherent gap: every prior session seam vended a forgettable
+//!   `Chan`, so every one carried it.
+//! - **Sessions ≠ cleanup closures — "session face of #20" was WRONG.** #20's open-ended cleanup *cannot* be
+//!   scoped (a true NONE/break); a **delimited** session *can* — so the peer/interaction structure **does** change
+//!   the outcome (refuting pre-registered claim (a)). My claim (b) holds only for the *free-handle* bomb.
+//! - **Ergonomics cost (real):** holding a `live` `Session` across any fallible op turns `?` into a **process-abort
+//!   operator** — the bomb discipline is unusable on fallible/cancellable code (every real network loop), worse
+//!   than the clean #9 abort-discharge I claimed.
+//! - **Prior art: peer starvation is NOT irreducible** — affine-session work (Mostrous–Vasconcelos *Affine
+//!   Sessions*; ECOOP 2022 *Stay Safe Under Panic*; MultiCrusty; Exceptional GV) resolves it via **cancellation
+//!   propagation** (given the timeout/cancellation channel §5 scoped out), not by forcing completion.
+//!
+//! What survives: **decidability** (the typestate is Θ(depth); the undecidable static leak-detection is correctly
+//! *conceded* as a NONE, not claimed). META (the 6th refutation **inverts** my usual error): across the rejections
+//! I overclaimed concentration is *total*; here I overclaimed it is *irreducible*. The lesson: **I overstate the
+//! extremes — fully-carried or wholly-uncarried — when the truth is a cost in between.** No new domain (liveness),
+//! coordinate (completion), or mode (N = 9); broken-seam tally **STAYS 8** (SEAM-COSTS, not the BREAK I predicted —
+//! the danger is concentrable). Lean `must_complete_scoped_completion_closes` (renamed from
+//! `..._typed_discipline_factors`): the **scoped-closure** witness *closes* completion at an API-locality cost;
+//! the free-handle witness only factored.
 
 use alloc::rc::Rc;
 use core::cell::RefCell;

@@ -2219,10 +2219,72 @@
       "outcome": "FAILED",
       "cost_usd": 2.835,
       "timestamp": "2026-06-30T14:15:32+00:00"
+    },
+    {
+      "round": 36,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_must_complete.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 must-complete session (can the affine floor *compel* run-to-`End`?) (re-import rule under attack)\n\nThis is a **design proposal** for a twenty-ninth *seam*. The session-type connective set is **exhausted** (#18/#23\norder, #24 delegation, #25 multiparty, #26 priority, #27 projected, #28 choice); every one HOLDS or BREAKS with the\n**same** leftover \u2014 a **completion residue** the affine floor never carries, which the proposer over-claimed as\ncarried **five** times (#8/#24/#25/#27, and the \"handle-all\" leg of #28). This seam stops probing features and\nattacks the residue itself: it builds the discipline that **tries to force** a session to reach `End`, and asks\nwhether the floor has **any** way \u2014 even a cost-paying abort \u2014 to compel it. It is **NOT a fourth-domain bid**; it\nstays inside the **third confirmed domain (liveness)**, on the **completion** coordinate.\n\nYou are attacking a **text specification** backed by real `rustc`-checked code (`seam/src/must_complete.rs`, default\n`no_std` build \u2014 `core` + `alloc`, **no `unsafe`**, self-contained over the #23 two-endpoint model). 158 tests pass\n(default).\n\n---\n\n## 0. The floor (stipulated, not under attack)\n\nRust as shipped: ",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Bomb makes `?`, panic-isolation, and cancellation abort the process; enforcement is unusable even where sound, not merely an 'abort' cost.",
+          "strongest_point": "Holding a live Session across any fallible op turns `?` into a process-abort operator, so the witness only works on straight-line infallible code that no real network loop ever is."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "\u00a74 clause-2 must-complete guarantee is false: safe mem::forget(session) skips the Drop bomb, no abort, peer starved.",
+          "strongest_point": "mem::forget consumes the handle by one affine-legal move and elides Drop, so the completion bomb never fires \u2014 and even when it does fire, abort terminates the peer rather than completing it, so no Drop-resident mechanism can ever compel run-to-End."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "No undecidable/super-poly pass is implied; structural typestate is genuinely \u0398(depth), and the undecidable completion-check is correctly conceded as a NONE, not claimed.",
+          "strongest_point": "The only undecidable pass here \u2014 static linearity/leak detection across forget/Box::leak/Rc-cycles \u2014 is exactly the pass the proposal declines to claim, so its negative (NONE) result is compiler-side sound."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Universal NONE is over-broad: a scoped-closure combinator (std thread::scope's analogue) compels completion modulo divergence, no unsafe.",
+          "strongest_point": "The proposal cites thread::scoped's removal as the leak hole but ignores its actual fix \u2014 the scoped-closure pattern \u2014 whose session analogue forces 'return End or diverge,' eliminating exactly the mem::forget-and-continue path the entire break rests on."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Misses MultiCrusty/Affine Sessions/EGV; deliverable #2's 'irreducibly starved peer' is refuted by published affine-session cancellation propagation.",
+          "strongest_point": "ECOOP 2022 'Stay Safe Under Panic' (affine Rust sessions under panic) and Mostrous\u2013Vasconcelos 'Affine Sessions' resolve peer starvation via cancellation propagation without forcing completion, directly refuting the proposal's claim that the second endpoint 'adds a victim, not a fix.'"
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "argued-past",
+          "attacker-implementation": "argued-past",
+          "attacker-expressiveness": "genuine-flaw",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "The bomb-discipline's cost is not 'an abort' but incompatibility with `?`, panic-isolation, and cancellation \u2014 enforcement is unusable on fallible/cancellable code (ergonomics).",
+          "'Irreducibly starved peer / second endpoint adds a victim not a fix' holds only on the single-threaded, no-timeout model; cancellation propagation (MultiCrusty/Affine Sessions/EGV) fixes starvation given the timeout channel \u00a75 scopes out, and those works must be cited (prior-art)."
+        ],
+        "headline": "Revise: scoped-closure combinator compels completion modulo divergence, so 'clean NONE' is false.",
+        "rationale": "Mechanism break is sound and self-confirmed, but the universal NONE is refuted in-scope: a CPS/scoped-closure discipline (thread::scope's analogue) eliminates the forget-and-continue path, compelling completion on every normally-returning path. Headline must downgrade NONE to SEAM-COSTS/partial-forcing."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.8512,
+      "timestamp": "2026-06-30T16:17:10+00:00"
     }
   ],
   "settled": [],
   "incompatibilities": [],
   "blind_spot_flags": [],
-  "total_cost_usd": 74.7074
+  "total_cost_usd": 77.5586
 }

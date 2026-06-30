@@ -471,15 +471,22 @@ pub mod choice;
 /// (#17/#18/#23/#27/#28) carries and I over-claimed as carried five times. A `Session<P>` is an affine handle
 /// with a `Drop` **completion bomb** (cf. `take` #9): drop a `live` mid-protocol session and it aborts, so the
 /// floor *appears* to compel run-to-`End`. The danger is the *remote* twin of `linear` #20's *local*
-/// must-run-cleanup: a `mem::forget`-ten session starves its **peer**. HYPOTHESIS (gauntlet-adjudicated):
-/// **SEAM-BREAKS** — the **session face of #20's must-run break** (as `priority` #26 was the session face of the
-/// lock-order break). `core::mem::forget(session)` skips the bomb in SAFE code, abandoning the session with no
-/// abort (`tests/must_complete_use.rs`). Pre-registered: (a) the peer/two-endpoint dimension does NOT change the
-/// break; (b) even the abort-bomb cannot force completion (`forget` skips `Drop` before it fires). "Runs to
-/// `End`" is LINEAR; Rust's floor is AFFINE — the same *wrong-structural-logic* NONE as #20, unifying the whole
-/// session arc's completion residue as ONE irreducible linear gap. Deflates onto the leakpocalypse (RFC 1066/1084;
-/// `session_types`/JML 2015). Lean `must_complete_typed_discipline_factors` (a `..._factors`, like `linear`/
-/// `priority`). See `must_complete`.
+/// must-run-cleanup: a `mem::forget`-ten session starves its **peer**. VERDICT (cold panel, r36): SEAM-COSTS
+/// [horn3-concentration], gauntlet **FAILED** the §6 deliverable — the **rejection mode, 6th firing**, and the
+/// most instructive: it **reverses** my finding. The free-handle bomb IS bypassable (`mem::forget`, confirmed),
+/// but my "universal NONE" is **REFUTED**: a **scoped-closure / CPS combinator** (`with_session(|s| …)`, the
+/// **`std::thread::scope` analogue**) **compels completion modulo divergence, no `unsafe`**, by moving the
+/// obligation to the re-import boundary so the consumer never holds a forgettable handle. STING: I cited
+/// `thread::scoped`'s removal (RFC 1084) but ignored its fix, `thread::scope` (stable 1.63). So completion is
+/// **NOT irreducible — it is CONCENTRABLE** at a horn-3 **API-locality** cost (surrender the free handle): the
+/// whole #17–#28 residue was the price of the **free-handle API**. Sessions ≠ #20's cleanup (a *delimited* session
+/// CAN be scoped; open-ended cleanup cannot — refuting claim (a)). Ergonomics: the bomb turns `?` into a
+/// process-abort (unusable on fallible code). Prior art: peer starvation is fixable by **cancellation
+/// propagation** (Mostrous–Vasconcelos *Affine Sessions*; ECOOP 2022 *Stay Safe Under Panic*; MultiCrusty; EGV).
+/// META (inverts my usual error): I overstate the *extremes* — total-carry or irreducible — when the truth is a
+/// cost between. Tally **STAYS 8** (COSTS, not the BREAK I predicted); N stays 9; liveness third domain. Lean
+/// `must_complete_scoped_completion_closes` (renamed from `..._typed_discipline_factors`: the scoped witness
+/// *closes* completion at a cost; the free-handle witness only factored). See `must_complete`.
 pub mod must_complete;
 
 use core::cell::UnsafeCell;
