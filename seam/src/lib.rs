@@ -280,6 +280,20 @@ pub mod restore;
 /// un-compellable closure (owned can ⇒ cost; borrowed cannot ⇒ forced break). See `reseat`.
 pub mod reseat;
 
+/// Twenty-first seam (Phase T — the *fourth-domain* probe): a state-based CRDT merge. The first primitive
+/// aimed at a fourth soundness domain — **distributed/replicated convergence** (eventual consistency) — after
+/// memory safety (match), information flow (mismatch), and liveness (partial). Its danger is **replica
+/// divergence** (two replicas that observed the same updates disagree), neither UB nor leak nor deadlock nor
+/// timing channel. Like the constant-time `secret` seam it has **no `unsafe`**: the danger is semantic. A
+/// `Replica<T>` merges via `T: JoinSemilattice`; convergence holds iff `join` is commutative + associative +
+/// idempotent — laws the affine/ownership floor **cannot enforce** (a safe non-conforming `join` type-checks
+/// and diverges replicas, exactly as the floor enforced IFC's syntactic proxy but not non-interference). The
+/// spec poses: is convergence a fourth domain that's **floor-mismatched** (no closing seam, like IFC),
+/// **TCB-axiom-costed** (it holds if a blessed library of verified CRDTs discharges the laws, like `mmio`'s
+/// hardware axiom), or a **deflation** to the application-correctness invariant `restore` already located?
+/// See `crdt`.
+pub mod crdt;
+
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 use core::sync::atomic::{AtomicUsize, Ordering};
