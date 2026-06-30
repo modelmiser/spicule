@@ -370,7 +370,7 @@ the second alone. A 0/N adversarial result is only as good as your ability to ru
 "the proposer was just weak," and the cleanest way to do that is to *hand the proposer
 the known-good sub-component and watch the failure move, not disappear.*
 
-## 10. The constructive phase — build and break twenty-seven real seams
+## 10. The constructive phase — build and break twenty-eight real seams
 
 The trilemma is a map, so the next step was to stop arguing in the abstract and **build**.
 A different harness shape: the negative half used cold instances to *propose* (and they
@@ -828,6 +828,34 @@ one of the nine modes, its fourth firing); twenty-seven primitives. Liveness sta
 its coordinate — now visibly two-part — the Lean witness `projected_schedulability_closes` (its sound core closes
 like SPSC; the horn-3 execution residue invisible to the kernel) — the salvage earned its keep by *working* yet
 teaching that "by construction" had quietly meant "given execution."
+
+**The last core connective — sound, rejected, and the same completion residue wearing a fourth mask.** With
+delegation, multiparty, and projection probed, one CORE session-type feature stayed unprobed: **branching** —
+external choice (`offer`/`&`: receive a label, branch) and internal choice (`select`/`⊕`: send a label). A
+*twenty-eighth* primitive (`choice.rs`) built it on the binary-session floor, branches modelled as `Either` and a
+label-receive driving a `match`. I pre-registered that choice "adds no new coordinate." The cold panel (r35)
+**agreed on the thesis but ruled the §6 deliverable FAILED** — the **rejection mode's fifth firing** (after
+`typed_nat` #8, `delegation` #24, `multiparty` #25, and `projected` #27 — every one a *sound* seam whose
+deliverable was rejected). The seam itself is **SOUND** (no UB — the worst case is a starved or leaked but
+memory-safe session) and decidable, so the horn-classifier landed **SEAM-COSTS [horn 3, concentration]**. The
+break: §4 guarantee #2, "**handle every label**," is **vacuous**. Rust exhaustiveness buys **scrutinee coverage**,
+not **run-to-`End`** — a perfectly safe `match offer() { Ok(Branch::Left(c)) => .., _ => {} }` type-checks with no
+`unsafe`, **drops** the `Chan<R>` continuation, and starves that branch; "handle-all" collapses straight into the
+conceded #17/#18/#23/#27 **completion residue**. Four panel corrections, all accepted: (1) branch-safety is
+**two-legged** (label–continuation correlation + branch-set duality), **not four** — "handle every label" is the
+false leg, and **order** is the generic typestate guarantee already carried since #18, not anything
+branch-specific; (2) the deflation is onto **binary `Either` + exhaustiveness**, **not** n-ary *named* sum types —
+labeled n-ary choice needs nesting that drops the label names, or `offer!`/`choose!` macros to restore them; (3)
+Horn 2 is **Θ(type-size)**, not Θ(depth) (2^depth leaves, but interning keeps it linear-in-source — costless, just
+mislabeled); (4) completion is **amplified per-branch** and **peer-choice-reachable** (the *adversary* picks which
+branch you must run to `End`), **not** "unchanged by branching." What survives, sharpened: choice adds **no new
+coordinate** — completion stays the #17/#18/#23/#27 residue, now fed by **two** safe paths (`mem::forget` *and* the
+dropped wildcard branch). Prior art **confirms**: Honda 1993 already pairs `&`/`⊕`, and the
+`session_types`/Jespersen–Munksgaard–Larsen 2015 **affine-vs-linear gap *is* this completion residue**. The Lean
+witness `choice_branch_typing_closes` closes its sound core; the horn-3 completion gap stays invisible to the
+kernel. No new domain (**liveness stays the third**), no new coordinate (**progress**, from #24), no new mode
+(**N stays 9** — rejection's fifth firing); twenty-eight primitives. So the FAILED broken-seam tally **stays
+eight** (sound — a deliverable rejection, not a soundness break).
 
 **Decontamination, across primitives.** The seamful2 theorem predicted that a failing seam's
 obstruction *relocates* to the re-import boundary rather than vanishing. SPSC: it **vanished**
