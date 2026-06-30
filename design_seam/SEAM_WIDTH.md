@@ -289,3 +289,32 @@ choice / delegation / recursion). The probe **held** (FAILED count stays **seven
 `binary_session_progress_core_closes`, a `..._closes`) yet **refuted its own headline**: the "real binary
 session" is #18 with a duplicated handle and a `RefCell` between the copies — the order/progress core's width is
 still zero, but the completion cost is now wider, not narrower.
+
+**The twenty-fourth seam: delegation holds at zero core-width, but the gauntlet REJECTS the width framing —
+the new hazard is off the map entirely.** Delegation (`seam/src/delegation.rs`, channel-over-channel: a
+`Chan<TxChan<Q, C>>::send_chan(c: Chan<Q>)` hands off a whole live session, `recv_chan` receives it) adds the
+higher-order session feature #23 lacked, still in the **liveness** domain. The carried core has the **same
+zero-width profile** as #18/#23: each op (`send`/`recv`/`send_chan`/`recv_chan`/`close`) is **O(1)**, and the
+two carried preconditions are fully concentrated — order (affine typestate) and, the elegant part,
+**don't-use-after-delegate for free** (the affine *move* consumes the delegated handle; the one linearity
+delegation needs, the floor has at no consumer cost). So the order + handoff core is **zero seam width**, and
+the cold panel (r31) confirmed the *mechanism* sound: horn-classifier **SEAM-COSTS [horn 3]**, no UB, decidable.
+Two width/complexity corrections recorded: **Horn-2 well-formedness is `Θ(depth²)`, not `Θ(depth)`** (the
+`HasDual` involution forces normalizing `dual(dual(carrier))`); and there is **no mid-protocol abort verb** —
+`Result<_, Self>` bans `?`, so on an I/O error the consumer holds a non-`End` channel it can neither close nor
+propagate, making the completion obligation undischargeable **by the programmer**, extra consumer width over the
+advertised "concentration is cheap." **But the headline result is a width *non-event*:** the judge ruled the §6
+deliverable **FAILED** (the **rejection mode**, 2nd after `typed_nat` #8) because delegation's signature hazard
+is **not a width cost at all**. I had filed it as a leak projecting onto the leak-freedom axis (#9/#10); the
+panel refuted that from my own cited lineage — the three-party hazard (B forgets `Chan<Q>`, starving C) is
+"deadlock at the other end" (Jespersen et al. 2015), i.e. **progress / deadlock-freedom**, a coordinate
+*distinct* from completion and leak-freedom (Coppo–Dezani–Yoshida–Padovani: "the communication topology changes
+because of delegation"; deadlock-free GV). I saw the `Rc` hazard's memory-leak *face* and mislabeled the
+progress *axis*; the single-threaded witness hides deadlock by construction (the symmetric delegation cycle is
+type-obstructed — an inexpressible infinite type — which rescues *behavior*, not *classification*). So the width
+map gains **no new column** (the carried core is still zero-width), and the new danger lands **off the width map
+entirely** — a progress coordinate, like the lock seams' (#15/#16) deadlock, not a seam-width cost. The probe
+**held** at the mechanism level (FAILED *broken-seam* count stays **seven** — this is a deliverable rejection,
+not a soundness break; N stays **nine** modes; Lean `delegation_handoff_core_closes`, a `..._closes`, like
+`typed_nat`) yet earned its keep by being **instructively wrong**: it opened the progress coordinate I had tried
+to fold into leak-freedom.

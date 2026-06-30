@@ -85,7 +85,20 @@ framing was **deflated** to "#18 with a duplicated handle and a `RefCell` betwee
 genuine sharpenings of the liveness map: binary duality gives only **per-session** progress (two interleaved
 sessions type-check a mutual-wait deadlock — global deadlock-freedom needs multiparty typing), and the
 **leakpocalypse double-bind** (a peer's `mem::forget` leaks the `Rc`, so the fallible `recv`'s `Err` is
-**non-actionable**) deepens the #17/#18 linearity gap. FAILED tally stays **seven** (this survived).
+**non-actionable**) deepens the #17/#18 linearity gap. FAILED tally stays **seven** (this survived). And a
+twenty-fourth — **delegation** (channel-over-channel, the higher-order session feature #23 lacked) — went
+deeper still, and the method **caught me mislabeling a coordinate using my own citations**. The seam is
+**sound** (SEAM-COSTS [horn 3]; the floor even carries *don't-use-after-delegate* for free, by the affine move),
+but the gauntlet **FAILED on the §6 deliverable** — the *rejection mode*'s 2nd firing (after `typed_nat` #8). My
+"delegation adds no new coordinate, it projects onto leak-freedom" claim was refuted from my cited lineage:
+delegation's signature hazard (B forgets `Chan<Q>`, **starving C**) is "*deadlock at the other end*" (Jespersen
+et al. 2015) — **progress / deadlock-freedom**, a coordinate *distinct* from completion and leak-freedom, and
+delegation is the *recognized* feature that breaks first-order sessions' automatic deadlock-freedom
+(Coppo–Dezani–Yoshida–Padovani; Kobayashi; deadlock-free GV). I saw the `Rc` hazard's leak-face and mislabeled
+the progress axis; "no new coordinate" was an artifact of a single-threaded witness that cannot deadlock. So the
+liveness domain gains **progress as a third coordinate** (the lock seams #15/#16 were its *lock* face;
+delegation its *session* face); the seam is sound, so the FAILED tally **stays seven**; N stays **9** (rejection
+is one of the nine modes). The probe earned its keep by being **instructively wrong**.
 
 ## The headline result
 
@@ -724,10 +737,43 @@ The adversarial process earned its keep eighteen times:
     stays the **third** domain (its partial-match now bounded to *per-session*); the FAILED broken-seam tally
     stays **seven** (this one *survived*).
 
+23. **Delegation — channel-over-channel (SOUND, but the DELIVERABLE was REJECTED):** the higher-order session
+    step #23's straight-line `i32` witness lacked — `Chan<TxChan<Q, C>>::send_chan(c: Chan<Q>)` hands off a
+    whole live session, `RxChan<Q, C>::recv_chan` receives it (built on #23's `Rc<RefCell<Transport>>` dual
+    endpoints; `HasDual` recurses through the payload protocol `Q`). The r30 expressiveness attacker named
+    delegation as *the* feature distinguishing session types from coupled typestate. The panel split: the
+    horn-classifier read the **mechanism** as **SEAM-COSTS [horn 3]** (sound, decidable, no UB — the floor even
+    carries *don't-use-after-delegate for free*, by the affine **move** that consumes the delegated handle), but
+    the **judge ruled FAILED on the §6 DELIVERABLE** — the method's **rejection mode**, firing the **second
+    time** (after `typed_nat` #8, also sound + rejected). My pre-registered claim — "delegation adds **no new
+    coordinate**; its hazards project onto leak-freedom (#9/#10), a Phase-K closed-basis confirmation" — was
+    **refuted from my own cited lineage**. Delegation's signature hazard — B `mem::forget`s the received
+    `Chan<Q>`, **starving C** — is, in the exact words of the `session_types` crate I cited
+    (Jespersen–Munksgaard–Larsen, WGP 2015), "**deadlock at the other end**": that is **progress /
+    deadlock-freedom**, a coordinate *distinct* from completion (linearity) **and** leak-freedom. An entire
+    literature exists *because delegation is the feature that breaks first-order binary sessions' automatic
+    deadlock-freedom* (Coppo–Dezani–Yoshida–Padovani, MSCS 2016, "*the communication topology changes because of
+    delegation*"; Kobayashi; deadlock-free GV — Lindley–Morris, Padovani, Multiparty GV PACMPL 2022, Rusty
+    Variation 2019). **The category error:** I saw the `Rc` hazard's **leak-face** and filed it under #9/#10,
+    missing that the signature danger is a **progress** phenomenon that merely *also* leaks under `Rc`; the
+    "no new coordinate" conclusion was an **artifact of a single-threaded witness that definitionally cannot
+    deadlock**. My one real defense — the symmetric two-session delegation **cycle is type-obstructed** (an
+    inexpressible infinite type) — rescues *behavior*, not *classification*. Recorded tradeoffs: no mid-protocol
+    abort verb (`Result<_, Self>` bans `?`, so the completion obligation is undischargeable by the *programmer*);
+    `HasDual` well-formedness is **Θ(depth²)** not the spec's Θ(depth) (the involution normalizes
+    `dual(dual(carrier))`); the finite-type, `!Send` single-thread witness cannot express the recursive
+    accept-loop server (delegation's canonical use case). The finding: the probe **earned its keep by being
+    instructively *wrong*** — I predicted a closed-basis confirmation, and the method refuted it with my own
+    citations, establishing **progress / deadlock-freedom as a third liveness coordinate** (the lock seams
+    #15/#16 were its *lock* face; delegation its *session* face), distinct from completion and leak-freedom. The
+    seam is **sound**, so the FAILED broken-seam tally **stays seven** (a deliverable rejection, not a soundness
+    break); N stays **9** (rejection is one of the nine modes — its 2nd firing); Lean
+    `delegation_handoff_core_closes` (the sound order + affine-handoff core *closes*, like `typed_nat`).
+
 ## Artifacts
 
-- Specs (attacked as text): `SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat,take,drain,selfref,validity,secret,labeled,ordered_locks,lock_registry,linear,session,restore,reseat,crdt,wcet,binary_session}.md`
-- Cold verdicts: `REPORT_SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat,take,drain,selfref,validity,secret,labeled,ordered_locks,lock_registry,linear,session,restore,reseat,crdt,wcet,binary_session}.md` (+ raw transcripts in `runs_seam/`)
+- Specs (attacked as text): `SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat,take,drain,selfref,validity,secret,labeled,ordered_locks,lock_registry,linear,session,restore,reseat,crdt,wcet,binary_session,delegation}.md`
+- Cold verdicts: `REPORT_SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat,take,drain,selfref,validity,secret,labeled,ordered_locks,lock_registry,linear,session,restore,reseat,crdt,wcet,binary_session,delegation}.md` (+ raw transcripts in `runs_seam/`)
 - Real Rust (rustc-checked, `#![no_std]`): `../seam/` — `src/lib.rs` (SPSC), `src/mmio.rs`,
   `src/intrusive.rs`, `src/slab.rs`, `src/branded.rs`, `src/refined.rs`, `src/shared.rs` (the lone
   `alloc` user), `src/typed_nat.rs` (eighth-axis probe 1 — sound, no new axis), `src/take.rs`
@@ -761,8 +807,8 @@ The adversarial process earned its keep eighteen times:
   time; it is Danielsson's 2008 cost monad and deflates to `typed_nat` #8 + an uninstalled `mmio`-shaped
   axiom + liveness's partial-match — the second fourth-domain candidate that fails to open a fourth domain);
   consumer code is `#![forbid(unsafe_code)]`; laundering paths are `compile_fail`
-  doctests (87 `tests/` integration tests + 52 doctests = 139 total in the default `no_std` build; with
-  `--features lockdep` the runtime registry adds its tests for **146 total**).
+  doctests (90 `tests/` integration tests + 53 doctests = 143 total in the default `no_std` build; with
+  `--features lockdep` the runtime registry adds its tests for **150 total**).
 - Seam-width instrument: `SEAM_WIDTH.md`; full face lattice: `REALIZABILITY.md`
 - Mechanization: `../proof/SeamGap.lean` — `seam_closes_iff_factors` + the
   `spsc`/`intrusive`/`slab`/`branded`/`refined`/`shared`/`typed_nat`/`take`/`drain`/`selfref`/`validity` instances,
@@ -785,7 +831,12 @@ The adversarial process earned its keep eighteen times:
   value is borrowed) and `binary_session_progress_core_closes` (the twenty-third seam *holds* with a horn-3
   cost — its order + *per-session* relative-progress core closes via affine typestate + the `HasDual`
   duality; the completion cost is modeling-dictionary, now peer-observable across two real endpoints, and the
-  per-session-only deadlock-freedom and the non-actionable `Err` from the leaked `Rc` live in the prose)
+  per-session-only deadlock-freedom and the non-actionable `Err` from the leaked `Rc` live in the prose) and
+  `delegation_handoff_core_closes` (the twenty-fourth seam — channel-over-channel — is **sound** and its order +
+  *don't-use-after-delegate* core closes via affine typestate + the affine move, exactly like `typed_nat`; but
+  its §6 **deliverable was REJECTED** (the rejection mode's 2nd firing): delegation opens **progress /
+  deadlock-freedom** as a third liveness coordinate distinct from completion and leak-freedom — the prose
+  records the refutation, the kernel sees only that the handoff core suffices)
   (propext-only).
 
 ## The one-sentence upgrade to the trilemma

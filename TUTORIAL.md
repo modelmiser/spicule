@@ -9,7 +9,7 @@ languages"; and (c) what newlang discovered and *why it matters*.
 **What newlang is.** Not a language. It is a research project that asked "what would the
 perfect systems language look like?", listed seven properties such a language should have,
 and then **proved — adversarially — that the seven cannot coexist**, mapped exactly where the
-wall is, and then **built twenty-three real things that live right up against the wall (eight that close, plus fifteen probes — ending by showing the closed basis is *per soundness domain*, that which seams close is *graded* by the *floor-precondition match* (full for memory safety, none for information flow, partial then none for liveness), that *upgrading the floor is non-monotone* — the granularity gap is a ladder — that a floor can be the *wrong structural logic* (affine vs linear) no upgrade fixes, and finally that the *same* danger is a soundness *break* or a mere concentration *cost* depending on how the re-import rule **packages** it — a dial that proves **real but bounded**: a controlled probe moved one identical danger across horns, yet the move only works where soundness can be *decoupled* from the un-compellable closure, and a clean single-variable follow-up confirmed the fence is *forced* — the same packaging over a borrowed slot breaks — and that a *fourth domain* (replicated convergence) need not even be one: the candidate **deflated** into the generic unchecked-typeclass-law gap, projecting onto an existing basis — and that a *second* fourth-domain try (real-time/WCET) **failed** too, its op-count an *unsound* proxy for cycles (a cost monad), so two candidates in a row open no new domain and the three confirmed domains look **special** — and finally that a *real binary session* **deepened** liveness: it held (removing #18's single-handle limit and confirming the grading transfers), but its "real session" framing deflated to *per-session-only* progress, global deadlock-freedom needing *multiparty* typing)** to show what
+wall is, and then **built twenty-four real things that live right up against the wall (nine that close, plus fifteen probes — ending by showing the closed basis is *per soundness domain*, that which seams close is *graded* by the *floor-precondition match* (full for memory safety, none for information flow, partial then none for liveness), that *upgrading the floor is non-monotone* — the granularity gap is a ladder — that a floor can be the *wrong structural logic* (affine vs linear) no upgrade fixes, and finally that the *same* danger is a soundness *break* or a mere concentration *cost* depending on how the re-import rule **packages** it — a dial that proves **real but bounded**: a controlled probe moved one identical danger across horns, yet the move only works where soundness can be *decoupled* from the un-compellable closure, and a clean single-variable follow-up confirmed the fence is *forced* — the same packaging over a borrowed slot breaks — and that a *fourth domain* (replicated convergence) need not even be one: the candidate **deflated** into the generic unchecked-typeclass-law gap, projecting onto an existing basis — and that a *second* fourth-domain try (real-time/WCET) **failed** too, its op-count an *unsound* proxy for cycles (a cost monad), so two candidates in a row open no new domain and the three confirmed domains look **special** — and finally that a *real binary session* **deepened** liveness: it held (removing #18's single-handle limit and confirming the grading transfers), but its "real session" framing deflated to *per-session-only* progress, global deadlock-freedom needing *multiparty* typing — and finally that **delegation** (channel-over-channel), built to add that very feature, *held* but had its deliverable **rejected**, opening **progress/deadlock-freedom** as a third liveness coordinate I had mislabeled as a leak)** to show what
 you *can* do. The deliverables are an impossibility result, a theorem (the *Seam Trilemma*),
 a Lean proof, and a small Rust crate of worked examples.
 
@@ -498,7 +498,7 @@ doesn't exist.
 
 ---
 
-# Part 9 — Build and break: twenty-three real seams (the heart of it)
+# Part 9 — Build and break: twenty-four real seams (the heart of it)
 
 Theory in hand, the project stopped arguing and *built*. Crucial design of the experiment:
 **build and break are different machines.** Construction is continuity, so a *stateful builder*
@@ -1373,6 +1373,57 @@ copies," is two sharpenings of the liveness map: binary duality gives only **per
 **leakpocalypse double-bind** deepens the #17/#18 linearity gap. N stays **nine** modes; liveness stays the
 **third** domain; the FAILED broken-seam tally **stays seven** (this survived).
 
+### Primitive 24 — delegation (channel-over-channel) → SOUND, but the deliverable is REJECTED (`seam/src/delegation.rs`)
+
+The twenty-third's expressiveness attacker named **delegation** — sending a channel endpoint as a payload over
+another channel — as *the* feature distinguishing session types from coupled typestate machines, the one #23's
+straight-line `i32` witness lacked. So build it: on #23's `Rc<RefCell<Transport>>` endpoints, the wire's slot
+now carries *either* an `i32` *or* a whole delegated endpoint; `TxChan<Q, C>::send_chan(c: Chan<Q>)` hands off a
+live session, `RxChan<Q, C>::recv_chan` receives it (re-attaching `Q`, which duality pins). `HasDual` passes
+`Q` through unchanged. Delegation is inherently **three-party**: A delegates its session-with-C to B, so B now
+drives that session with C. No `unsafe`.
+
+The pre-registered hypothesis was a *closed-basis confirmation*: delegation adds no new coordinate; its hazards
+are #23's completion gap (now three-party) plus a leak (abandoning a carrier with a delegated channel in flight
+strands the payload `Rc`), **projecting onto the leak-freedom axis (#9/#10)** — the Phase-K pattern, one domain
+over. The cold panel (r31) **rejected that deliverable** — and this is the more instructive outcome. The
+*mechanism* is sound (horn-classifier **SEAM-COSTS [horn 3]**; the soundness attacker confirmed no wrong-`Q`
+re-typing — duality-by-construction + generic invariance block any Gay–Hole subtyping smuggle; the worst case is
+a memory-safe leaked/starved session, not UB). But the **judge ruled FAILED on the §6 deliverable** — the
+method's **rejection mode**, firing for the *second* time (after `typed_nat` #8, also sound + deliverable-
+rejected). The refutation came *from my own cited lineage*:
+
+> - **Delegation's signature hazard is *progress / deadlock-freedom*, a coordinate distinct from completion AND
+>   leak-freedom — not a leak.** The three-party hazard (B `mem::forget`s the received `Chan<Q>`, starving C) is,
+>   in the *exact* words of the `session_types` crate I cited (Jespersen–Munksgaard–Larsen, WGP 2015), that an
+>   affine session "*means an agent can drop the connection anytime without finishing the protocol, which leads
+>   to **deadlock at the other end**.*" That is **progress** — a recognized *third* property. An entire
+>   literature exists *because delegation is the feature that breaks first-order binary sessions' automatic
+>   deadlock-freedom*: Coppo–Dezani–Yoshida–Padovani (MSCS 2016, "*the communication topology changes because of
+>   delegation*"), Kobayashi-style deadlock/lock-freedom typing, deadlock-free GV (Lindley–Morris; Padovani,
+>   "Progress as Compositional Lock-Freedom"; Multiparty GV, PACMPL 2022; Rusty Variation, 2019).
+> - **The category error.** I saw the `Rc` hazard's *memory-leak face* and filed it under leak-freedom (#9/#10),
+>   missing that the signature danger is a **progress** phenomenon that merely *also* leaks under `Rc`. The new
+>   danger does not land on an existing coordinate — it is a *distinct* one (progress), projected onto the wrong
+>   axis because the witness cannot see its true one.
+> - **The scoping is what hid it.** Progress/deadlock manifests only under interleaving; a single-threaded
+>   synchronous witness *definitionally cannot deadlock*, so "no new coordinate" was an **artifact of the
+>   witness**. My one real defense — the symmetric two-session delegation **cycle is type-obstructed** (an
+>   inexpressible infinite type) — rescues *behavior*, not *classification*.
+> - **Recorded tradeoffs.** No mid-protocol abort verb and `Result<_, Self>` bans `?`, so on an I/O error the
+>   completion obligation is undischargeable *by the programmer*, not merely the type system; `HasDual`
+>   well-formedness is Θ(depth²) (the involution normalizes `dual(dual(carrier))`), not the spec's Θ(depth); and
+>   the finite-type, `!Send`, single-thread witness cannot express the recursive accept-loop server that is
+>   delegation's canonical use case.
+
+So the probe **earned its keep by being instructively wrong**: I predicted a closed-basis confirmation, and the
+method refuted it *with my own citations*, opening the **progress / deadlock-freedom** coordinate — distinct
+from completion (linearity) and leak-freedom. The liveness domain thus has *progress* as a third coordinate: the
+lock-ordering seams (#15/#16) were its *lock* face, delegation its *session* face. The sound order +
+don't-use-after-delegate core (the affine *move* carries the one linearity delegation needs) still **closes**
+(`delegation_handoff_core_closes`, like `typed_nat`); N stays **nine** modes; the FAILED *broken-seam* tally
+**stays seven** (this is a deliverable rejection, not a soundness break).
+
 ### The taxonomy (the whole point, in one table)
 
 | Primitive | What the missing conjunct *is* | Fate | Pays with |
@@ -1399,6 +1450,7 @@ copies," is two sharpenings of the liveness map: binary duality gives only **per
 | State-based CRDT merge (`Replica<T: JoinSemilattice>`) | replicas must *converge* — `join` must obey the semilattice laws (commutative/associative/idempotent — **not UB**) | **breaks (floor-mismatch), but DEFLATES** | **FOURTH-DOMAIN PROBE — NO NEW DOMAIN** — the `T: JoinSemilattice` bound is a *syntactic proxy, not a witness*; a safe lawless `join` type-checks and diverges replicas (double-counts on redelivery; undecidable by Rice). But the candidate fourth domain **deflated**: the blessed-CRDT TCB rescue is *not* MMIO-shaped (open lattice space → trust recurs per CRDT), 'dischargeable' only at the model level (no Rust pass checks model-to-shipped-code), and the gap is the *generic* unchecked-typeclass-law phenomenon (`Ord`/`Eq`/`Hash`/`Monoid`/semilattice — signatures checked, laws not), so convergence **projects onto `restore`'s application-correctness basis**. The map stays at three domains + application-correctness; scored a TRADEOFF survival, FAILED tally stays 6. No new mode |
 | Cost-typed computation (`Timed<C, T>`, a graded cost monad) | a computation must meet a *cycle deadline* — real elapsed time ≤ budget (real-time/WCET — **not UB**) | **breaks (horn 1), FAILED** | **SECOND FOURTH-DOMAIN PROBE — FAILED, no new domain** — `step` charges +1 *decoupled* from its closure, so a 10⁶-iteration loop is cost 1 and `within::<1>` admits it (the op-count is an *unsound* proxy for cycles; my §4 over-claimed the deadline). All five attackers landed: Horn 3 is *false* (non-unifying `if`-branches force manual step-padding); the unary cost is O(C), uncompilable at real budgets; no additive composition; and it is **Danielsson's 2008 cost monad** — "op-count ≠ cycles" is WCET's *founding premise*, so *pick a lane* (abstract cost xor physical deadline). Deflates: cost monad / `typed_nat` #8 for the static part, an `mmio`-shaped-but-*uninstalled* axiom #2 for the physical claim, liveness's partial-match for data-dependent loops. The map stays at three domains + application-correctness; FAILED tally rises to **7**. No new mode |
 | Real binary session (`session()` → two dual `Chan` over `Rc<RefCell>`) | two peers' protocol run in order *and to completion* — neither abandons, starving its dual (liveness — **not UB**) | **costs (holds)** | **LIVENESS DEEPENING — #18's grading survives, framing deflated** — removes #18's single-handle limitation (two concurrently-live dual endpoints, the `E0499` #18 hit); order **closes** + *per-session* relative progress **closes** (duality, `HasDual`), completion **costs horn 3** (now peer-observable). But the panel deflated the "real binary session" framing in five accepted ways: relative progress closes only **per session** (two interleaved `session()`s type-check a mutual-wait deadlock — Kobayashi/Padovani; global deadlock-freedom needs *multiparty* typing); the single-threaded witness makes "peer waits forever" self-abandonment-flavored (only the *static* limitation lifted, not `session_types` 2015's real concurrency); the fallible `recv`'s `Err` is **non-actionable** because `mem::forget` leaks the `Rc` (the **leakpocalypse double-bind** — the gap that costs completion also denies an actionable abandonment signal); only straight-line `i32` protocols (no choice/delegation/recursion). Net: two sharpenings of the liveness map; refuted its own headline, confirmed the grading. FAILED tally stays 7; N stays 9. No new mode |
+| Delegation (channel-over-channel; `send_chan`/`recv_chan` over `Rc<RefCell>`) | a delegated session must reach its peer and run to completion — abandoning it deadlocks the *third* party (liveness — **not UB**) | **holds (sound), DELIVERABLE REJECTED** | **REJECTION MODE (2nd, after #8) — delegation opens the PROGRESS coordinate** — the *mechanism* is sound (SEAM-COSTS [horn 3]; no wrong-`Q` re-typing — duality pins `Q`; order + don't-use-after-delegate close, the latter carried free by the affine *move*), but the judge **FAILED the §6 deliverable**: my "no new coordinate / projects onto leak-freedom (#9/#10)" claim was refuted *from my own cited lineage*. Delegation's signature hazard (B forgets `Chan<Q>`, starving C) is "deadlock at the other end" (Jespersen et al. 2015) — **progress / deadlock-freedom**, a coordinate *distinct* from completion and leak-freedom; delegation is the recognized feature that *breaks* first-order sessions' automatic deadlock-freedom (Coppo–Dezani–Yoshida–Padovani; Kobayashi; deadlock-free GV). I saw the `Rc` hazard's leak-*face* and mislabeled the progress *axis*; the single-threaded witness hides deadlock by construction (the symmetric cycle is type-obstructed — rescues *behavior*, not *classification*). The probe earned its keep by being instructively *wrong*. FAILED tally stays 7 (sound — a deliverable rejection); N stays 9 |
 
 The decontamination signal (Part 6) held across all twelve **memory-safety** primitives: the obstruction
 *vanished* (SPSC), *moved and stayed decidable* (MMIO), *moved onto a runtime witness* (slab), *moved onto
@@ -1456,15 +1508,19 @@ sees only whether a Boolean witness suffices — which is *exactly* why the axis
 adjudicated by the cold panel in prose, not the kernel: the kernel certifies that all of
 `typed_nat`/`take`/`drain`/`selfref`/`validity` *close*, and says nothing about the fact that one spends a
 confounded non-axis, two spend clean distinct axes, one spends a real-but-inseparable danger, and one
-spends a coordinate *already on the map* — the last of which is how you know the basis is closed). Three more
+spends a coordinate *already on the map* — the last of which is how you know the basis is closed). Four more
 *close* in the kernel but **hold-with-a-cost** in prose — `session_order_safety_closes`,
-`restore_ownership_core_closes`, and `binary_session_progress_core_closes` (the eighteenth, nineteenth, and
-twenty-third seams): the kernel sees their sound *order-safety* / *ownership-core* / *order-plus-per-session-
-progress* component factor through the witness, but not the horn-3 concentration cost the cold panel charged
-each (the session's un-completable protocol; the restore guard's un-compellable closure — the #17 gap
-re-packaged so it costs instead of breaks; and the binary session's un-compellable *peer*, whose `mem::forget`
-starves the dual — the #17/#18 gap now across a two-party boundary, the real-binary-session deepening of #18
-that survives but whose "real session" framing the panel deflated to per-session-only progress). The
+`restore_ownership_core_closes`, `binary_session_progress_core_closes`, and `delegation_handoff_core_closes`
+(the eighteenth, nineteenth, twenty-third, and twenty-fourth seams): the kernel sees their sound *order-safety* /
+*ownership-core* / *order-plus-per-session-progress* / *order-plus-affine-handoff* component factor through the
+witness, but not the cost the cold panel charged each (the session's un-completable protocol; the restore
+guard's un-compellable closure — the #17 gap re-packaged so it costs instead of breaks; the binary session's
+un-compellable *peer*, whose `mem::forget` starves the dual — the #17/#18 gap now across a two-party boundary,
+the real-binary-session deepening of #18 that survives but whose "real session" framing the panel deflated to
+per-session-only progress; and the delegation seam's order-plus-affine-handoff core — sound, but whose §6
+deliverable the panel *rejected*, the rejection mode firing a second time after `typed_nat` #8: delegation opens
+**progress / deadlock-freedom** as a coordinate distinct from completion and leak-freedom, which I had mislabeled
+as a leak and the kernel models not at all). The
 last five, the out-of-memory-safety primitives, are the sharpest illustration: their Lean instances are
 named `secret_typed_discipline_factors`, `labeled_typed_discipline_factors`,
 `ordered_locks_typed_discipline_factors`, `lock_registry_typed_discipline_factors`, and
@@ -1531,7 +1587,7 @@ You can forget every primitive and keep these.
    the professional move is to (a) put it in one place (concentration), (b) make the obligation
    at it as visible as possible, and (c) choose *consciously* whether the boundary costs you
    soundness, decidability, concentration, runtime, API surface, a solver in your toolchain, or
-   exception-safety, leak-freedom. The twenty-three-primitive taxonomy is a decision procedure for that choice.
+   exception-safety, leak-freedom. The twenty-four-primitive taxonomy is a decision procedure for that choice.
 
 4. **Adversarial separation of build and break.** Construction wants continuity; demolition wants
    a cold, context-free skeptic. Keeping them as separate machines — and *calibrating* your
@@ -1691,6 +1747,22 @@ witness, and the honest move is to drop the claim.
     progress; the leakpocalypse double-bind). The instrument is calibrated when it can ratify your soundness and
     reject your sales pitch in the same verdict.
 
+12. **The rejection mode fires twice — and the second time it corrects your *map*, using your own citations.**
+    A sound seam can still **fail** its gauntlet when its *deliverable* overclaims; this is the rejection mode,
+    seen first at `typed_nat` (#8, a sound seam whose claimed eighth axis was rejected). The twenty-fourth
+    primitive — **delegation** (channel-over-channel), built to answer #23's "no delegation, so it's #18 doubled"
+    — fired it again. The mechanism is sound (SEAM-COSTS [horn 3], no UB), but I pre-registered a *closed-basis
+    confirmation*: "delegation adds no new coordinate; its hazards project onto leak-freedom." The cold panel
+    refuted that **from the very lineage I cited**: delegation is the *recognized* feature that breaks
+    first-order sessions' automatic deadlock-freedom (it spawned the global-progress literature —
+    Coppo–Dezani–Yoshida–Padovani; Kobayashi; deadlock-free GV), so its signature hazard is **progress /
+    deadlock-freedom**, a coordinate *distinct* from completion and leak-freedom. I had seen the `Rc` hazard's
+    memory-*leak face* and mislabeled the progress *axis* — an error I could sustain only because a
+    single-threaded witness *definitionally cannot deadlock*. The lesson: building "the real feature" can
+    **refute your map, not just confirm it** — and the sharpest refutations come from reading your own
+    references more honestly than your hypothesis did. (The liveness domain thus has *progress* as a third
+    coordinate: the lock seams #15/#16 were its *lock* face, delegation its *session* face.)
+
 ---
 
 # Part 12 — Do it yourself: exercises and a reading path
@@ -1702,8 +1774,8 @@ witness, and the honest move is to drop the claim.
 - `lean proof/SeamGap.lean` — read the characterization; change a definition and watch it break.
 - Skim `design_seam/REPORT_SEAM_SPEC_*.md` — the cold attackers' actual verdicts, in their words.
 
-**Build a twenty-fourth primitive — the fourth-domain door looks hard to open, and the twenty-third just
-deepened liveness instead.** (The packaging trilogy is *closed*: #18 found the horn moves, #19 that it moves
+**Build a twenty-fifth primitive — the fourth-domain door looks hard to open, and the twenty-fourth just
+opened a third *liveness* coordinate (progress) by having its deliverable rejected.** (The packaging trilogy is *closed*: #18 found the horn moves, #19 that it moves
 within a fence, #20 that the fence is *forced* — see below; a further packaging probe will only re-confirm. And
 **both** fourth-domain attempts failed to open a fourth domain: #21, **distributed/replicated convergence** via
 a state-based CRDT, **deflated** — it breaks floor-relatively but folded into the *generic
@@ -1718,7 +1790,14 @@ deadlock-freedom needs *multiparty* typing), and the fallible `recv`'s `Err` is 
 `mem::forget` leaks the `Rc` (the leakpocalypse double-bind). *Two* fourth-domain candidates, *two* non-domains,
 by different mechanisms — the meta-finding is that the three confirmed domains (memory safety / information flow
 / liveness) look **special**, and a would-be fourth keeps reducing
-to an existing basis or failing on an unsound proxy.) The memory-safety basis is closed; a within-memory-safety probe will
+to an existing basis or failing on an unsound proxy. And #24, **delegation** (channel-over-channel) — the very
+next move proposed below — was *built*; its mechanism **held** (SEAM-COSTS [horn 3], no UB), but the panel
+**rejected its deliverable** (the rejection mode, a second time after #8): my pre-registered "delegation projects
+onto leak-freedom, no new coordinate" claim was refuted *from my own cited lineage* — delegation is the
+recognized feature that *breaks* first-order sessions' automatic deadlock-freedom, so it opens **progress /
+deadlock-freedom** as a coordinate *distinct* from completion and leak-freedom, which I had mislabeled as a leak
+because a single-threaded witness cannot deadlock. So liveness now carries *three* coordinates, not two.) The
+memory-safety basis is closed; a within-memory-safety probe will
 *project*, not extend. Primitives 13–21 opened the live frontiers. Primitive
 13 showed information flow is a *distinct*
 domain; 14, that *no IFC seam closes on Rust's affine floor*; 15, that liveness **half-closes** on a static
@@ -1736,15 +1815,20 @@ single-variable confirmation #19's confound could not give; 21, that the first *
 no new domain either; and 23, that a **real binary session** *deepened* liveness — it **held**, removing #18's
 single-handle limitation and confirming the grading transfers, but its "real session" framing deflated to
 *per-session-only* progress (interleaved sessions deadlock; global deadlock-freedom needs *multiparty* typing)
-and a non-actionable `recv` `Err` (the leakpocalypse double-bind). So the twenty-fourth has two honest
+and a non-actionable `recv` `Err` (the leakpocalypse double-bind); and 24, that **delegation**
+(channel-over-channel) opened the **progress / deadlock-freedom** coordinate — its mechanism *held*
+(SEAM-COSTS [horn 3]) but its deliverable was **rejected** (the rejection mode's second firing after #8),
+refuting my "projects onto leak-freedom" claim from my own cited lineage, since delegation is the recognized
+feature that breaks first-order sessions' automatic deadlock-freedom. So the twenty-fifth has two honest
 directions and a warning (the third, *forcing the horn*, the twentieth already did) — but the fourth-domain
-door is looking hard to open. (i) **Deepen liveness further — #23 just opened two sub-frontiers.** The binary
-session shipped only a *straight-line `i32`* fragment; the session-type features it lacked are the obvious next
-probes — `offer`/`choose` (external/internal choice, where the continuation *type depends on a received
-value*), **delegation** (channel-over-channel — *the* feature that distinguishes session types from coupled
-typestate), or recursion. Sharper still, #23's deflation named the real bite: binary duality gives only
-*per-session* progress, so **multiparty session types** (Honda–Yoshida–Carbone; Kobayashi's deadlock typing)
-are the floor a *global* deadlock-freedom seam would need — does that floor *close* the global-progress gap, or
+door is looking hard to open. (i) **Deepen liveness further — and #24 named where it bites.** The binary
+session shipped only a *straight-line `i32`* fragment, and delegation (#24) confirmed that the *fragment* — not
+the single handle — was the real limit: the session-type features still unbuilt are the obvious probes —
+`offer`/`choose` (external/internal choice, where the continuation *type depends on a received value*) or
+recursion. Sharper still, #24 *promoted progress to a coordinate*: binary duality gives only *per-session*
+progress, and delegation is exactly the feature that breaks even that — so **multiparty session types**
+(Honda–Yoshida–Carbone; Kobayashi's deadlock typing; deadlock-free GV) are now the *named* floor a *global*
+deadlock-freedom seam would need — does that floor *close* the global-progress gap delegation opened, or merely
 relocate it? (Grading a genuinely *fourth* domain is settled-hard: convergence deflated to application-
 correctness; WCET's op-count is an unsound proxy that reduces to a cost monad.) (ii) **Probe another STRUCTURAL LOGIC** (linear was the first
 *wrong-structural-logic* verdict): a **relevant**-type precondition — *must-use-at-least-once with an error
@@ -1791,7 +1875,7 @@ mode.)
    shared ownership trades *unbounded dynamic allocation* against *caller-provided bounded storage*.
 8. **Verus** and **Creusot** docs — what "Rust but `unsafe` is proof" actually looks like when
    someone ships it (the productive horn from Part 8).
-9. This repo's `WRITEUP.md` (the full result), `design_seam/SYNTHESIS.md` (the twenty-three-primitive map),
+9. This repo's `WRITEUP.md` (the full result), `design_seam/SYNTHESIS.md` (the twenty-four-primitive map),
    `design_seam/REALIZABILITY.md` (the face lattice / 3-of-N proof), and `THE-SAME-WALL.md` (the
    cross-field boundary/veil discipline).
 

@@ -370,7 +370,7 @@ the second alone. A 0/N adversarial result is only as good as your ability to ru
 "the proposer was just weak," and the cleanest way to do that is to *hand the proposer
 the known-good sub-component and watch the failure move, not disappear.*
 
-## 10. The constructive phase — build and break twenty-three real seams
+## 10. The constructive phase — build and break twenty-four real seams
 
 The trilemma is a map, so the next step was to stop arguing in the abstract and **build**.
 A different harness shape: the negative half used cold instances to *propose* (and they
@@ -696,6 +696,40 @@ binary duality gives only *per-session* progress, and the linearity gap (#17/#18
 stays **seven** (this survived). *(A citation the panel corrected, for the record: ECOOP 2022 "Stay Safe Under
 Panic" is Lagaillardie–Neykova–Yoshida.)*
 
+**The higher-order step — and a prediction the method refuted with my own citations.** The r30 expressiveness
+attacker had named **delegation** (channel-over-channel — sending a channel endpoint as a payload) as *the*
+feature distinguishing session types from coupled typestate, the one #23's straight-line `i32` witness lacked.
+So a *twenty-fourth* primitive (`delegation.rs`) added it: on #23's `Rc<RefCell<Transport>>` endpoints, two
+markers `TxChan<Q, C>`/`RxChan<Q, C>` with `send_chan`/`recv_chan`, `HasDual` recursing through the payload
+protocol. I **pre-registered the wrong conclusion**: that delegation "adds no new coordinate — its hazards
+project onto completion (#23) and leak-freedom (#9/#10), a Phase-K closed-basis confirmation." The cold panel
+(r31) ruled the re-import rule **sound** (horn-classifier **SEAM-COSTS [horn 3]**, no UB, decidable — duality
+pins `Q`, so the type-erased delegated wire cannot be re-typed wrong), but the judge ruled the gauntlet
+**FAILED on the §6 deliverable** — the method's **rejection mode**, firing for the *second* time (after the
+`typed_nat` eighth-axis probe, also sound-but-deliverable-rejected). And it refuted my classification *from my
+own cited lineage*: the three-party hazard — the delegatee B `mem::forget`s the received `Chan<Q>`, **starving
+the third party C** — is, in the exact words of the `session_types` crate I cited (Jespersen–Munksgaard–Larsen,
+*Session Types for Rust*, WGP 2015), "*deadlock at the other end*." That is **progress/deadlock-freedom** — a
+*third* recognized liveness property, distinct from both completion (linearity) and leak-freedom. An entire
+literature exists *because delegation is the feature that breaks first-order binary sessions' automatic
+deadlock-freedom*: Coppo–Dezani–Yoshida–Padovani (MSCS 2016 — "*the communication topology changes because of
+delegation*"), Kobayashi-style deadlock/lock-freedom typing, deadlock-free GV (Lindley–Morris; Padovani's
+"Progress as Compositional Lock-Freedom"; Multiparty GV, *PACMPL* 2022; Rusty Variation, 2019). My error was a
+**category error**: I saw the `Rc` hazard's *memory-leak face* and filed it under leak-freedom, missing that
+the signature danger is a *progress* phenomenon that merely *also* leaks under `Rc`; and "no new coordinate"
+was an **artifact of a single-threaded witness that definitionally cannot deadlock**. My one real defense — the
+symmetric two-session delegation cycle is *type-obstructed* (an inexpressible infinite type) — rescues
+*behavior*, not *classification*. (Recorded tradeoffs: no mid-protocol abort verb and `Result<_, Self>` bans
+`?`, so completion is undischargeable *by the programmer*, not just the type system; `HasDual` well-formedness
+is `Θ(depth²)`, not `Θ(depth)`, from normalizing `dual(dual(carrier))`; the finite-type, `!Send`,
+single-thread witness cannot express the recursive accept-loop server that is delegation's canonical use case.)
+So the probe **earned its keep by being instructively wrong**: I predicted a closed-basis confirmation and the
+method opened the **progress** coordinate instead — the lock-ordering seams (#15/#16) were its *lock* face,
+delegation its *session* face. The order + don't-use-after-delegate core is sound and closes (the affine *move*
+carries don't-use-after-delegate — the one linearity delegation needs the floor *has*), so the FAILED tally
+stays **seven** (a deliverable rejection, not a soundness break); **N stays 9** (rejection is one of the nine
+modes, its second firing); twenty-four primitives.
+
 **Decontamination, across primitives.** The seamful2 theorem predicted that a failing seam's
 obstruction *relocates* to the re-import boundary rather than vanishing. SPSC: it **vanished**
 (precondition factors through the witness). MMIO: it **moved and stayed decidable** (the
@@ -724,7 +758,7 @@ was the whole verdict — including the one mirage (the fuel knob), the two genu
 the one *real-but-inseparable* destination (immovability), and the one that landed *on coordinates already
 on the map* (validity) — the last of which is what closes the basis.
 
-**The adversary earned its keep — twenty-three times.** On MMIO it named the axiom's category correctly
+**The adversary earned its keep — twenty-four times.** On MMIO it named the axiom's category correctly
 (a TCB boundary, not a horn) and surfaced a horn-3 cost the builder had under-weighted. On the
 intrusive list it proved something *worse* than the builder predicted: branding does not restore
 soundness at all (a brand is an *access* capability, not a *storage* lifetime), correcting a real
@@ -844,7 +878,7 @@ cold review had flagged to a genuine characterization — `seam_closes_iff_facto
 closes **iff** its precondition factors through the safe witness — with the regimes as
 machine-checked instances (`spsc_seam_closes`, `intrusive_seam_does_not_close`, the slab's
 `slab_runtime_closes_but_static_does_not`: the same precondition closes through a *runtime*
-witness but not the *static* one, and `branded_seam_closes`/`refined_seam_closes`/`shared_seam_closes`/`typed_nat_seam_closes`/`take_seam_closes`/`drain_seam_closes`/`selfref_seam_closes`/`validity_seam_closes`/`secret_typed_discipline_factors`/`labeled_typed_discipline_factors`/`ordered_locks_typed_discipline_factors`/`lock_registry_typed_discipline_factors`/`linear_typed_discipline_factors`/`restore_ownership_core_closes`/`reseat_typed_discipline_factors`/`crdt_typed_discipline_factors`/`wcet_typed_discipline_factors`/`binary_session_progress_core_closes`:
+witness but not the *static* one, and `branded_seam_closes`/`refined_seam_closes`/`shared_seam_closes`/`typed_nat_seam_closes`/`take_seam_closes`/`drain_seam_closes`/`selfref_seam_closes`/`validity_seam_closes`/`secret_typed_discipline_factors`/`labeled_typed_discipline_factors`/`ordered_locks_typed_discipline_factors`/`lock_registry_typed_discipline_factors`/`linear_typed_discipline_factors`/`restore_ownership_core_closes`/`reseat_typed_discipline_factors`/`crdt_typed_discipline_factors`/`wcet_typed_discipline_factors`/`binary_session_progress_core_closes`/`delegation_handoff_core_closes`:
 all close like SPSC in the kernel — the recovered axes, the seven broken seams' domain gaps, the graded floor-match, the non-monotone floor-upgrade, the structural-logic (affine-vs-linear) break, the forced borrowed-slot double-free, the unsound real-time op-count proxy, and the real binary session's order+per-session-progress core (whose horn-3 completion cost and per-session-only deadlock-freedom it cannot see) alike invisible to it), `propext` only. Honest bound unchanged: the
 *math* is now a real characterization, but the faithfulness of "precondition" and "witness" to
 actual Rust primitives — *which axis a closing seam spends* (zero-cost, API-locality, legibility,
