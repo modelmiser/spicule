@@ -321,6 +321,23 @@ pub mod crdt;
 /// (memory/IFC/liveness) look special. 22 primitives; FAILED broken-seam tally rises to 7; N stays 9. See `wcet`.
 pub mod wcet;
 
+/// Twenty-third seam (Phase V — the *real binary session*, deepening liveness): two dual endpoints, both
+/// concurrently live, sharing the wire through `Rc<RefCell<Transport>>`. NOT a fourth-domain bid — after both
+/// fourth-domain candidates (`crdt`, `wcet`) deflated, this stays in the **third confirmed domain (liveness)**
+/// and removes #18's most-cited limitation: the r25 panel's deflation #1 was "*not a binary session — a
+/// single-handle typestate walk*" (one `&mut Transport` can't split into two live endpoints, `E0499`), so
+/// #18's "a peer waits forever" hazard was inexpressible (only *self*-abandonment). Here the duality is real,
+/// at the cost of `alloc` + interior mutability. Three structural shifts: (1) `recv` is forced **fallible**
+/// (`Result<…, Self>`) — the value comes from a peer who may never send, so the completion gap surfaces in the
+/// signature #18 hid it from; (2) mutual-wait deadlock is **foreclosed by duality typing** (`HasDual`: if one
+/// peer is `Tx`, its dual is `Rx` — they cannot both block — the binary-session *relative*-progress theorem, a
+/// NEW positive the single-handle walk couldn't show); (3) abandonment starvation is **not** foreclosed — a
+/// peer's safe `mem::forget` starves its dual *forever*, now genuinely **peer-observable** (a second party
+/// waits), where #18's non-completion was only self-observable. No `unsafe` (the danger is liveness; `Rc`/
+/// `RefCell` mediate sharing — the worst case is a starved peer, not UB). Tests whether #18's component-wise
+/// grading SURVIVES removing the single-handle limitation. See `binary_session`.
+pub mod binary_session;
+
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 use core::sync::atomic::{AtomicUsize, Ordering};
