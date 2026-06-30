@@ -551,6 +551,28 @@ pub mod must_scoped;
 /// `recursion`.
 pub mod recursion;
 
+/// Thirty-second seam (Phase AE — GUARDED RECURSION, the salvage of #31): builds the exact fix the r38 panel
+/// handed back. #31 (`recursion`) was SOUND but its deliverable was REJECTED because I **over-conceded** —
+/// productivity/guardedness is not an undecidable NONE but a **decidable cost**. This seam carries it: a sealed
+/// [`guarded::Guarded`] marker (impl for `Tx<C>`/`Rx<C>`/`End`, **not** `Var`) bounds [`guarded::Session::enter`],
+/// so the unguarded `Rec<Var>` = µX.X (the non-contractive spin loop) **cannot be unfolded** — rejected at compile
+/// time in Θ(type-size), no SMT, the **same machinery as order**. The key simplification: for single-level
+/// recursion a **shallow head-check IS full contractivity** — if the body's head is an action (`Tx`/`Rx`),
+/// everything inside (incl. any `Var`) is under it ⇒ guarded; `End` is vacuously guarded; a bare `Var` head is
+/// unguarded ⇒ rejected — so `Guarded` need only be impl'd for the three heads, no recursive trait walk. HYPOTHESIS
+/// (pre-registered; the cold panel rules): **SEAM-COSTS [horn3-concentration], that HOLDS** — guardedness/
+/// productivity concentrates (decidable, the cost #31 owed), closing the over-concession. Horn 1 (no `unsafe`; the
+/// marker only *removes* a degenerate program) and Horn 2 (decidable, structural) hold. The honest, deliberate
+/// limit (so as not to now over-claim — #31 was rejected for *under*-claiming): the marker buys **productivity**
+/// (every unfolding is preceded by an action — no silent µX.X spin), **NOT termination** (`Rec<Tx<Var>>` is guarded
+/// and still infinite; forcing a loop to reach `End` stays the halting problem, the one conceded undecidable NONE).
+/// So the final split: order + duality + **guardedness/productivity** all CLOSE; **termination alone** is the NONE.
+/// Deflation (conceded): textbook contractivity (Coq/Agda guarded corecursion; contractive recursive types;
+/// `session_types` well-formedness) — the contribution is *building* the carriable half #31 identified. Predicted:
+/// tally stays 8; N stays 9. Lean (HYPOTHESIS) `guarded_recursion_productivity_closes` (a `..._closes`: guardedness
+/// concentrates via the sealed marker; termination stays in the prose, invisible to the kernel). See `guarded`.
+pub mod guarded;
+
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 use core::sync::atomic::{AtomicUsize, Ordering};
