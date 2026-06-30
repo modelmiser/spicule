@@ -84,7 +84,44 @@
 //! **SEAM-BREAKS [horn 1]** for the full #19-parallel packaging, with the standing question of whether the
 //! `into_inner`-less subset is a sound repackaging that *moves* the fence rather than confirming it.
 //!
-//! ## The cold panel's verdict (REPORT_SEAM_SPEC_reseat): _pending — filled in after the gauntlet._
+//! ## The cold panel's verdict (REPORT_SEAM_SPEC_reseat, r27): SEAM-BREAKS [horn 1], FAILED — the SIXTH
+//! ## broken seam. The horn flip is a CLEAN single variable; and the fence is FORCED, not movable.
+//!
+//! The seam **broke** (FAILED, 0/1). Two findings, both decisive:
+//!
+//! 1. **The single-variable horn flip is confirmed CLEAN — Phase R's confound is repaired.** All five
+//!    attackers agreed: #19 (owned value + `into_inner`) *cost* horn 3; this seam (borrowed slot +
+//!    `into_inner`), with the packaging **byte-identical**, *breaks* horn 1. The soundness attacker landed a
+//!    4-line safe witness — `let mut s = String::from("hello"); let mut g = Reseat::new(&mut s);
+//!    g.push_str(" world"); g.into_inner()` — where `into_inner` returns the owned `String` while the slot
+//!    `s` keeps the `ptr::read` duplicate (`E0509` forces the `mem::forget(self)` that suppresses the
+//!    reseat), so both `s` and the returned value own overlapping/realloc'd heap and **double-free on drop,
+//!    with no `unsafe` in user code**. The implementation attacker confirmed the UB is plain decidable Rust.
+//!    Where #17→#19 co-varied packaging *and* ownership model, #19→#20 co-varies **neither** — so this is the
+//!    clean controlled experiment, and the cost-3 → break-1 flip is attributable to the **decoupling
+//!    property alone**.
+//!
+//! 2. **The fence is FORCED, not movable — my spec's open hedge was the defect that FAILED it.** I posed
+//!    forced-vs-movable and leaned *movable*: that the `into_inner`-less subset (`new`/`Deref`/`DerefMut`/
+//!    `Drop`) holds (unwind-safe, `forget` = leak), pushing the fence inward to *soundness-load-bearing vs
+//!    leak-tolerant*. The ergonomics and expressiveness attackers **rejected** this: the sound subset is
+//!    **degenerate** — it deletes the *by-value move-out* that *defines* take-and-reseat (the `T → T`-through-
+//!    a-non-`T` transform `take_mut`/`replace_with` exist for), leaving a primitive **strictly dominated by
+//!    plain `&mut T`**. So every *usable* packaging of the borrowed-slot take breaks horn 1: the fence is
+//!    **FORCED across all useful packagings**, sitting exactly at Phase R's **owned-vs-borrowed** line — not
+//!    pushed inward. (`mem::forget` being a mere leak here is real but does not rescue the seam: a guard you
+//!    can only `forget`, never move out of, is not the primitive.)
+//!
+//! **Deflation (pre-registered, a flag not a kill).** No novel mechanism: `take_mut`'s `ptr::read`/`write` +
+//! `scopeguard`'s `into_inner` defuse + RFC 1066's forget-skips-`Drop`, reassembled. The contribution is
+//! **analytical** — the clean controlled pair (#19/#20) and **locating** the fence.
+//!
+//! **The refined finding (closing the packaging trilogy).** *The horn a danger threatens is movable iff the
+//! value-ownership model lets soundness DECOUPLE from the un-compellable closure.* An **owned** value can
+//! (#19: the restore is a side-obligation beside a sound core ⇒ horn-3 cost). A **borrowed slot** cannot, for
+//! any *usable* packaging (#20: single ownership across the read-duplicate is load-bearing, and the only
+//! `into_inner`-free repackaging is degenerate ⇒ forced horn-1 break). Phase Q: the horn moves. Phase R: it
+//! moves within a fence (but confounded). Phase S: the fence is real, FORCED, and sits at owned-vs-borrowed.
 //!
 //! The sound uses *do* reseat — see `tests/reseat_use.rs` (mutate-in-place then reseat on normal exit and on
 //! panic-unwind; `mem::forget` leaks the mutation but never double-frees; only `into_inner` double-drops).

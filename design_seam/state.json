@@ -1652,10 +1652,72 @@
       "outcome": "TRADEOFF",
       "cost_usd": 2.5479,
       "timestamp": "2026-06-30T01:22:14+00:00"
+    },
+    {
+      "round": 27,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_reseat.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 take-and-reseat guard over a borrowed slot (re-import rule under attack)\n\nThis is a **design proposal** for a twentieth *seam*, built as the **controlled counterpart** to the\nnineteenth (`SEAM_SPEC_restore.md`). Phase R found the packaging dial **real but bounded**: the same\n`mem::forget` danger that broke #17's horn 1 only *costs* horn 3 when packaged as a side-obligation beside a\nsound **owned**-value core. But the panel ruled the move **confounded** (#17\u2192#19 co-varied the packaging AND\nthe value-ownership model) and named a **forcing point**: the *same* danger over a **borrowed slot**\n(`take_mut`) would force horn-1 UB regardless of packaging. This seam runs the single-variable experiment the\nconfound forbade \u2014 it keeps #19's packaging **byte-for-byte identical** (a guard with `Deref`/`DerefMut`/\n`into_inner`/Drop-restore) and changes **only** the decoupling property, owned value \u2192 borrowed slot.\n\nYou are attacking a **text specification** backed by real `rustc`-checked code (`seam/src/reseat.rs`, the\ndefault `no_std` build \u2014 `core`-only; the foundation has the seam's `unsafe` block, `ptr::read`/`ptr::write`).\n\n---\n\n## 0. The floor (stipulated, not under attack)\n\nR",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "The 'MOVABLE' into_inner-less guard is ergonomically vacuous \u2014 no by-value move-out, strictly dominated by &mut T; fence is FORCED in practice, not movable.",
+          "strongest_point": "The only sound subset deletes the by-value move-out that defines take-and-reseat, leaving a primitive dominated by plain &mut T, so every *usable* packaging breaks \u2014 the fence is forced, and labeling it movable is the defect."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "into_inner over a borrowed slot returns owned while slot keeps the duplicate: safe-code double-free",
+          "strongest_point": "A 4-line safe String program (new/push_str/into_inner) leaves both v and the slot owning overlapping/realloc'd heap, double-freeing on drop with no unsafe in user code."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "No compiler-pass blow-up; all stock decidable Rust (borrow check, drop elaboration, deref). Proposal's UB predictions are mechanically correct.",
+          "strongest_point": "Even the unsoundness is plain decidable Rust \u2014 E0509 forces into_inner into mem::forget(self), which channels the author into the predicted double-free, confirming rather than refuting the spec."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Double-free headline is correct, but the MOVABLE-fence ruling is wrong: the only sound packaging is a strictly-worse &mut T.",
+          "strongest_point": "The into_inner-less 'sound' guard cannot express the by-value T\u2192T-through-non-T transform that take_mut/replace_with exist for, so the fence is FORCED across all useful packagings, not MOVABLE."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Prior art (take_mut, scopeguard into_inner, RFC 1066) is correctly cited and confirms, not refutes, the proposal's claims.",
+          "strongest_point": "Only a deflation flag survives: the design is take_mut + scopeguard-into_inner + leakpocalypse reassembled with no new mechanism \u2014 but the proposal pre-registers that and its contribution is explicitly analytical."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "genuine-flaw",
+          "attacker-soundness": "argued-past",
+          "attacker-implementation": "argued-past",
+          "attacker-expressiveness": "genuine-flaw",
+          "attacker-prior-art": "argued-past"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Single-variable horn flip (owned+into_inner cost-3 \u2192 borrowed+into_inner break-1, packaging byte-identical) is confirmed clean by all five attackers and should be preserved into the revision.",
+          "Deflation flag (pre-registered): no novel mechanism \u2014 take_mut ptr::read/write + scopeguard into_inner defuse + RFC 1066 forget-skips-Drop reassembled; contribution is purely analytical."
+        ],
+        "headline": "Central FORCED-vs-MOVABLE ruling is wrong; sound subset isn't a usable take-and-reseat.",
+        "rationale": "Horn-1 double-free is confirmed and embraced (soundness/impl/prior-art land nothing new). But the deliverable's MOVABLE ruling fails the proposal's own 'every usable packaging' test: the into_inner-less guard has no by-value move-out and is dominated by &mut T. Fence is FORCED. Revise."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 1.954,
+      "timestamp": "2026-06-30T01:58:53+00:00"
     }
   ],
   "settled": [],
   "incompatibilities": [],
   "blind_spot_flags": [],
-  "total_cost_usd": 53.1832
+  "total_cost_usd": 55.1372
 }

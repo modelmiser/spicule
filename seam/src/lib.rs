@@ -266,10 +266,18 @@ pub mod restore;
 /// abort-bomb, unlike the eager ninth seam `take`) and **forget-safe** (`mem::forget` leaks the mutation but
 /// the slot keeps valid original bits — a leak, not a double-free). The horn-1 break is **isolated to
 /// `into_inner`**: the API that was *sound* for #19's owned value (one owner) is a **double-free** over a
-/// borrowed slot (it returns `owned` while the slot keeps the read duplicate — two owners). Same packaging,
-/// flipped decoupling, flipped horn (cost 3 → break 1). The spec poses: is the horn *forced* (confirming the
-/// fence at owned-vs-borrowed) or merely *movable to a different API* (the `into_inner`-less subset appears to
-/// hold with a horn-3 leak cost, pushing the fence to soundness-load-bearing-vs-leak-tolerant)? See `reseat`.
+/// borrowed slot (it returns `owned` while the slot keeps the read duplicate — two owners). The cold panel
+/// (r27) ruled **SEAM-BREAKS [horn 1], FAILED — the sixth broken seam**: a 4-line safe `String` witness
+/// (`new`/`push_str`/`into_inner`) double-frees with no `unsafe` in user code. Two findings: (a) the
+/// single-variable horn flip is **clean** (cost 3 → break 1, packaging byte-identical) — Phase R's confound
+/// is **repaired**, the flip is attributable to the decoupling property alone; (b) the fence is **FORCED, not
+/// movable** — my spec's *movable* hedge was rejected: the `into_inner`-less "sound" subset is **degenerate**
+/// (it deletes the by-value move-out that defines `take_mut`, strictly dominated by plain `&mut T`), so every
+/// *usable* packaging breaks, and the fence sits at Phase R's **owned-vs-borrowed** line. Deflation
+/// (pre-registered): no novel mechanism (`take_mut` + `scopeguard`-`into_inner` + RFC 1066); contribution is
+/// analytical. 20 primitives; **6 broken seams** (was 5); 9 verdict modes unchanged. The refined finding
+/// closing the trilogy: the horn is movable iff the ownership model lets soundness DECOUPLE from the
+/// un-compellable closure (owned can ⇒ cost; borrowed cannot ⇒ forced break). See `reseat`.
 pub mod reseat;
 
 use core::cell::UnsafeCell;

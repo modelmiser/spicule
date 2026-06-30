@@ -624,4 +624,41 @@ theorem restore_ownership_core_closes :
   rw [seam_closes_iff_factors]
   exact ⟨id, fun _ => rfl⟩
 
+/-- Take-and-reseat-over-a-borrowed-slot shape — the *forcing-the-horn* probe (a `Reseat<'a, T>` guard,
+    `take_mut` in guard form), the SIXTH seam to break, and the controlled counterpart to #19. It keeps #19's
+    packaging byte-identical (a guard with `Deref`/`DerefMut`/`into_inner`/Drop-restore) and changes only the
+    decoupling property — owned value → borrowed slot — the single-variable experiment #19's confound forbade.
+    Read `Pr`/`Wt` by analogy: the precondition is *single ownership across the transient `ptr::read`
+    duplicate*. In the kernel the typed discipline factors (`Preseat` is definitionally `V`), as always — the
+    affine guard, the unwind-safe `Drop`-reseat, and the `mem::forget`-is-a-leak fact are all the parts the
+    floor DOES carry.
+
+    The real seam BREAKS, compiler-settled (REPORT_SEAM_SPEC_reseat, r27 — SEAM-BREAKS [horn 1], FAILED): a
+    4-line **safe** witness — `let mut s = String::from("hello"); let mut g = Reseat::new(&mut s);
+    g.push_str(" world"); g.into_inner()` — returns the owned `String` while the slot keeps the `ptr::read`
+    duplicate (`E0509` forces the `mem::forget(self)` that suppresses the reseat), so both own overlapping
+    heap and **double-free**, with no `unsafe` in user code. The cold panel ruled: (1) the single-variable
+    horn flip is **clean** — #19 (owned + `into_inner`) *cost* horn 3, this (borrowed + `into_inner`) *breaks*
+    horn 1, packaging byte-identical — so Phase R's confound is **repaired** and the flip is attributable to
+    the decoupling property alone; (2) the fence is **FORCED, not movable** — the `into_inner`-less "sound"
+    subset is *degenerate* (it deletes the by-value move-out that defines `take_mut`, strictly dominated by
+    `&mut T`), so every *usable* packaging breaks horn 1, and the fence sits at the **owned-vs-borrowed** line.
+    Deflation (pre-registered): no novel mechanism (`take_mut` + `scopeguard`-`into_inner` + RFC 1066);
+    contribution is analytical. The refined finding closing the packaging trilogy: *the horn a danger
+    threatens is movable iff the value-ownership model lets soundness DECOUPLE from the un-compellable closure*
+    (owned can ⇒ cost; borrowed cannot, for any usable packaging ⇒ forced break). `..._factors` (not
+    `..._closes`) certifies only the trivial typed sub-fact; the kernel sees neither the `into_inner`
+    double-free nor the duplicate window. -/
+def Preseat (p : Prog) : Bool := V p
+
+/-- Trivial sub-fact only (see the docstring): the *typed* discipline factors — the affine guard, the
+    unwind-safe reseat, and the forget-is-a-leak fact are what the floor carries. The real seam BREAKS:
+    `into_inner` over a borrowed slot hands out the value while the slot keeps the `ptr::read` duplicate — a
+    safe-code double-free (horn 1). It is the FORCED-horn counterpart to #19's held owned-value `restore`:
+    same packaging, only the decoupling property flipped, so the verdict flips cost-3 → break-1. -/
+theorem reseat_typed_discipline_factors :
+    ∃ d : Prog → Bool, SoundW Preseat d ∧ UsableW Preseat d ∧ ConcW V d := by
+  rw [seam_closes_iff_factors]
+  exact ⟨id, fun _ => rfl⟩
+
 end SeamGap
