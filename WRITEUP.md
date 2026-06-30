@@ -370,7 +370,7 @@ the second alone. A 0/N adversarial result is only as good as your ability to ru
 "the proposer was just weak," and the cleanest way to do that is to *hand the proposer
 the known-good sub-component and watch the failure move, not disappear.*
 
-## 10. The constructive phase — build and break thirty-one real seams
+## 10. The constructive phase — build and break thirty-two real seams
 
 The trilemma is a map, so the next step was to stop arguing in the abstract and **build**.
 A different harness shape: the negative half used cold instances to *propose* (and they
@@ -949,6 +949,42 @@ the horn-3 completion/guardedness residue stays invisible to the kernel (verifie
 **179** tests green, `lean proof/SeamGap.lean` exit 0). No new domain (**liveness stays the third**), no new mode
 (**N stays 9** — rejection's seventh firing); **thirty-one primitives**. So the FAILED broken-seam tally **stays
 eight** (SOUND — a deliverable rejection, not a break).
+
+**The salvage that closed it — guardedness was a decidable cost all along, the cleanest verdict in the arc.**
+#31's r38 rejection was an *over-concession*: it filed **productivity / guardedness** as an undecidable NONE
+beside termination, when the panel showed it is a **decidable cost** a sealed marker carries — and, like #26→#27
+(`priority`→`projected`) and #29→#30 (`must_complete`→`must_scoped`), it left the prescribed fix to a later
+primitive. A *thirty-second* primitive (`guarded.rs`, Phase AE) builds exactly that fix. On #31's single-level
+`Rec<P>`/`Var`, a sealed **`Guarded` marker** (a `sealed::Sealed` supertrait, impl for `Tx<C>`/`Rx<C>`/`End` but
+**NOT** `Var`) bounds `enter()`/`recur()`, so the non-contractive `Rec<Var>` = `µX.X` — the type every system #31
+cited (Coq/Agda guarded corecursion, contractive recursive types) rejects **syntactically** — simply **cannot be
+unfolded**: there is no `Guarded` impl for a bare `Var` head, so the body never forms (Θ(type-size), no SMT — the
+**SAME trait-resolution machinery as order**). The key structural fact: for single-level recursion a **SHALLOW
+head-check IS full contractivity** — an action head (`Tx`/`Rx`) guards everything nested inside it, `End` is
+vacuously guarded, and a bare `Var` head is the *only* unguarded shape — so "contractive" collapses to "head ≠
+`Var`," one decidable trait bound. The cold panel (r39) ruled the re-import rule **SOUND** and the judge ruled
+**SURVIVED (1/1)** — the horn-classifier landing **SEAM-COSTS [none]**, the **cleanest verdict in the entire arc**:
+all three horns hold with *no horn dropped at all*, stronger than #30's [horn 3]. **NOT a rejection, NOT a break** —
+the salvage HELD, closing #31's over-concession (guardedness **IS** concentrable). And I **avoided the #27
+salvage-over-claim trap**: I claimed only **productivity** (no silent `µX.X` spin) and **conceded termination up
+front**, rather than promising more than the construction earns and being caught helping myself to an unstated
+assumption. What HELD: no safe unfold of `Rec<Var>`, no UB, zero-ceremony concentration, decidable with no SMT, and
+no false positive (every genuinely-guarded protocol still type-checks). What the panel **MARKED** — a tradeoff,
+*not* a horn-drop: **completeness bought by restriction** — the head-check equals full contractivity *only because*
+the single-level, choice-free grammar collapses it to "head ≠ `Var`"; a richer grammar (nested `Rec`,
+choice-in-recursion) needs the real recursive contractivity walk, which is **scoped out, not escaped** — and my
+"folklore" deflation slightly **overstated** its generality. The seam **buys productivity, not termination**:
+`Rec<Tx<Var>>` is guarded yet still infinite, so **halting stays the one conceded undecidable NONE**. The meta is
+the arc's "flee the MIDDLE" tic surfacing *small even here* — I wrote "full contractivity" where the exact truth is
+"full contractivity *for the single-level fragment*" — but now a **MARKED caveat on a seam that HELD**, not an
+over-concession that sank one. The #31→#32 **reject→salvage** rhythm completes (the third such pair, after #26→#27
+and #29→#30): order + duality + **guardedness/productivity** all **CLOSE**; **termination alone** is the NONE.
+Deflation, conceded: no new mechanism — #31's `Rec`/`Var` + #8's `typed_nat`-style sealed markers + #5's
+brand-style inertness. The Lean witness `guarded_recursion_productivity_closes` closes the sound guarded core
+(verified: default **176** / lockdep **183** tests green, `lean proof/SeamGap.lean` exit 0). No new domain
+(**liveness stays the third**), no new mode (**N stays 9** — the rejection-mode count **stays seven**, this
+SURVIVED); **thirty-two primitives**. So the FAILED broken-seam tally **stays eight** (SEAM-COSTS [none] — a
+held, cost-free close, not a break).
 
 **Decontamination, across primitives.** The seamful2 theorem predicted that a failing seam's
 obstruction *relocates* to the re-import boundary rather than vanishing. SPSC: it **vanished**
