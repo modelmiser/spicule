@@ -9,7 +9,7 @@ languages"; and (c) what newlang discovered and *why it matters*.
 **What newlang is.** Not a language. It is a research project that asked "what would the
 perfect systems language look like?", listed seven properties such a language should have,
 and then **proved — adversarially — that the seven cannot coexist**, mapped exactly where the
-wall is, and then **built twenty-five real things that live right up against the wall (nine that close, plus sixteen probes — ending by showing the closed basis is *per soundness domain*, that which seams close is *graded* by the *floor-precondition match* (full for memory safety, none for information flow, partial then none for liveness), that *upgrading the floor is non-monotone* — the granularity gap is a ladder — that a floor can be the *wrong structural logic* (affine vs linear) no upgrade fixes, and finally that the *same* danger is a soundness *break* or a mere concentration *cost* depending on how the re-import rule **packages** it — a dial that proves **real but bounded**: a controlled probe moved one identical danger across horns, yet the move only works where soundness can be *decoupled* from the un-compellable closure, and a clean single-variable follow-up confirmed the fence is *forced* — the same packaging over a borrowed slot breaks — and that a *fourth domain* (replicated convergence) need not even be one: the candidate **deflated** into the generic unchecked-typeclass-law gap, projecting onto an existing basis — and that a *second* fourth-domain try (real-time/WCET) **failed** too, its op-count an *unsound* proxy for cycles (a cost monad), so two candidates in a row open no new domain and the three confirmed domains look **special** — and finally that a *real binary session* **deepened** liveness: it held (removing #18's single-handle limit and confirming the grading transfers), but its "real session" framing deflated to *per-session-only* progress, global deadlock-freedom needing *multiparty* typing — and finally that **delegation** (channel-over-channel), built to add that very feature, *held* but had its deliverable **rejected**, opening **progress/deadlock-freedom** as a third liveness coordinate I had mislabeled as a leak — and finally that a *multiparty* session, assembled from those binary edges, made #23's asserted interleaved deadlock a *compiled* artifact (`ring()` type-checks a source-less three-party cycle the per-edge floor cannot range over), *held* (sound) yet had its deliverable **rejected a third time** when my "global progress lives only in a generative whole-protocol projection" claim proved a *false dichotomy* — per-channel priority typing (Kobayashi, Dardha–Gay) rejects the ring with no global type, restoring a three-rung taxonomy and the weaker truth that global progress is a *whole-program* (not per-call, not necessarily generative) obligation)** to show what
+wall is, and then **built twenty-six real things that live right up against the wall (nine that close, plus seventeen probes — ending by showing the closed basis is *per soundness domain*, that which seams close is *graded* by the *floor-precondition match* (full for memory safety, none for information flow, partial then none for liveness), that *upgrading the floor is non-monotone* — the granularity gap is a ladder — that a floor can be the *wrong structural logic* (affine vs linear) no upgrade fixes, and finally that the *same* danger is a soundness *break* or a mere concentration *cost* depending on how the re-import rule **packages** it — a dial that proves **real but bounded**: a controlled probe moved one identical danger across horns, yet the move only works where soundness can be *decoupled* from the un-compellable closure, and a clean single-variable follow-up confirmed the fence is *forced* — the same packaging over a borrowed slot breaks — and that a *fourth domain* (replicated convergence) need not even be one: the candidate **deflated** into the generic unchecked-typeclass-law gap, projecting onto an existing basis — and that a *second* fourth-domain try (real-time/WCET) **failed** too, its op-count an *unsound* proxy for cycles (a cost monad), so two candidates in a row open no new domain and the three confirmed domains look **special** — and finally that a *real binary session* **deepened** liveness: it held (removing #18's single-handle limit and confirming the grading transfers), but its "real session" framing deflated to *per-session-only* progress, global deadlock-freedom needing *multiparty* typing — and finally that **delegation** (channel-over-channel), built to add that very feature, *held* but had its deliverable **rejected**, opening **progress/deadlock-freedom** as a third liveness coordinate I had mislabeled as a leak — and finally that a *multiparty* session, assembled from those binary edges, made #23's asserted interleaved deadlock a *compiled* artifact (`ring()` type-checks a source-less three-party cycle the per-edge floor cannot range over), *held* (sound) yet had its deliverable **rejected a third time** when my "global progress lives only in a generative whole-protocol projection" claim proved a *false dichotomy* — per-channel priority typing (Kobayashi, Dardha–Gay) rejects the ring with no global type, restoring a three-rung taxonomy and the weaker truth that global progress is a *whole-program* (not per-call, not necessarily generative) obligation — and finally that a *priority-typed* session (Kobayashi/Dardha–Gay, the rung the multiparty rejection named), built to *confirm* that weaker thesis, instead **broke on soundness** — the public `role()` constructor lets three identically-priority-typed relays compile into a deadlocking ring (edge-priority consistency is a *trusted-constructor invariant*, not a type fact), the **eighth broken seam**, confirming the thesis by *breaking* not costing and unifying progress's lock face (ordered_locks #15/#16) and session face under one *wrong-granularity* break)** to show what
 you *can* do. The deliverables are an impossibility result, a theorem (the *Seam Trilemma*),
 a Lean proof, and a small Rust crate of worked examples.
 
@@ -498,7 +498,7 @@ doesn't exist.
 
 ---
 
-# Part 9 — Build and break: twenty-five real seams (the heart of it)
+# Part 9 — Build and break: twenty-six real seams (the heart of it)
 
 Theory in hand, the project stopped arguing and *built*. Crucial design of the experiment:
 **build and break are different machines.** Construction is continuity, so a *stateful builder*
@@ -1471,6 +1471,54 @@ face, multiparty its *global-topology* face. N stays **nine** modes; the FAILED 
 seven** (a deliverable rejection, not a soundness break). The probe earned its keep by being instructively
 **wrong** a third time — and each time, the literature I myself cited is what corrected the map.
 
+### Primitive 26 — priority (per-channel priority typing) → SEAM-BREAKS [horn 1], the eighth broken seam (`seam/src/priority.rs`)
+
+#25's rejection named the omitted middle rung — **per-channel priority / obligation typing** (Kobayashi linear-π;
+Padovani; **Dardha–Gay, FoSSaCS 2018**; Kokke–Dardha): per-channel, compositional, non-generative, *no global
+type*, yet it rejects the source-less ring via `prio(recv) < prio(send)` chaining to a contradictory `p < p`
+around the cycle. So build *that* — the rung-(b) floor — and build it **to confirm #25's weaker thesis humbly**:
+that the per-channel bound carries nothing global, that deadlock-freedom still rests on something more than the
+edge floor. Over #23's binary edges and #8's sealed `typed_nat::Lt` (Peano `<` — no reflexive `Lt<N>` instance
+exists), a forwarder `Relay<Pi, Po>` recv-then-sends under the bound `Pi: Lt<Po>`. The pre-registered claim
+(§4.3): the deadlocking ring `A→B→C→A` becomes *untypable*, because `p_CA < p_AB < p_BC < p_CA` chains by
+transitivity to `p: Lt<p>`, for which no instance exists. I staked **SEAM-COSTS [horn 3]** — a humble
+confirmation that priority typing closes the gap the per-edge floor cannot, at the cost of a per-channel
+obligation discipline. No `unsafe`.
+
+The cold panel (r33) moved it to **SEAM-BREAKS [horn 1]** — the **eighth broken seam**, and the *first soundness
+break since `wcet` #22* (the broken-seam tally rises 7→8; the prior three primitives were sound deliverable-
+rejections). The §4.3 untypability claim is **false**, and the soundness attacker proved it with a passing test
+(`public_role_builds_a_typed_deadlocking_ring`):
+
+> - **The collapse secretly assumes edge-priority *consistency*.** The chain `p_CA < p_AB < p_BC < p_CA` forms
+>   *only* if the `Nat` A sends on edge AB is the *same* `Nat` B receives on AB — one shared priority per edge.
+>   But Rust does **no transitive reasoning**: it checks each `Relay<Pi, Po>`'s bound `Pi: Lt<Po>` in *isolation*,
+>   per endpoint, never relating one relay's `Po` to the next's `Pi`. The contradiction `p: Lt<p>` materializes
+>   only when a single shared `Nat` threads each edge — which **only the `relay()` constructor enforces**.
+> - **The public constructor is the hole.** `role::<Pi, Po>` is public, so three `role::<N1, N2>` relays — each
+>   discharging the trivial bound `1 < 2` locally — **wire into the ring**: it *compiles*, with no `unsafe`, and
+>   **deadlocks**. Edge-priority consistency is the **constructor's invariant, a mini-projection — not a
+>   per-endpoint type fact** the floor can range over.
+> - **The sting: I described this exact flaw in §4 and shipped `role()` public anyway.** §4 says in plain words
+>   that "edge consistency is the constructor's invariant, not a per-endpoint type fact"; the soundness attacker
+>   **quoted my own sentence** back and pointed at the public `role()`. The seam breaks on precisely the seam I
+>   documented and left open.
+
+So the probe **confirmed #25's weaker thesis by *breaking*, not costing**: the per-channel `Lt` bound carries
+*nothing global* — it never names the dual endpoint — so deadlock-freedom rests on a **trusted edge-consistent
+constructor** (`relay()`), a mini-projection by another name. Hide `role()` and mint only through an
+edge-consistent constructor and the seam *salvages* to **SEAM-COSTS [horn 3]** (the humble result I predicted) —
+but as *shipped*, with the constructor public, it is a **soundness break**. The unification is the sharp part:
+this is the **same break as `ordered_locks` #15/#16**, one soundness sub-domain over — the type-level order
+carries the *local* bound (`prio(recv) < prio(send)`, like a per-token rank), but **whole-program acyclicity
+escapes** it (the cycle the per-edge floor cannot see, like the per-thread inversion). Progress's **lock face**
+(#15/#16) and its **session face** (here) break the *same way*: the *wrong-granularity* gap — a local order
+typed, a global acyclicity un-typed. The sound role-local recv-then-send discipline still factors
+(`priority_typed_discipline_factors`, a `..._factors` — the kernel models neither liveness nor the missing
+transitive reasoning); liveness is the **third domain**, **progress** its third coordinate (lock face #15/#16,
+session face #24, global-topology face #25, and now the *priority* face that *breaks*). N stays **nine** modes;
+the FAILED *broken-seam* tally **rises to eight** (a real soundness break, the first since `wcet`).
+
 ### The taxonomy (the whole point, in one table)
 
 | Primitive | What the missing conjunct *is* | Fate | Pays with |
@@ -1822,8 +1870,8 @@ witness, and the honest move is to drop the claim.
 - `lean proof/SeamGap.lean` — read the characterization; change a definition and watch it break.
 - Skim `design_seam/REPORT_SEAM_SPEC_*.md` — the cold attackers' actual verdicts, in their words.
 
-**Build a twenty-sixth primitive — the fourth-domain door looks hard to open, and the twenty-fifth just
-*resolved* the multiparty question raised below by having its deliverable rejected a third time.** (The packaging trilogy is *closed*: #18 found the horn moves, #19 that it moves
+**Build a twenty-seventh primitive — the fourth-domain door looks hard to open, and the twenty-sixth just
+*resolved* the priority question raised below by *breaking on soundness* (horn 1) — the eighth broken seam.** (The packaging trilogy is *closed*: #18 found the horn moves, #19 that it moves
 within a fence, #20 that the fence is *forced* — see below; a further packaging probe will only re-confirm. And
 **both** fourth-domain attempts failed to open a fourth domain: #21, **distributed/replicated convergence** via
 a state-based CRDT, **deflated** — it breaks floor-relatively but folded into the *generic
@@ -1874,7 +1922,11 @@ deliverable was **rejected a third time**: my "global progress lives *only* in a
 projection" claim was a *false dichotomy*, refuted from my own miscited lineage by **per-channel priority typing**
 (Kobayashi; Dardha–Gay) that rejects the ring with no global type — restoring a **three-rung** taxonomy (per-edge
 floor / per-channel priority typing + whole-program acyclicity / generative MPST) in which global progress is a
-*whole-program*, not per-call, obligation. So the twenty-sixth has two honest
+*whole-program*, not per-call, obligation; and 26, that **per-channel priority typing** — the rung-(b) floor
+#25 named — *broke on soundness* (horn 1), the **eighth broken seam**: it rejects the ring only when a trusted
+constructor threads one shared priority per edge, but the public `role()` lets three identically-typed relays
+compile a deadlocking ring (Rust checks each `Pi: Lt<Po>` in isolation, no transitive reasoning), the same
+*wrong-granularity* break as `ordered_locks` #15/#16 one sub-domain over. So the twenty-seventh has two honest
 directions and a warning (the third, *forcing the horn*, the twentieth already did) — but the fourth-domain
 door is looking hard to open. (i) **Deepen liveness further — and #24 named where it bites.** The binary
 session shipped only a *straight-line `i32`* fragment, and delegation (#24) confirmed that the *fragment* — not
@@ -1887,9 +1939,17 @@ deadlock-freedom seam would need — and **#25 built it; the answer is *neither 
 type (rung c) closes global progress by construction, but the per-edge floor does *not* (a source-less `ring()`
 type-checks a deadlock), and the cold panel corrected my claim that the generative projection is its *only*
 home — **per-channel priority typing** (Kobayashi; Dardha–Gay FoSSaCS 2018) closes it with *no global type at
-all*. So the still-unbuilt liveness probes are now `offer`/`choose` and recursion (the *fragment* limit #24
-named), and — sharpest — **priority-typed deadlock-freedom** as the rung-(b) floor: does a per-channel
-obligation discipline *close* the global-progress gap the per-edge floor cannot, or merely relocate it? (Grading
+all*. **#26 built that rung-(b) floor — and it *broke* (horn 1).** Per-channel priority typing rejects the ring
+*only* when a trusted constructor threads one shared priority per edge; the public `role()` lets three
+identically-priority-typed relays compile a deadlocking ring, because Rust checks each `Pi: Lt<Po>` bound in
+*isolation* and does no transitive reasoning — edge-priority consistency is the constructor's invariant, not a
+type fact (the same *wrong-granularity* break as `ordered_locks` #15/#16, one sub-domain over). So the frontier
+re-points to three honest directions: (a) the **salvage** — hide `role()`, mint only through an edge-consistent
+constructor, recovering the humble **SEAM-COSTS [horn 3]** result #26 was built to confirm (does the gap *close*
+once the constructor is the sole mint, or merely relocate to a trusted mini-projection?); (b) the *fragment*
+limit #24 named — **recursive / choice (`offer`/`select`) protocols**, where the continuation type *depends on a
+received value*; and (c) **dynamic-`N` / async multiparty**, where the static, fixed-`N`, single-threaded witness
+that propped up #25/#26 finally gives way to work-stealing migration and a genuinely concurrent cyclic-wait hang. (Grading
 a genuinely *fourth* domain is settled-hard: convergence deflated to application-correctness; WCET's op-count is
 an unsound proxy that reduces to a cost monad.) (ii) **Probe another STRUCTURAL LOGIC** (linear was the first
 *wrong-structural-logic* verdict): a **relevant**-type precondition — *must-use-at-least-once with an error
