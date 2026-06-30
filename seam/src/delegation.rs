@@ -51,24 +51,65 @@
 //!
 //! ### Sound three-party delegation runs and completes — see `tests/delegation_use.rs`.
 //!
-//! ## THE HYPOTHESIS THIS SPEC PUTS TO THE COLD PANEL (to be replaced by the r31 verdict)
+//! ## The cold panel's verdict (REPORT_SEAM_SPEC_delegation, r31): SOUND, but the gauntlet FAILED on the §6
+//! ## DELIVERABLE — the REJECTION mode (2nd after `typed_nat` #8). My "no new coordinate" claim was REFUTED:
+//! ## delegation opens **progress / deadlock-freedom** as a coordinate distinct from completion AND leak-freedom.
 //!
-//! `design_seam/SEAM_SPEC_delegation.md` asks: does the higher-order step (delegation) open new ground, or
-//! deflate onto the existing basis? Predicted **SEAM-COSTS [horn 3]**, a SURVIVAL confirming the closed basis:
-//! - order **closes** (typestate); don't-use-after-delegate **closes** (affine move — the linearity the floor
-//!   *does* have); completion **costs horn 3**, now three-party.
-//! - The new hazard — **leak amplification** via an abandoned in-flight delegation — **projects onto the
-//!   leak-freedom axis (#9/#10)**: a new danger class lands on an *existing* coordinate, the Phase-K
-//!   closed-basis pattern recurring one domain over. No new soundness domain (still liveness), no new verdict
-//!   mode (N stays 9), no UB (`Rc`/`RefCell` are safe; the worst case is a leaked/starved session).
-//! - Deflation pre-registered (the `crdt`/#23 discipline, not the `wcet` over-claim): higher-order session
-//!   types with delegation are deep folklore — Honda 1993, **Gay & Hole 2005** (subtyping for session types,
-//!   with delegation), the `session_types` Rust crate (which supports delegation over real channels), and the
-//!   `Rc<RefCell>` cycle/abandonment leak is the canonical Rust footgun (RFC 1066 leakpocalypse). The
-//!   contribution is **locating delegation on the realizability lattice** and showing the higher-order step
-//!   adds **no new coordinate** — its hazards are #23's completion gap (now three-party) plus the leak-freedom
-//!   axis. The open question: does the protocol-type recursion *obstruct* the symmetric two-session delegation
-//!   cycle (a minor positive), and is the leak a horn-3 cost or a floor-mismatch?
+//! The **re-import rule is sound** — the horn-classifier ruled **SEAM-COSTS [horn 3]** (decidable, no UB; the
+//! soundness attacker confirmed no wrong-`Q` re-typing — duality-by-construction + generic invariance pin `Q`
+//! and block any Gay–Hole subtyping smuggle; the worst case is a memory-safe leaked/starved session). But the
+//! **judge ruled FAILED** on the in-scope §6 deliverable, and I accept it: my central pre-registered claim —
+//! *"delegation adds no new coordinate; its hazards project onto leak-freedom (#9/#10), a Phase-K closed-basis
+//! confirmation"* — is **refuted from my own cited lineage**. This is the method's **rejection mode** (the seam
+//! is sound, like `typed_nat` #8, but its deliverable is rejected), firing for the **second time**.
+//!
+//! **The category error (the genuine flaw).** Delegation's three-party hazard — B `mem::forget`s the received
+//! `Chan<Q>`, **starving C** — is **not** a completion gap of the carrier and **not** a leak. In the exact
+//! words of the `session_types` Rust crate I cited (Jespersen–Munksgaard–Larsen, WGP 2015): an affine session
+//! "*means an agent can drop the connection anytime without finishing the protocol, which leads to **deadlock
+//! at the other end**.*" That is **progress** — a third, recognized property. An entire literature exists
+//! *because delegation is the feature that breaks first-order binary sessions' automatic deadlock-freedom*:
+//! Coppo–Dezani–Yoshida–Padovani (MSCS 2016, "*the communication topology changes because of delegation*"),
+//! Kobayashi-style deadlock/lock-freedom typing, and deadlock-free GV (Lindley–Morris; Padovani, "Progress as
+//! Compositional Lock-Freedom"; Multiparty GV, PACMPL 2022; Rusty Variation, 2019). I saw the `Rc`
+//! hazard's **memory-leak face** and filed it under leak-freedom (#9/#10), missing that the **signature** danger
+//! is a **progress** phenomenon that merely *also* leaks under `Rc`. The new danger does **not** land on an
+//! existing coordinate — it is a **distinct coordinate (progress / deadlock-freedom)**, projected onto the
+//! wrong one because the witness cannot see its true axis.
+//!
+//! **Why the single-threaded scoping doesn't save the claim.** Progress/deadlock only manifests under
+//! interleaving; a single-threaded synchronous witness *definitionally cannot deadlock*, so "delegation adds no
+//! new coordinate" is an **artifact of the witness**, not a property of delegation. My one real defense — the
+//! symmetric two-session **delegation cycle is type-obstructed** (it is an inexpressible infinite type,
+//! confirmed by the expressiveness and implementation attackers) — rescues *behavior*, not *classification*: it
+//! means the correct deliverable answer is "delegation's signature hazard **is** a distinct coordinate
+//! (progress), which this witness avoids by obstructing the cyclic topology and excluding concurrency."
+//!
+//! **Recorded tradeoffs (accepted, carried into the prose):**
+//! 1. **No mid-protocol abort verb; `Result<_, Self>` bans `?`.** On an I/O error you hold a non-`End` channel
+//!    you can neither close nor propagate; dropping it starves the peer — so the completion obligation is
+//!    undischargeable **by the programmer**, not merely by the type system (a real cost against horn-3's
+//!    "concentration is cheap").
+//! 2. **Horn-2 complexity is Θ(depth²), not the spec's Θ(depth)** — the `HasDual` involution forces
+//!    normalizing `dual(dual(carrier))`. Still polynomial, no SMT — but the stated complexity was wrong.
+//! 3. **The finite-type, `!Send`, single-thread witness cannot express the recursive accept-loop server**
+//!    (delegation's canonical use case) nor cross-thread hand-off; Horn-2 decidability depends on that
+//!    restriction (`Rec`/`Var` would restore it, as `session_types` did).
+//!
+//! **The net finding (the probe earned its keep by being instructively WRONG).** I predicted a closed-basis
+//! confirmation; the method **refuted it with my own citations**, revealing that the higher-order step **opens
+//! the progress / deadlock-freedom coordinate** — distinct from completion (linearity) and leak-freedom — which
+//! delegation is the *recognized* feature to introduce. So the liveness domain is **not** two coordinates
+//! (completion, leak-freedom) but at least **three** (… + progress/deadlock-freedom); the earlier lock-ordering
+//! seams (#15/#16) were the *lock* face of progress, and delegation is its *session-topology* face. The seam is
+//! sound (SEAM-COSTS [horn 3]), so the **FAILED broken-seam tally STAYS 7** (this is a deliverable rejection,
+//! not a soundness break); **N stays 9** (rejection is one of the nine modes — its 2nd firing after `typed_nat`
+//! #8); 24 primitives; Lean `delegation_handoff_core_closes` (the sound order + affine-handoff core closes,
+//! like `typed_nat`). Folklore deflation confirmed (Gay & Hole 2005; Jespersen et al. 2015; the `Rc<RefCell>`
+//! leak) — but the deflation's own sources are what refuted the headline.
+//!
+//! Sound three-party delegation runs and completes; abandonment leaks the in-flight payload — see
+//! `tests/delegation_use.rs`.
 
 use alloc::rc::Rc;
 use core::cell::RefCell;

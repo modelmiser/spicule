@@ -770,4 +770,42 @@ theorem binary_session_progress_core_closes :
   rw [seam_closes_iff_factors]
   exact ⟨id, fun _ => rfl⟩
 
+/-- Delegation (channel-over-channel) shape — the *higher-order session* probe (`send_chan`/`recv_chan` over
+    `Rc<RefCell<Transport>>`, the feature #23 lacked). Read `Pr`/`Wt` by analogy: the kernel models only the
+    component the seam CLOSES — the *order* + *don't-use-after-delegate* core (`Pdeleg` is definitionally `V`):
+    `send_chan`/`recv_chan` exist only at the matching state (order), and `send_chan` **consumes** the delegated
+    handle, so the affine MOVE carries don't-use-after-delegate — the one linearity delegation needs here, which
+    the floor has for free. It CLOSES, and the soundness is intact (no UB, decidable, duality-pinned re-typing).
+
+    But the cold panel (REPORT_SEAM_SPEC_delegation, r31) ruled the whole gauntlet **FAILED — on the §6
+    DELIVERABLE, not on soundness** (the horn-classifier still read the *mechanism* as SEAM-COSTS [horn 3]).
+    This is the method's **REJECTION mode**, firing the **second time** (after `typed_nat` #8, also sound +
+    rejected): my pre-registered claim — "delegation adds no new coordinate; its hazards project onto
+    leak-freedom (#9/#10), a Phase-K closed-basis confirmation" — was **refuted from my own cited lineage**.
+    Delegation's signature hazard (B forgets the received `Chan<Q>`, **starving C**) is "deadlock at the other
+    end" (Jespersen–Munksgaard–Larsen 2015) — **progress / deadlock-freedom**, a coordinate *distinct* from
+    completion (linearity) and leak-freedom. Delegation is the *recognized* feature that breaks first-order
+    binary sessions' automatic deadlock-freedom (Coppo–Dezani–Yoshida–Padovani, "the communication topology
+    changes because of delegation"; Kobayashi; deadlock-free GV — Lindley–Morris, Padovani, Multiparty GV).
+    I saw the `Rc` hazard's leak-FACE and mislabeled the progress AXIS; the single-threaded witness hides
+    deadlock by construction, so "no new coordinate" was an artifact of the scoping. The symmetric delegation
+    cycle is type-obstructed (an inexpressible infinite type) — but that rescues *behavior*, not *classification*.
+    So the liveness domain has **progress** as a third coordinate (the lock seams #15/#16 were its *lock* face;
+    delegation its *session* face). The seam is sound, so the FAILED broken-seam tally STAYS 7 (a deliverable
+    rejection, not a soundness break); N stays 9 (rejection is one of the nine modes). Like every column past
+    concentration, the horn-3 cost and the rejected classification are modeling-dictionary; the kernel sees only
+    that the order + affine-handoff witness suffices. -/
+def Pdeleg (p : Prog) : Bool := V p
+
+/-- The sound core CLOSES (SEAM-COSTS [horn 3]; the gauntlet FAILED on the *deliverable*, not on soundness): its
+    *order* + *don't-use-after-delegate* core closes via affine typestate + the affine move (which carries the
+    one linearity delegation needs), exactly as a closing seam does in the kernel — like `typed_nat` (sound, its
+    deliverable rejected). The uncarried components — completion (horn-3, now three-party) and the newly-named
+    **progress / deadlock-freedom** coordinate delegation introduces — live in the prose, invisible to the
+    kernel; the rejection corrected my mislabeling of progress as a leak-freedom projection. -/
+theorem delegation_handoff_core_closes :
+    ∃ d : Prog → Bool, SoundW Pdeleg d ∧ UsableW Pdeleg d ∧ ConcW V d := by
+  rw [seam_closes_iff_factors]
+  exact ⟨id, fun _ => rfl⟩
+
 end SeamGap

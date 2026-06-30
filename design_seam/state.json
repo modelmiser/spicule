@@ -1906,10 +1906,73 @@
       "outcome": "TRADEOFF",
       "cost_usd": 1.8975,
       "timestamp": "2026-06-30T04:44:59+00:00"
+    },
+    {
+      "round": 31,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_delegation.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 delegation (channel-over-channel) (re-import rule under attack)\n\nThis is a **design proposal** for a twenty-fourth *seam*. It is **NOT a fourth-domain bid** \u2014 it stays inside\nthe **third confirmed domain (liveness)** and adds the higher-order session feature the twenty-third seam\n(`SEAM_SPEC_binary_session.md`) lacked. The r30 expressiveness attacker named **delegation** \u2014 sending a\nchannel endpoint as a payload over another channel \u2014 as \"*the* feature that distinguishes session types from\ncoupled typestate machines.\" This seam adds it, and asks whether the higher-order step opens new ground or\n**deflates onto the existing basis** (a Phase-K-style closed-basis confirmation, one domain over).\n\nYou are attacking a **text specification** backed by real `rustc`-checked code (`seam/src/delegation.rs`,\ndefault `no_std` build \u2014 `core` + `alloc`, **no `unsafe`**, like the `binary_session`/`crdt`/`secret` seams).\n143 tests pass (default).\n\n---\n\n## 0. The floor (stipulated, not under attack)\n\nRust as shipped: affine ownership (handles `!Copy`/`!Clone`, consumed by each op \u2014 crucially, **the affine\nmove carries \"don't use a channel after you delegate it\"**), nominal typing + pri",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Result<_,Self> bans `?` and there's no mid-protocol abort, so I/O errors force unpreventable starvation/leaks; no recursion and !Send gut the use case.",
+          "strongest_point": "On any transport error mid-session you hold a non-End channel you cannot close and cannot propagate with `?`; dropping it starves the peer \u2014 the conceded completion obligation becomes impossible to discharge, not merely manual."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Narrow claims (order, affine handoff, no-UB, decidable HasDual) hold; dangerous obligations honestly conceded as memory-safe costs.",
+          "strongest_point": "Phantom-Q reconstruction is static-only but airtight: dual-by-construction carriers pin Q and invariance blocks any subtyping mismatch, so no accepting program reaches UB."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Claimed passes (method-resolution, affinity, structural HasDual on finite types) are all polynomial; intractable passes are exactly the conceded ones.",
+          "strongest_point": "Duality passes Q through unchanged and is scoped to finite types, so HasDual resolution is structural single-chain recursion \u2014 no HOU, SMT, or escape analysis is ever invoked; only nit is the involution bound makes it \u0398(depth\u00b2), not the claimed \u0398(depth)."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "No forced unsafe escape; admitted failures are liveness costs, not expressiveness losses; only concern is recursion for the motivating server use case.",
+          "strongest_point": "Restricting to finite types for Horn-2 decidability means the witness can't express the recursive accept-loop server that is delegation's canonical motivating use case \u2014 though that gap is answerable with Rec/Var markers, not a forced escape from the type system."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Delegation adds a progress/deadlock coordinate (Coppo-Dezani-Yoshida-Padovani); proposal mislabels it as a leak and scopes it out.",
+          "strongest_point": "Delegation is the recognized feature that breaks binary sessions' automatic deadlock-freedom, spawning the global-progress literature, so it adds a progress coordinate distinct from completion and leak-freedom \u2014 refuting the 'no new coordinate' claim."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "argued-past",
+          "attacker-implementation": "tradeoff",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "No mid-protocol abort verb and Result<_,Self> bans `?`: on I/O error the completion obligation is undischargeable by the programmer, not merely the type system \u2014 Horn-3 concentration is not as cheap as advertised.",
+          "Horn-2 complexity is \u0398(depth\u00b2), not the stated \u0398(depth), because the involution supertrait bound forces normalizing dual(dual(carrier)).",
+          "The finite-type, !Send single-thread witness cannot express the recursive accept-loop server (delegation's canonical use case) nor cross-thread hand-off; Horn-2 decidability depends on this restriction."
+        ],
+        "headline": "Soundness holds, but deliverable mislabels delegation's progress/deadlock hazard as a leak.",
+        "rationale": "Re-import rule is sound and decidable (soundness/implementation confirm). But prior-art shows, from the proposal's own cited lineage, that delegation introduces progress/deadlock-freedom as a distinct coordinate \u2014 not a projection onto leak-freedom. The 'no new coordinate' conclusion is an artifact of single-threaded scoping and must be revised."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.8756,
+      "timestamp": "2026-06-30T07:01:29+00:00"
     }
   ],
   "settled": [],
   "incompatibilities": [],
   "blind_spot_flags": [],
-  "total_cost_usd": 61.4552
+  "total_cost_usd": 64.3308
 }

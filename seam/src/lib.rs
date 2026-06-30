@@ -357,9 +357,17 @@ pub mod binary_session;
 /// **three-party** — the delegatee can `mem::forget` a session it never contracted to complete, starving the
 /// third party); and **leak-freedom** — the new hazard: the payload is now an `Rc<RefCell<Transport>>`, so
 /// abandoning a carrier with a delegated channel *in flight* leaks the payload session (the canonical
-/// `Rc<RefCell>` leak, leakpocalypse / #9 / #10, *amplified* through delegation). Tests whether that new hazard
-/// PROJECTS ONTO the leak-freedom axis (a Phase-K-style closed-basis confirmation in the session domain) rather
-/// than opening a new coordinate. See `delegation`.
+/// `Rc<RefCell>` leak, leakpocalypse / #9 / #10, *amplified* through delegation). The cold panel (r31) ruled it
+/// **SOUND (SEAM-COSTS [horn 3]) but FAILED the §6 deliverable** — the REJECTION mode (2nd after `typed_nat`
+/// #8): my "no new coordinate / projects onto leak-freedom" claim was **refuted from my own cited lineage**.
+/// Delegation's signature hazard (B forgets `Chan<Q>`, starving C) is "*deadlock at the other end*" (Jespersen
+/// et al. 2015) — **progress / deadlock-freedom**, a coordinate *distinct* from completion and leak-freedom;
+/// delegation is the *recognized* feature that breaks first-order sessions' automatic deadlock-freedom
+/// (Coppo–Dezani–Yoshida–Padovani; Kobayashi; deadlock-free GV). I saw the `Rc` hazard's leak-face and
+/// mislabeled the progress axis; the single-threaded witness hides deadlock by construction. So the liveness
+/// domain has progress as a third coordinate (the lock seams #15/#16 were its *lock* face; delegation its
+/// *session* face). Sound, so the FAILED broken-seam tally STAYS 7 (a deliverable rejection, not a soundness
+/// break); N stays 9; Lean `delegation_handoff_core_closes`. See `delegation`.
 pub mod delegation;
 
 use core::cell::UnsafeCell;
