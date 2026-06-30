@@ -199,3 +199,24 @@ count stays **five** — this one holds). The refined finding: **which horn a da
 choice *within a structural envelope* set by whether soundness can be *decoupled* from the un-compellable
 closure** — owned value ⇒ it *costs* (this seam); borrowed-across-unwind / `Pin` / `thread::scope` ⇒ it
 *forces*. Phase Q said the horn moves; this says it moves *within a fence*, and names the fence.
+
+**The twentieth seam falls off the width edge — and that is the point.** The take-and-reseat guard over a
+**borrowed slot** (`seam/src/reseat.rs`, a `Reseat<'a, T>` — `take_mut` in guard form) is the *controlled
+counterpart* to #19: it keeps #19's packaging **byte-identical** (a guard with `Deref`/`DerefMut`/
+`into_inner`/Drop-restore) and changes **only** the decoupling property, owned value → borrowed slot — the
+clean single-variable experiment #19's confound forbade. The cold panel (r27) ruled **SEAM-BREAKS [horn 1],
+FAILED — the *sixth* broken seam.** On the **seam-width** instrument it earns no row for the *breaking*
+reason: the re-import *launders UB* (a 4-line safe `String` program — `new`/`push_str`/`into_inner` — leaves
+two owners of overlapping heap and **double-frees**, no `unsafe` in user code), and width is only defined for
+seams that *hold or cost*. #19 sat at the edge (O(1)/guard, holding with a horn-3 obligation); #20, same
+packaging but a borrowed slot, falls **off** it. Two findings: **(1)** the horn flip is a **clean single
+variable** — all five attackers agreed #19 (owned + `into_inner`) *cost* horn 3 and #20 (borrowed +
+`into_inner`) *breaks* horn 1, packaging byte-identical, so Phase R's **confound is repaired** and the flip
+is attributable to the decoupling property alone; **(2)** the fence is **FORCED, not movable** — the
+`into_inner`-less "sound" subset is *degenerate* (it deletes the by-value move-out that defines `take_mut`,
+strictly dominated by plain `&mut T`), so every *usable* packaging breaks, and the fence sits exactly at the
+**owned-vs-borrowed** line. Deflation (pre-registered): no novel mechanism (`take_mut` + `scopeguard`-
+`into_inner` + RFC 1066); the contribution is *analytical* — the controlled pair and *locating* the fence.
+The broken count is now **six**; N stays **nine** verdict modes. The trilogy's refined finding: *the horn is
+movable iff the value-ownership model lets soundness **decouple** from the un-compellable closure* — owned
+**can** (⇒ cost), a borrowed slot **cannot**, for any usable packaging (⇒ forced break).

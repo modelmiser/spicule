@@ -370,7 +370,7 @@ the second alone. A 0/N adversarial result is only as good as your ability to ru
 "the proposer was just weak," and the cleanest way to do that is to *hand the proposer
 the known-good sub-component and watch the failure move, not disappear.*
 
-## 10. The constructive phase — build and break nineteen real seams
+## 10. The constructive phase — build and break twenty real seams
 
 The trilemma is a map, so the next step was to stop arguing in the abstract and **build**.
 A different harness shape: the negative half used cold instances to *propose* (and they
@@ -595,6 +595,28 @@ set by whether soundness can be _decoupled_ from the un-compellable closure** �
 borrowed-across-unwind ⇒ forces. Phase Q said the horn moves; Phase R says it moves *within a fence*, and
 names the fence.
 
+**Forcing the horn — the fence is real and FORCED.** Phase R's bound (i) was an admitted confound: #17→#19
+co-varied the packaging *and* the value-ownership model, so the cost-3 → break-1 move could not be pinned on
+the decoupling property alone. A *twentieth* primitive (`reseat.rs`) runs the single-variable experiment the
+confound forbade: a take-and-reseat guard over a **borrowed slot** (`take_mut` in guard form) that keeps #19's
+packaging **byte-for-byte identical** — a guard with `Deref`/`DerefMut`/`into_inner`/Drop-restore — and flips
+**only** owned → borrowed. The cold panel ruled **SEAM-BREAKS [horn 1], FAILED** — the *sixth* broken seam —
+on a four-line *safe* witness (`String::from`/`Reseat::new`/`push_str`/`into_inner`): `into_inner` hands back
+the owned `String` while the slot keeps the `ptr::read` duplicate (`E0509` forces the `mem::forget` that
+suppresses the reseat), so two owners double-free with no `unsafe` in user code. Two findings landed. (a) The
+single-variable horn flip is **clean** — all five attackers agreed #19 (owned + `into_inner`) *cost* horn 3
+and this (borrowed + `into_inner`) *breaks* horn 1 on byte-identical packaging — so **Phase R's confound is
+repaired**, and the flip is attributable to the decoupling property alone. (b) The fence is **FORCED, not
+movable**: the spec's *movable* hedge (that the `into_inner`-less subset holds with a horn-3 leak, pushing the
+fence inward) was rejected — that subset is *degenerate*, deleting the by-value move-out that *defines*
+`take_mut`, strictly dominated by plain `&mut T`, so **every usable packaging breaks**, and the fence sits
+exactly at Phase R's owned-vs-borrowed line. (Deflation, pre-registered: no novel mechanism — `take_mut` +
+`scopeguard`-`into_inner` + RFC 1066, reassembled; the contribution is analytical.) That closes the packaging
+trilogy: **the horn a danger threatens is movable iff the value-ownership model lets soundness _decouple_ from
+the un-compellable closure** — an owned value can (⇒ cost), a borrowed slot cannot, for any usable packaging
+(⇒ forced break). Phase Q: the horn moves. Phase R: within a fence (confounded). Phase S: the fence is real,
+FORCED, and sits at owned-vs-borrowed.
+
 **Decontamination, across primitives.** The seamful2 theorem predicted that a failing seam's
 obstruction *relocates* to the re-import boundary rather than vanishing. SPSC: it **vanished**
 (precondition factors through the witness). MMIO: it **moved and stayed decidable** (the
@@ -623,7 +645,7 @@ was the whole verdict — including the one mirage (the fuel knob), the two genu
 the one *real-but-inseparable* destination (immovability), and the one that landed *on coordinates already
 on the map* (validity) — the last of which is what closes the basis.
 
-**The adversary earned its keep — nineteen times.** On MMIO it named the axiom's category correctly
+**The adversary earned its keep — twenty times.** On MMIO it named the axiom's category correctly
 (a TCB boundary, not a horn) and surfaced a horn-3 cost the builder had under-weighted. On the
 intrusive list it proved something *worse* than the builder predicted: branding does not restore
 soundness at all (a brand is an *access* capability, not a *storage* lifetime), correcting a real
@@ -701,7 +723,15 @@ beside a sound ownership core, so the horn-dial is real — but the panel ruled 
 value-ownership model co-varied) and the dial *bounded* (a borrowed-slot/`take_mut` packaging *forces* horn 1,
 and `Pin`/`thread::scope` show un-repackageable horns), so which horn a danger threatens is a design choice
 *within an envelope* set by whether soundness can be decoupled from the un-compellable closure — confirm and
-boundary in one verdict, no new mode (the dial itself is RFC-1066 folklore).
+boundary in one verdict, no new mode (the dial itself is RFC-1066 folklore). And on the **borrowed-slot
+take-and-reseat guard** it did the twelfth thing — it *repaired the prior verdict's own confound and then
+ruled against the builder's hedge*: the twentieth seam kept the restore guard's packaging byte-identical and
+flipped only owned → borrowed, and the panel confirmed the horn flip is now a **clean single variable** (the
+same `into_inner` that *cost* horn 3 over an owned value is a safe-code double-free over a borrowed slot, the
+*sixth* broken seam) **and** rejected the spec's *movable*-fence framing as the defect — the `into_inner`-less
+"sound" subset is degenerate (dominated by `&mut T`), so every *usable* packaging breaks and the fence is
+**FORCED** at owned-vs-borrowed, not movable. Confirm, confound-repair, and a ruling against the proposal's
+own hedge in one verdict.
 Spec↔impl divergences, sharpened overclaims, novelty-deflations, one axis-rejection, one relabel,
 one distinctness-ruling, an inseparable-category finding (twice), the closed-basis certification, a
 domain-generalization, a floor-domain-mismatch diagnosis (two horn-drops in the IFC domain), and a
@@ -711,7 +741,10 @@ non-monotone and "granularity" a ladder), one *component-wise hold* (the session
 closes while completion costs horn 3, the same gap that broke one seam only costing another), and one
 *controlled-packaging confirmation that came back fenced* (the restore guard — the horn-dial is real but
 bounded by whether soundness can be decoupled from the un-compellable closure, the move confounded and the
-horn forceable) — exactly what build/break separation exists to surface. A
+horn forceable), and one *confound-repairing single-variable break that ruled the fence FORCED* (the
+borrowed-slot reseat guard — the same `into_inner` that cost horn 3 over an owned value double-frees over a
+borrowed slot, the sixth broken seam, the prior verdict's confound repaired and its *movable* hedge rejected
+because the only sound subset is degenerate) — exactly what build/break separation exists to surface. A
 discovery procedure that can say "no", "the right name", "why it doesn't merge", "real but unmeasurable",
 "real but adds nothing — the basis is closed", "this is a *different domain* entirely", "this floor is the
 wrong floor for that domain", "this floor *partly* fits that domain — and a better floor trades the gap,
@@ -723,8 +756,8 @@ cold review had flagged to a genuine characterization — `seam_closes_iff_facto
 closes **iff** its precondition factors through the safe witness — with the regimes as
 machine-checked instances (`spsc_seam_closes`, `intrusive_seam_does_not_close`, the slab's
 `slab_runtime_closes_but_static_does_not`: the same precondition closes through a *runtime*
-witness but not the *static* one, and `branded_seam_closes`/`refined_seam_closes`/`shared_seam_closes`/`typed_nat_seam_closes`/`take_seam_closes`/`drain_seam_closes`/`selfref_seam_closes`/`validity_seam_closes`/`secret_typed_discipline_factors`/`labeled_typed_discipline_factors`/`ordered_locks_typed_discipline_factors`/`lock_registry_typed_discipline_factors`/`linear_typed_discipline_factors`/`restore_ownership_core_closes`:
-all close like SPSC in the kernel — the recovered axes, the five broken seams' domain gaps, the graded floor-match, the non-monotone floor-upgrade, and the structural-logic (affine-vs-linear) break alike invisible to it), `propext` only. Honest bound unchanged: the
+witness but not the *static* one, and `branded_seam_closes`/`refined_seam_closes`/`shared_seam_closes`/`typed_nat_seam_closes`/`take_seam_closes`/`drain_seam_closes`/`selfref_seam_closes`/`validity_seam_closes`/`secret_typed_discipline_factors`/`labeled_typed_discipline_factors`/`ordered_locks_typed_discipline_factors`/`lock_registry_typed_discipline_factors`/`linear_typed_discipline_factors`/`restore_ownership_core_closes`/`reseat_typed_discipline_factors`:
+all close like SPSC in the kernel — the recovered axes, the six broken seams' domain gaps, the graded floor-match, the non-monotone floor-upgrade, the structural-logic (affine-vs-linear) break, and the forced borrowed-slot double-free alike invisible to it), `propext` only. Honest bound unchanged: the
 *math* is now a real characterization, but the faithfulness of "precondition" and "witness" to
 actual Rust primitives — *which axis a closing seam spends* (zero-cost, API-locality, legibility,
 solver-freedom, bare-metal, unwind-safety, leak-freedom), and whether that "axis" is even *separable*

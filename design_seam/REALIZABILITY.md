@@ -61,8 +61,23 @@ danger-*intrinsic*); and it is *not novel* (`JoinGuard` broke horn 1, `scopeguar
 in RFC 1066 in 2015 — so the contribution is the *method* and *locating the dial*, **no new mode**). The
 refined finding: **which horn a danger threatens is a design choice *within a structural envelope* set by
 whether soundness can be DECOUPLED from the un-compellable closure** (owned ⇒ costs; borrowed-across-unwind /
-`Pin` / `thread::scope` ⇒ forces). Phase Q said the horn moves; Phase R says it moves *within a fence, and
-names the fence*. N stays 9; the five broken seams unchanged — this one holds too.** (Phases L–R.)*
+`Pin` / `thread::scope` ⇒ forces). And a twentieth — a *take-and-reseat guard over a **borrowed slot*** (the
+real `take_mut`, in guard form) — ran the clean single-variable experiment Phase R's confound forbade: it
+keeps #19's packaging **byte-identical** and flips **only** owned → borrowed, and the cold panel (r27) ruled
+**SEAM-BREAKS [horn 1], FAILED — the *sixth* broken seam.** A 4-line *safe* `String` witness
+(`new`/`push_str`/`into_inner`) double-frees with no `unsafe` in user code (`into_inner` returns the owned
+value while the slot keeps the `ptr::read` duplicate — two owners). **Two findings, both decisive:** the
+horn flip is *clean* (#19 owned+`into_inner` cost-3 → #20 borrowed+`into_inner` break-1, packaging
+byte-identical — so Phase R's confound is **repaired** and the flip is attributable to the decoupling
+property *alone*); and the fence is **FORCED, not movable** — the `into_inner`-less "sound" subset is
+*degenerate* (it deletes the by-value move-out that *defines* `take_mut`, strictly dominated by plain
+`&mut T`), so every *usable* packaging breaks, and the fence sits exactly at the **owned-vs-borrowed** line.
+(Deflation, pre-registered: no novel mechanism — `take_mut` + `scopeguard`-`into_inner` + RFC 1066,
+reassembled; contribution analytical.) Phase Q said the horn moves; Phase R says it moves *within a fence*;
+Phase S proves the fence **real and FORCED** at owned-vs-borrowed, closing the packaging trilogy: **the horn
+is movable iff the value-ownership model lets soundness DECOUPLE from the un-compellable closure** (owned
+can ⇒ cost; borrowed cannot, for any *usable* packaging ⇒ forced break). N stays 9 verdict modes; **the
+broken-seam count rises to six** (this one breaks).** (Phases L–S.)*
 
 > **A note on the "#5/#6/#7" shorthand (and a numbering collision).** `#6` (zero-cost) and `#7`
 > (AI-legible) are the literal seed-property numbers. The "**#5⟂#7 cell**" shorthand, coined for the
@@ -580,6 +595,36 @@ horn 3 (the restore strands a *logical invariant* — a lost lease, a stale glob
 > said the horn moves; Phase R says it moves *within a fence, and names the fence*. N stays 9; the five
 > broken seams are unchanged — this one holds.
 
+#### The fence, hit from the other side — a twentieth primitive proves it FORCED (the sixth break)
+
+Phase R's "movable within a fence" carried a **confound** the panel itself flagged: #17→#19 co-varied the
+packaging *and* the value-ownership model, so the cost-3 verdict could not be cleanly attributed to either. A
+twentieth — a **take-and-reseat guard over a *borrowed slot*** (`Reseat<'a, T>`, the real `take_mut` in guard
+form) — runs the single-variable experiment that confound forbade: it keeps #19's packaging **byte-identical**
+(a guard with `Deref`/`DerefMut`/`into_inner`/Drop-restore) and flips **only** owned value → borrowed slot.
+The cold panel (r27) ruled **SEAM-BREAKS [horn 1], FAILED — the *sixth* broken seam.**
+
+> **Two findings, both decisive.** (1) **The horn flip is clean — Phase R's confound is repaired.** All five
+> attackers agreed: #19 (owned + `into_inner`) *cost* horn 3; this seam (borrowed + `into_inner`), packaging
+> byte-identical, *breaks* horn 1. The soundness attacker landed a 4-line *safe* witness — `let mut s =
+> String::from("hello"); let mut g = Reseat::new(&mut s); g.push_str(" world"); g.into_inner()` — where
+> `into_inner` returns the owned `String` while the slot keeps the `ptr::read` duplicate (`E0509` forces the
+> `mem::forget(self)` that suppresses the reseat), so both own overlapping/realloc'd heap and **double-free,
+> with no `unsafe` in user code.** Where #17→#19 co-varied two variables, #19→#20 co-varies **none** — the
+> cost-3 → break-1 flip is attributable to the **decoupling property alone**. (2) **The fence is FORCED, not
+> movable.** The spec posed forced-vs-movable and leaned *movable* (the `into_inner`-less subset holds — it is
+> unwind-safe, and `mem::forget` is a leak not a double-free); the ergonomics and expressiveness attackers
+> **rejected** this: the sound subset is **degenerate** — it deletes the *by-value move-out* that *defines*
+> `take_mut`/`replace_with` (the `T → T`-through-a-non-`T` transform), leaving a primitive **strictly
+> dominated by plain `&mut T`**. So every *usable* packaging of the borrowed-slot take breaks horn 1; the
+> fence sits exactly at Phase R's **owned-vs-borrowed** line — not pushed inward. (Deflation, pre-registered:
+> no novel mechanism — `take_mut`'s `ptr::read`/`write` + `scopeguard`'s `into_inner` defuse + RFC 1066's
+> forget-skips-`Drop`, reassembled; contribution is **analytical** — the clean controlled pair and *locating*
+> the fence.) **Closing the packaging trilogy: the horn a danger threatens is movable *iff* the value-ownership
+> model lets soundness DECOUPLE from the un-compellable closure** — an *owned* value can (#19 ⇒ horn-3 cost);
+> a *borrowed* slot cannot, for any usable packaging (#20 ⇒ forced horn-1 break). N stays 9 verdict modes; the
+> broken-seam count rises to **six**.
+
 ## The recursion: each primitive un-bundled one folded axis
 
 ```
@@ -668,6 +713,23 @@ restore │  CONTROLLED PACKAGING probe  ⇒ HOLDS WITH COST: SEAM-COSTS [horn3]
         │                              ENVELOPE set by whether soundness DECOUPLES from the closure (owned ⇒ costs;
         │                              borrowed-across-unwind/Pin/thread::scope ⇒ forces). No new mode; N stays 9.
         ▼
+ reseat │  FORCING-THE-HORN probe       ⇒ BREAKS [horn1] (FAILED, r27). The SIXTH broken seam, and the controlled
+        │  (take-and-reseat guard over   counterpart to #19: keep #19's packaging BYTE-IDENTICAL, flip ONLY owned→
+        │   a BORROWED slot = take_mut)  borrowed (the single-variable experiment #19's confound forbade). A 4-line
+        │                              SAFE String witness (new/push_str/into_inner) double-frees with no unsafe in
+        │                              user code: into_inner returns owned while the slot keeps the ptr::read
+        │                              duplicate (E0509 forces mem::forget(self)) → two owners → double-free. TWO
+        │                              findings: (1) the horn flip is CLEAN — #19 owned+into_inner cost-3 → #20
+        │                              borrowed+into_inner break-1, packaging byte-identical → Phase R's confound
+        │                              REPAIRED, flip attributable to the decoupling property ALONE; (2) the fence is
+        │                              FORCED not movable — the into_inner-less "sound" subset is DEGENERATE (deletes
+        │                              the by-value move-out that DEFINES take_mut, dominated by plain &mut T), so
+        │                              every USABLE packaging breaks; the fence sits at the owned-vs-borrowed line.
+        │                              Deflation (pre-registered): no new mechanism (take_mut + scopeguard-into_inner
+        │                              + RFC 1066). CLOSES THE PACKAGING TRILOGY: the horn is movable IFF the
+        │                              ownership model lets soundness DECOUPLE from the closure (owned ⇒ cost; borrowed
+        │                              ⇒ forced break). No new mode; N stays 9; broken-seam count → SIX.
+        ▼
 Realizability table         MEMORY-SAFETY domain (on a MATCHED affine floor): N ≥ 9 CLOSED axes (sound,
                             decidable, concentration, API-locality, #6, #7, bare-metal, unwind-safety,
                             leak-freedom) + INSEPARABLE (move-stability, validity) + 2 outside-the-axes
@@ -688,7 +750,13 @@ Realizability table         MEMORY-SAFETY domain (on a MATCHED affine floor): N 
                             REAL but BOUNDED: the move is confounded (ownership co-varies), the horn is forceable
                             (borrowed-slot/take_mut → horn1 UB; Pin / thread::scope un-repackageable), so the horn
                             is a design choice WITHIN A STRUCTURAL ENVELOPE set by whether soundness DECOUPLES from
-                            the un-compellable closure. The Seam Trilemma is DOMAIN-GENERAL, the cost-basis
+                            the un-compellable closure. And the FORCING-THE-HORN counterpart (take-and-reseat guard
+                            over a BORROWED slot, r27) hit the fence from the other side — BREAKS [horn1], the SIXTH
+                            broken seam: the clean single-variable flip (#19 owned cost-3 → #20 borrowed break-1,
+                            packaging byte-identical) REPAIRS the confound, and the fence is FORCED not movable (the
+                            into_inner-less subset is degenerate, dominated by &mut T). The packaging trilogy closes:
+                            the horn is movable IFF the ownership model lets soundness DECOUPLE from the closure
+                            (owned ⇒ cost; borrowed ⇒ forced break). The Seam Trilemma is DOMAIN-GENERAL, the cost-basis
                             PER-DOMAIN, and WHICH SEAMS CLOSE depends on the FLOOR-DOMAIN MATCH — GRADED (full /
                             partial / none), set per PRECONDITION not per domain, and not monotonically liftable.
                             Nine method modes:
@@ -801,7 +869,7 @@ The axes are not independent toggles you can set freely — **two trades and a d
   invisible in non-leak code), yet still real — a reminder that "deflatable" and "not an axis" are
   different verdicts (the rejected checker-tractability probe is the latter; leak-freedom the former).
 - The Lean kernel (`../proof/SeamGap.lean`) sees only whether a precondition factors through a
-  Boolean witness — so it certifies *closure* (`spsc`/`branded`/`refined`/`shared`/`typed_nat`/`take`/`drain`/`selfref`/`validity` — and `session_order_safety_closes`, the eighteenth seam, whose *order-safety* component closes like a holding seam (it HOLDS with a horn-3 completion cost the kernel cannot see), and `restore_ownership_core_closes`, the nineteenth seam, whose *ownership* core closes the same way (it HOLDS with a horn-3 restore cost — the controlled-packaging probe: the same `mem::forget` gap that broke #17 only costs here, but bounded — the horn is forceable in a borrowed-slot/`take_mut` packaging) — (+ `secret`/`labeled`/`ordered_locks`/`lock_registry`/`linear`, which certify only the trivial typed sub-fact — the two IFC seams break, and three liveness-domain seams break: the static lock-ordering one partially-matches, the runtime registry shows the floor-upgrade is non-monotone, and the must-run-cleanup one is a clean NONE breaking on wrong-structural-logic, affine≠linear)
+  Boolean witness — so it certifies *closure* (`spsc`/`branded`/`refined`/`shared`/`typed_nat`/`take`/`drain`/`selfref`/`validity` — and `session_order_safety_closes`, the eighteenth seam, whose *order-safety* component closes like a holding seam (it HOLDS with a horn-3 completion cost the kernel cannot see), and `restore_ownership_core_closes`, the nineteenth seam, whose *ownership* core closes the same way (it HOLDS with a horn-3 restore cost — the controlled-packaging probe: the same `mem::forget` gap that broke #17 only costs here, but bounded — the horn is forceable in a borrowed-slot/`take_mut` packaging) — (+ `secret`/`labeled`/`ordered_locks`/`lock_registry`/`linear`/`reseat`, which certify only the trivial typed sub-fact — the two IFC seams break, three liveness-domain seams break (the static lock-ordering one partially-matches, the runtime registry shows the floor-upgrade is non-monotone, and the must-run-cleanup one is a clean NONE breaking on wrong-structural-logic, affine≠linear), and `reseat_typed_discipline_factors`, the twentieth seam, breaks on a forced horn-1 double-free — the controlled counterpart to #19 that proves the packaging fence FORCED at owned-vs-borrowed: `into_inner` over a borrowed slot hands out the value while the slot keeps the `ptr::read` duplicate, so the same packaging that *held* for #19's owned value breaks here)
   all close, like SPSC) but is blind to *which axis a closing seam spends* — or whether that "axis" is
   even separable (the self-ref cell closes in the kernel exactly like the rest; its inseparability is
   pure modeling-dictionary). Every column past
