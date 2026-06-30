@@ -245,10 +245,17 @@ pub mod session;
 /// guard owns and vends scoped access to a `T`, no `unsafe`, no UAF) beside which the restore closure is a
 /// mere *side-obligation*. Built to turn Phase Q's headline — *which horn a danger threatens is a function
 /// of how the re-import rule packages it* — from an **observation** (across the different primitives #17 and
-/// #18) into a **controlled experiment** (the same danger, only the packaging changed). The hypothesis the
-/// spec poses: the `mem::forget` gap that **broke** #17's horn 1 here only **costs** horn 3 (an un-restored
-/// logical invariant — a lost lease, a stale global — never UB), so the horn is a design choice, not a
-/// property of the danger. See `restore`.
+/// #18) into a **controlled experiment** (change the packaging, hold the danger fixed). The cold panel (r26)
+/// ruled **SEAM-COSTS [horn 3]** (survived): the `mem::forget` gap that **broke** #17's horn 1 here only
+/// **costs** horn 3 (an un-restored logical invariant — a lost lease, a stale global — never UB) — the
+/// packaging dial is **real**. But the panel **bounded** the thesis: the move is *confounded* (#19 also adds
+/// the value-ownership core #17 lacked, so the value-ownership model co-varies), and the horn is *forceable*
+/// — the same danger in a borrowed-slot/`take_mut` packaging forces horn-1 UB, and `Pin`/`thread::scope`
+/// show un-repackageable horns. The refined finding: which horn a danger threatens is a design choice
+/// **within a structural envelope** set by whether soundness can be **decoupled** from the un-compellable
+/// closure (owned ⇒ costs; borrowed-across-unwind ⇒ forces). Not novel (`JoinGuard` horn-1 / `scopeguard`
+/// horn-3, RFC 1066); contribution = the method + locating the dial. N stays 9 modes; the 5 broken seams
+/// unchanged (this holds). See `restore`.
 pub mod restore;
 
 use core::cell::UnsafeCell;

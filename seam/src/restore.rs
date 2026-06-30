@@ -25,7 +25,12 @@
 //! 1084). So the restore is *exactly* as un-compellable here as the finalizer was in #17 — bit-for-bit the
 //! same gap. Nothing about the danger has changed.
 //!
-//! ## What changed is ONLY the packaging — and that is the whole experiment
+//! ## What the experiment changes — the packaging (with a co-variation the panel flagged, see the verdict)
+//!
+//! *(The intended single variable is the packaging; but the cold panel ruled the move **confounded** — to
+//! package the danger as a side-obligation, #19 also introduces a value-ownership core that #17 lacked, so
+//! the value-ownership model co-varies. The honest claim is therefore "a better-controlled probe than the
+//! incidental #17-vs-#18 pair," not "a clean single-variable manipulation." See the verdict below.)*
 //!
 //! In #17 (`MustRun`), the re-import **promise** was *"the finalizer runs"*: the running of the closure
 //! **was** the seam's entire soundness claim, so a skipped `Drop` **drops the claim outright** — a horn-1
@@ -92,7 +97,49 @@
 //! (It compiles under `#![forbid(unsafe_code)]`, the value is leaked, and the "every lease is returned"
 //! invariant is broken — yet memory safety is intact: nothing is freed twice, nothing dangles.)
 //!
-//! ## The cold panel's verdict (REPORT_SEAM_SPEC_restore): _pending — filled in after the gauntlet._
+//! ## The cold panel's verdict (REPORT_SEAM_SPEC_restore, r26): SEAM-COSTS [horn 3] — it HOLDS with a cost,
+//! ## confirming the packaging dial; but the panel **bounded** the thesis three ways, all accepted.
+//!
+//! The seam **survived** (TRADEOFF, 1/1). Three attackers (ergonomics, soundness, implementation) conceded
+//! the **memory-safety core is sound** — no safe double-free/alias/double-consume (`mem::swap` strands a
+//! value but yields no UB), checking is trivially decidable, and no nontrivial compiler pass is implied
+//! (the seam *concedes* restore-liveness up front rather than asking the compiler to prove the closure runs,
+//! so it never hands any pass an undecidable query). The predicted **horn-3 cost is correct**: the
+//! identical #17 `Drop`-gap here strands only the restore *invariant* — an undischargeable "don't forget the
+//! guard" obligation recurring at every `?`/panic/return — never soundness. **The core packaging claim
+//! holds: the same `mem::forget` danger that BROKE #17's horn 1 only COSTS horn 3 here.**
+//!
+//! But two attackers ruled BREAKS, folded by the judge into the recorded costs below — and they sharpen the
+//! result past my prediction:
+//! 1. **The move is CONFOUNDED, not a clean single-variable experiment (expressiveness).** "Only the
+//!    packaging changed" is false: #17→#19 also added a **load-bearing affine-ownership core**, so the
+//!    *value-ownership model* co-varied with the packaging. This is structural, not sloppy — to package a
+//!    danger as a *side*-obligation you must introduce a sound core for it to sit *beside*, so "core" and
+//!    "packaging" are not independently dialable. The horn-move is **real but co-varied** — a better-
+//!    controlled probe than #17-vs-#18's incidental pair, not a single-variable manipulation.
+//! 2. **The thesis is BOUNDED, not universal — the horn IS forceable (expressiveness + prior-art).** The
+//!    *same* skippable-`Drop` danger in a **borrowed-slot / `take_mut` packaging** forces **horn-1 UB** (a
+//!    mid-restore panic double-drops the borrowed slot — the ninth-axis `take` danger), and **`Pin`'s drop
+//!    guarantee** and the post-leakpocalypse **`thread::scope` restructure** (the closure shape that *forces*
+//!    the join) exhibit horns that **cannot** be repackaged away. So "which horn" depends on **where safety
+//!    rests**, which is *partly danger-intrinsic*: packaging moves the horn only **within an envelope** set
+//!    by whether soundness can be decoupled from the un-compellable closure. My spec scoped the borrowed-slot
+//!    case out (§2/§5), so the forcing point **marks the price** rather than breaking this seam — but it is
+//!    the real boundary of the thesis, and the honest answer to the deliverable's "can the horn be forced?"
+//!    is **yes, partly**.
+//! 3. **Not novel — a confirm-by-restaging, no new verdict mode (prior-art).** This exact dial was turned in
+//!    2015: `JoinGuard`/`thread::scoped` broke horn 1, `scopeguard` costs horn 3, and the matter concluded in
+//!    **RFC 1066 (the leakpocalypse)**. The contribution is **the method** (turning Phase Q's observation
+//!    into a *deliberately* controlled probe) and **locating the dial** on the realizability lattice — not a
+//!    new structure. N stays 9 verdict modes; the 5 broken seams are unchanged (this one holds).
+//!
+//! **The refined finding (the real yield).** The packaging dial is **real but bounded**: *which horn a
+//! danger threatens is a design choice within a structural envelope determined by whether soundness can be
+//! decoupled from the un-compellable closure.* Decouplable (an **owned** value → the restore is a
+//! side-obligation beside a sound core) ⇒ the danger **costs** (horn 3, this seam, `scopeguard`).
+//! Not decouplable (a **borrowed** value restored across unwind, `Pin`'s load-bearing address, `thread::
+//! scope`'s borrowed frames) ⇒ the danger **forces** horn 1. Phase Q said the horn moves; Phase R says it
+//! moves *within a fence*, and names the fence.
 //!
 //! And the sound use *does* restore on every ordinary path — see `tests/restore_use.rs` (normal exit, early
 //! return, and panic-unwind all run the restore; `into_inner` is the sanctioned keep; only `forget`/

@@ -1588,10 +1588,74 @@
       "outcome": "TRADEOFF",
       "cost_usd": 2.4946,
       "timestamp": "2026-06-29T23:43:42+00:00"
+    },
+    {
+      "round": 26,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_restore.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 value-owning scope-restore guard (re-import rule under attack)\n\nThis is a **design proposal** for a nineteenth *seam*, built as a **controlled experiment** on the headline\nof Phase Q (`SEAM_SPEC_session.md`): *which horn a danger threatens is a function of how the re-import rule\n**packages** it, not a property of the danger.* Phase Q reached that as an **observation** \u2014 #17\n(`SEAM_SPEC_linear.md`, must-run cleanup) **broke** horn 1, while #18 (session completion) only **cost**\nhorn 3, on the *same* `mem::forget` mechanism \u2014 but #17 and #18 were *different primitives*, so the horn-move\ncould be incidental. This seam holds the danger **bit-for-bit identical to #17** and changes **only** the\npackaging, to test whether the move is a controllable design lever or an artifact.\n\nYou are attacking a **text specification** backed by real `rustc`-checked code (`seam/src/restore.rs`, the\ndefault `no_std` build \u2014 `core`-only, **no `unsafe`**).\n\n---\n\n## 0. The floor (stipulated, not under attack)\n\nRust's borrow checker as shipped: ownership is **affine** (use *at most* once; you may drop/`mem::forget` a\nvalue without using it). `Deref`/`DerefMut` resolution, move-checking, and the ",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "In-scope primitive is shipping scopeguard \u2014 zero added ceremony; the painful fallible/async/stored cases are honestly scoped out, not broken.",
+          "strongest_point": "The seam imposes no annotation or proof burden beyond Rust because it literally is scopeguard, but it earns its 'usable' verdict only by scoping out exactly the fallible/async/no_std-stored restores where real systems ergonomics actually fail."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Memory-safety core is zero-unsafe affine scopeguard; no accepted double-free/alias/double-consume; checking trivially decidable.",
+          "strongest_point": "A fully-safe no_std affine wrapper has no soundness surface to break, and the only gap (skipped restore) is conceded non-UB floor, so horn 1 holds and the predicted horn-3 cost is correct."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "No nontrivial compiler pass is implied; all passes (move/borrow check, drop-glue, trait selection, monomorphization) stay polynomial on the stipulated floor.",
+          "strongest_point": "The proposal concedes restore-liveness up front rather than asking the compiler to prove the closure runs, so it never hands any pass an undecidable termination/liveness or alias query \u2014 the type is non-recursive, owned, and first-order."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Horn-3 result reached by excising the borrowed-value/take_mut packaging where the identical mem::forget danger forces horn-1 UB; 'only packaging changed' is confounded.",
+          "strongest_point": "The same skippable-Drop danger forces horn 1 in a take-and-restore (borrowed-slot) packaging the proposal scopes out, so the horn is forceable, not fully a packaging choice, and the experiment co-varied the value-ownership model rather than only the packaging."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "minor",
+          "summary": "Deliverable restages the 2015 leakpocalypse; its universal 'horn is fully packaging' claim is refuted by Pin and the thread::scoped fix.",
+          "strongest_point": "The horn-as-packaging experiment was already run on the identical mem::forget mechanism (JoinGuard broke horn-1, scopeguard costs horn-3) and concluded in RFC 1066; Pin's drop guarantee and the closure-restructure fix prove the horn can be forced, so it is not fully a design choice."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "argued-past",
+          "attacker-soundness": "argued-past",
+          "attacker-implementation": "argued-past",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "TRADEOFF",
+        "tradeoffs": [
+          "The 'controlled experiment / only packaging changed' claim is confounded: #17\u2192#19 added a load-bearing affine-ownership core, so the value-ownership model co-varied with the packaging; the horn-move is real but not a clean single-variable manipulation.",
+          "The thesis is bounded, not universal: the identical skippable-Drop danger in a borrowed-slot/take_mut packaging forces horn-1 UB, and Pin's drop guarantee plus the thread::scope restructure show horns that cannot be repackaged. 'Which horn' depends on where safety rests, which is partly danger-intrinsic.",
+          "The deliverable is a confirm-by-restaging of the 2015 leakpocalypse (RFC 1066) and the affine-vs-linear / safety-vs-liveness partition; the contribution is the method and locating the dial, not a new verdict structure.",
+          "The demonstration is scoped to infallible, synchronous, owned, scope-local restore; it is silent-by-design on fallible/async/stored-capturing (no_std) restores where ergonomics and the horn-question actually bite."
+        ],
+        "headline": "Restore's skippable-Drop only costs horn 3 (sound core intact); deliverable's controlled-manipulation and novelty claims are bounded.",
+        "rationale": "Soundness verdict SEAM-COSTS horn 3 survives all attacks; no memory-safety break exists. Expressiveness and prior-art correctly bound the deliverable\u2014horn is forceable (take_mut/Pin), the move co-varies the value model, and the result restages the leakpocalypse\u2014but these qualify, not kill. Record tradeoffs."
+      },
+      "outcome": "TRADEOFF",
+      "cost_usd": 2.5479,
+      "timestamp": "2026-06-30T01:22:14+00:00"
     }
   ],
   "settled": [],
   "incompatibilities": [],
   "blind_spot_flags": [],
-  "total_cost_usd": 50.6353
+  "total_cost_usd": 53.1832
 }

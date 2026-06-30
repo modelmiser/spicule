@@ -586,4 +586,42 @@ theorem session_order_safety_closes :
   rw [seam_closes_iff_factors]
   exact ⟨id, fun _ => rfl⟩
 
+/-- Value-owning-scope-restore shape — the *controlled-packaging* probe (a `Restore<T, F: FnOnce(T)>` guard,
+    the real `scopeguard::guard(value, f)` + `into_inner`), built to turn Phase Q's packaging finding from an
+    observation into a *deliberate* experiment: it carries the **identical** un-compellable-`Drop` danger as
+    #17 (`mem::forget` skips the restore closure) but wraps it in #18's structure — a sound affine-ownership
+    *core* beside which the restore is a side-obligation. Read `Pr`/`Wt` by analogy: the precondition the seam
+    actually CLOSES is the *memory-safety / ownership core* (own a `T`, vend scoped `DerefMut` access,
+    `Option::take` so the value is committed-xor-restored exactly once — no double-free, no alias, no
+    double-consume), which factors through the affine ownership witness (`Prestore` is definitionally `V`). It
+    CLOSES.
+
+    The cold panel (REPORT_SEAM_SPEC_restore, r26) ruled **SEAM-COSTS [horn 3]** (TRADEOFF, survived) — it
+    HOLDS with a recorded cost, confirming the packaging dial: the *same* `mem::forget` gap that BROKE #17's
+    horn 1 only **costs** horn 3 here (the restore is an undischargeable "don't forget the guard" obligation,
+    recurring at every `?`/panic/return — never UB, since memory safety never rested on the closure). But the
+    panel **bounded** the thesis, all accepted in the prose: (1) the move is **confounded** — to package the
+    danger as a side-obligation, #19 also adds the value-ownership core #17 lacked, so the value-ownership
+    model co-varies (a better-controlled probe, not a single-variable manipulation); (2) the thesis is
+    **bounded, not universal** — the horn is *forceable*: the same skippable-`Drop` danger in a borrowed-slot/
+    `take_mut` packaging forces horn-1 UB (the ninth-axis `take` danger), and `Pin`'s drop guarantee and the
+    `thread::scope` restructure exhibit un-repackageable horns, so *which* horn depends on **where safety
+    rests** — partly danger-intrinsic; (3) **not novel** — `JoinGuard` broke horn 1 and `scopeguard` costs
+    horn 3 already in 2015 (RFC 1066, the leakpocalypse), so the contribution is the *method* and *locating*
+    the dial, not a new verdict structure (N stays 9 modes; the 5 broken seams unchanged). The refined
+    finding: which horn a danger threatens is a design choice **within a structural envelope** set by whether
+    soundness can be decoupled from the un-compellable closure. Like every column past concentration, the
+    horn-3 cost is modeling-dictionary; the kernel sees only that the ownership-core witness suffices. -/
+def Prestore (p : Prog) : Bool := V p
+
+/-- The seam HOLDS with a cost (SEAM-COSTS [horn 3]): its *memory-safety / ownership core* closes via affine
+    ownership (`!Copy`/`!Clone`, `Option::take` one-shot, borrow-tied `Deref`), sound/usable/concentrated,
+    exactly as a closing seam does in the kernel. The restore obligation is a horn-3 concentration cost (the
+    same #17 `mem::forget` gap), invisible to the kernel — but the gap only COSTS here, because soundness is
+    *decoupled* from the closure (an owned value), the controlled-packaging move that #17 lacked. -/
+theorem restore_ownership_core_closes :
+    ∃ d : Prog → Bool, SoundW Prestore d ∧ UsableW Prestore d ∧ ConcW V d := by
+  rw [seam_closes_iff_factors]
+  exact ⟨id, fun _ => rfl⟩
+
 end SeamGap
