@@ -70,7 +70,54 @@
 //! assert_eq!(r, 30);
 //! ```
 //!
-//! ## The cold panel's verdict (REPORT_SEAM_SPEC_wcet): _pending — filled in after the gauntlet._
+//! ## The cold panel's verdict (REPORT_SEAM_SPEC_wcet, r29): SEAM-BREAKS [horn 1], FAILED — the SEVENTH
+//! ## broken seam (and the second fourth-domain candidate to fail to open a fourth domain).
+//!
+//! **The seam FAILED** (0/1) — all five attackers ruled BREAKS, from five distinct angles. Unlike the
+//! convergence probe (`crdt`), which *deflated and survived* (its break pre-registered), this one **FAILED**,
+//! because my §4 re-import rule **over-claimed**: it promised `within` returns the value "only when the
+//! computation meets its deadline," but the type tracks the **op-count**, not the time, so the guarantee is
+//! falsified in safe code. The honest verdict is the break I predicted (floor-mismatch, unsound proxy) plus a
+//! spec defect (the over-claim) and richer corrections:
+//!
+//! 1. **Soundness (fatal) — the op-count is no upper bound on cycles.** `step` advances `C := S<C>`
+//!    *structurally, decoupled from the closure*, so a million-iteration loop is cost `1` and `within::<1>`
+//!    returns it through the only sanctioned exit. `C ≤ D` proves nothing about real elapsed time. The break
+//!    is structural: `pure(()).step(|_| for i in 0..1_000_000 { black_box(i); }).within::<S<Z>>()`.
+//! 2. **Ergonomics — Horn 3 is FALSE.** An `if` whose two arms do different work yields **non-unifying**
+//!    `Timed<S<C>>` vs `Timed<S<S<S<C>>>>` types, forcing the programmer to hand-pad branches with dummy
+//!    `step`s. "The consumer writes no cost bookkeeping" is refuted — the cost index is *heavy* bookkeeping.
+//! 3. **Implementation — the unary cost does not scale.** `C` is unary Peano (the *exact* `typed_nat` #8
+//!    machinery), so the result type and `Lt` resolution are **linear in the cycle count**: honest per-cycle
+//!    stepping is **uncompilable** at any realistic 10³–10⁷-cycle budget (recursion-limit / O(C) type
+//!    blow-up). The only compilable path — bundling many units into one `step` — *is* the soundness break.
+//! 4. **Expressiveness — no additive composition.** The seam exposes only `pure(0)` and `step(+1)`, with no
+//!    **type-level addition**, so two cost-typed computations cannot be sequenced and summed. Every program
+//!    is one flat literal step-chain; factoring real code forces folding work into a lying single `step`.
+//! 5. **Prior-art — this is Danielsson's 2008 cost monad, and the gap is WCET's *founding premise*.** The
+//!    primitive is the graded/indexed cost monad (Danielsson, POPL 2008). "op-count ≠ cycles" is **not a
+//!    finding** — it is the premise WCET analysis *exists to close*. Every cost-indexed precedent (Danielsson,
+//!    RaML / amortized resource analysis, gas/fuel metering, aiT) achieved soundness only by **abandoning the
+//!    physical-cycle claim** or **installing a defining/microarchitectural machine**. The seam keeps the
+//!    physical-time claim while reusing their machinery — exactly the unsound gap. **Pick a lane:** *abstract
+//!    cost* (sound, but it is not real time) **xor** *physical deadline* (needs a defining machine the floor
+//!    does not provide).
+//!
+//! **The refined finding — WCET does not open a fourth domain either (the second candidate to fail).** It
+//! **deflates** multiply: the static cost monad onto Danielsson 2008 / `typed_nat`'s type-level `Nat` (#8 —
+//! which does not even *scale* to real budgets); the *physical-deadline* claim onto an `mmio`-shaped axiom
+//! (#2) that this seam **never installs** (so it is *worse* than MMIO — MMIO's hardware axiom is faithful and
+//! present; here the cost model is a fiction and absent); and the data-dependent-loop gap onto the liveness
+//! domain's **partial-match** (a `while` has no static `C`). So the floor carries a **proxy that is not the
+//! property**, and the proxy is **unsound** — *sharper* than `secret`, whose proxy foreclosed *some* leaks
+//! (sound but incomplete); the op-count can be **arbitrarily far** from the truth.
+//!
+//! **The meta-finding (for the record).** **Two** fourth-domain candidates have now been probed — convergence
+//! (`crdt`, deflated + survived) and real-time/WCET (`wcet`, deflated + FAILED) — and **neither opens a fourth
+//! soundness domain**, by *different* mechanisms (unchecked algebraic law → application-correctness; unsound
+//! physical-time proxy → cost-monad + missing machine). The three confirmed domains (memory safety /
+//! information flow / liveness) look increasingly **special**. N stays **9** verdict modes (floor-mismatch +
+//! projects-onto-basis, both already on the board); 22 primitives; the FAILED broken-seam tally rises to **7**.
 //!
 //! The static accounting *does* discharge in-budget, and the op-count *does* diverge from real work — see
 //! `tests/wcet_use.rs`.

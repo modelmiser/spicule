@@ -1777,10 +1777,74 @@
       "outcome": "TRADEOFF",
       "cost_usd": 2.6955,
       "timestamp": "2026-06-30T03:19:51+00:00"
+    },
+    {
+      "round": 29,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_wcet.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 cost-typed computation (re-import rule under attack)\n\nThis is a **design proposal** for a twenty-second *seam*, the **second probe aimed at a fourth soundness\ndomain** \u2014 after the convergence probe (`SEAM_SPEC_crdt.md`) *deflated* (its gap was the generic\nunchecked-typeclass-law phenomenon, projecting onto `restore`'s application-correctness basis). This one\ntargets **real-time / worst-case execution time (WCET)** \u2014 a cleaner candidate, because a cycle budget is a\n**quantitative resource bound**, not an algebraic law.\n\nYou are attacking a **text specification** backed by real `rustc`-checked code (`seam/src/wcet.rs`, the\ndefault `no_std` build \u2014 `core`-only, **no `unsafe`**, like the `secret`/`crdt` semantic-domain seams).\n\n---\n\n## 0. The floor (stipulated, not under attack)\n\nRust's type system as shipped, **plus** the eighth seam's sealed type-level `Nat`/`Lt` machinery (`typed_nat`)\nas a *given* building block: `C: Lt<S<D>>` is a compile-time proof that `C \u2264 D`, discharged by trait\nresolution. The abstract machine models **no notion of time or cycles** \u2014 so the project's usual \"can safe\ncode reach UB?\" is *trivially* no (no `unsafe`). Do not attack trait resolution ",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Unusable: no runtime-bounded loop is typeable, if-branches don't unify, every signature carries unary cost \u2014 ATS2 failure; Horn 3 false.",
+          "strongest_point": "An if-expression whose two arms do different work produces non-unifying Timed<S<C>> vs Timed<S<S<S<C>>>> types, forcing the programmer to hand-pad branches with dummy steps \u2014 refuting the 'consumer writes no cost bookkeeping' claim outright."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "Op-count is not an upper bound on cycles; within::<1> accepts a million-cycle step, violating \u00a74's deadline guarantee.",
+          "strongest_point": "step charges +1 independent of its closure's work, so C \u2264 D proves nothing about real elapsed time and within admits deadline misses in safe code."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Unary type-level Nat makes honest per-cycle step accounting uncompilable at realistic WCET budgets; recursion limit and O(C) type blow-up.",
+          "strongest_point": "Cost C is unary Peano, so the result type and Lt resolution are linear in the cycle count \u2014 honest stepping is uncompilable at any real-time budget, and the only compilable path (bundling units into one step) is exactly the conceded soundness break."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "No cost-additive composition operator; only flat unit-step chains expressible. Real modular/data-dependent WCET code requires hiding work in a lying step.",
+          "strongest_point": "The spec exposes only pure(0) and step(+1) with no type-level addition, so two cost-typed computations cannot be sequenced and summed \u2014 every program is one flat literal step-chain, and factoring real code forces folding work into a single step that is charged 1, which still type-checks."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Primitive is Danielsson's 2008 cost monad; op-count\u2260cycles is WCET's founding premise, not a finding; re-import keeps a physical-time claim all precedents dropped.",
+          "strongest_point": "Every cost-indexed precedent (Danielsson, RaML, gas, aiT) achieved soundness only by abandoning the physical-cycle claim or installing a defining/microarchitectural machine \u2014 the re-import keeps that claim while reusing their machinery, which is exactly the unsound gap WCET analysis exists to close."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "genuine-flaw",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "tradeoff",
+          "attacker-expressiveness": "genuine-flaw",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Unary typed_nat encoding does not scale: honest per-cycle accounting is uncompilable at realistic 10^3\u201310^7-cycle budgets (recursion-limit / O(C) type blow-up) \u2014 but this leans on the \u00a70-stipulated floor representation.",
+          "Even restated soundly, the construct has no additive/compositional operator and no data-dependent bound \u2014 modular and runtime-bounded real-time code is inexpressible without runtime metering.",
+          "Ergonomic ceremony: non-unifying if-branches force manual step-padding and every signature carries a unary cost index \u2014 Horn 3 'no cost bookkeeping' must be retracted.",
+          "The primitive is Danielsson's 2008 graded cost monad and must be cited as such; the design must 'pick a lane' (defined abstract cost vs. physical deadline)."
+        ],
+        "headline": "Re-import's real-time deadline guarantee is false; op-count is an unsound proxy for cycles.",
+        "rationale": "step charges +1 independent of closure work, so within::<1> accepts a 10^6-cycle computation \u2014 \u00a74's guarantee is falsified in safe code. Confirmed by prior art as WCET's canonical unsound abstraction; floor-mismatch holds (sharper than secret), WCET deflates, N stays 9."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 1.725,
+      "timestamp": "2026-06-30T03:46:48+00:00"
     }
   ],
   "settled": [],
   "incompatibilities": [],
   "blind_spot_flags": [],
-  "total_cost_usd": 57.8327
+  "total_cost_usd": 59.5577
 }

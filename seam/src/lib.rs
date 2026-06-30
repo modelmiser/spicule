@@ -308,10 +308,17 @@ pub mod crdt;
 /// between a static cost and real time. A `Timed<C, T>` tracks a static op-count `C` (the *exact* sealed
 /// `Nat`/`Lt` machinery of `typed_nat`, reused on purpose) and `within::<D>` proves `C ≤ D` at compile time —
 /// but the op-count is an **unsound proxy** for real cycles: a single `step` can wrap a million-iteration loop
-/// or a cache-missing division, so "op-count ≤ deadline" does not imply "cycles ≤ deadline". The spec poses:
-/// real-time gets no closing seam (**SEAM-BREAKS [floor-mismatch]** — a proxy that is not the property), and
-/// does WCET **deflate** like convergence — static cost onto `typed_nat` (#8), the trusted cost-model onto an
-/// `mmio`-shaped-but-*unsound* axiom (#2) — rather than opening a genuine fourth domain? See `wcet`.
+/// or a cache-missing division, so "op-count ≤ deadline" does not imply "cycles ≤ deadline". The cold panel
+/// (r29) ruled **SEAM-BREAKS [horn 1], FAILED — the seventh broken seam**: `step` charges +1 regardless of
+/// work, so `within::<1>` admits a million-cycle computation (my §4 over-claimed the deadline guarantee). All
+/// five attackers landed: Horn 3 is *false* (non-unifying `if`-branches force manual step-padding); the unary
+/// cost doesn't *scale* (O(C) blow-up, uncompilable at real budgets); no additive composition; and the
+/// primitive is **Danielsson's 2008 cost monad** — "op-count ≠ cycles" is WCET's *founding premise*, so "pick
+/// a lane" (abstract cost xor physical deadline). WCET does **not** open a fourth domain — it deflates (cost
+/// monad / `typed_nat` #8 for the static part, an `mmio`-shaped-but-*uninstalled* axiom #2 for the physical
+/// claim, liveness's partial-match for data-dependent loops). Meta: **two** fourth-domain candidates probed
+/// (`crdt` deflated+survived, `wcet` deflated+FAILED), **neither opens a fourth domain** — the three domains
+/// (memory/IFC/liveness) look special. 22 primitives; FAILED broken-seam tally rises to 7; N stays 9. See `wcet`.
 pub mod wcet;
 
 use core::cell::UnsafeCell;

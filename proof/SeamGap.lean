@@ -695,4 +695,40 @@ theorem crdt_typed_discipline_factors :
   rw [seam_closes_iff_factors]
   exact ⟨id, fun _ => rfl⟩
 
+/-- Cost-typed-computation shape — the *second fourth-domain* probe (a `Timed<C, T>` graded cost monad,
+    reusing `typed_nat`'s sealed `Nat`/`Lt`), targeting **real-time / WCET** after the convergence probe
+    (`crdt`) deflated. Like `crdt`/`secret` it has **no `unsafe`** — the danger is the **semantic** mismatch
+    between a static op-count and real elapsed time (a *deadline miss*). Read `Pr`/`Wt` by analogy: the
+    precondition is *the computation meets its cycle deadline*. In the kernel the typed discipline factors
+    (`Pwcet` is definitionally `V`), as always — the static op-count accounting (`within::<D>` proving `C ≤ D`)
+    is the part the floor DOES carry.
+
+    The real seam BREAKS, and FAILED (REPORT_SEAM_SPEC_wcet, r29 — SEAM-BREAKS [horn 1], the seventh broken
+    seam): `step` charges `C := S<C>` *decoupled from its closure*, so a million-iteration loop is cost `1` and
+    `within::<1>` admits it — `C ≤ D` proves nothing about real cycles (my §4 over-claimed the deadline
+    guarantee). All five attackers landed: (1) soundness — op-count is no cycle upper bound; (2) ergonomics —
+    Horn 3 FALSE (non-unifying `if`-branches force manual step-padding); (3) implementation — unary Peano cost
+    is O(C), uncompilable at real 10³–10⁷-cycle budgets, and the only compilable path *is* the break; (4)
+    expressiveness — no type-level addition, so no compositional sequencing; (5) prior-art — this is
+    Danielsson's 2008 cost monad, and "op-count ≠ cycles" is WCET's *founding premise*, so "pick a lane"
+    (abstract cost xor physical deadline — the latter needs a defining machine the floor lacks). The refined
+    finding: WCET does NOT open a fourth domain — it deflates (cost monad / `typed_nat` #8 for the static
+    part — which does not even *scale*; an `mmio`-shaped-but-*uninstalled* axiom #2 for the physical claim;
+    liveness's partial-match for data-dependent loops). The op-count is an **unsound** proxy — *sharper* than
+    `secret`'s sound-but-incomplete one. META: two fourth-domain candidates (`crdt`, `wcet`), neither opens a
+    fourth domain — the three domains (memory/IFC/liveness) look special. N stays 9; FAILED tally rises to 7.
+    `..._factors` (not `..._closes`) certifies only the trivial typed sub-fact; the kernel sees neither the
+    op-count/cycle gap nor the deflation. -/
+def Pwcet (p : Prog) : Bool := V p
+
+/-- Trivial sub-fact only (see the docstring): the *typed* discipline factors — the static op-count accounting
+    (`within::<D>` proving `C ≤ D`) is what the floor carries. The real seam BREAKS (and FAILED): `step`
+    charges one unit decoupled from its closure's work, so `within::<1>` admits a million-cycle computation —
+    the op-count is an unsound proxy for real time. WCET does not open a fourth domain; it deflates (Danielsson
+    2008 cost monad / `typed_nat` #8 + an uninstalled `mmio`-shaped axiom + liveness's partial-match). -/
+theorem wcet_typed_discipline_factors :
+    ∃ d : Prog → Bool, SoundW Pwcet d ∧ UsableW Pwcet d ∧ ConcW V d := by
+  rw [seam_closes_iff_factors]
+  exact ⟨id, fun _ => rfl⟩
+
 end SeamGap
