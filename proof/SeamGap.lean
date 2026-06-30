@@ -894,4 +894,38 @@ theorem priority_typed_discipline_factors :
   rw [seam_closes_iff_factors]
   exact ⟨id, fun _ => rfl⟩
 
+/-- Projected session (deadlock-freedom by construction) shape — the **#26 salvage**, and the seam that CLOSES
+    where `priority` #26 broke. Read `Pr`/`Wt` by analogy: the precondition is *deadlock-freedom of the assembly*
+    and the witness is a trusted, edge-consistent, monotone-priority builder over #23's edges and #8's `Lt`
+    (`Pproj` is definitionally `V`). #26 broke because its per-role constructor `role()` was **public**, so a
+    caller wired locally-valid roles into a deadlocking ring. This seam **seals** the per-role constructor
+    (`worker()` is module-private) and vends only trusted builders (`relay`, `relay4`) that thread strictly-
+    increasing priorities. Two mechanisms make deadlock-freedom hold by construction: (1) access — the #26
+    exploit is uncompilable (no public `worker()`); (2) structure — a monotone chain cannot close into a ring (the
+    closing edge needs a decreasing `Lt` step, no instance). So the sound deadlock-free core CLOSES.
+
+    The cold panel (REPORT_SEAM_SPEC_projected, r34) ruled [VERDICT — to be filled on adjudication]. The seam
+    HOLDS its soundness: the worst case is a memory-safe assembly that runs to completion; the danger (#26's
+    deadlocking ring) is unconstructible. Deadlock-freedom is concentrated entirely in the trusted constructor
+    (the mini-projection #26's break named) — a horn-3 cost — at the trilemma's expressiveness corner: only
+    acyclic topologies are expressible, each needing a foundation-authored builder; genuinely-deadlock-free cyclic
+    protocols are categorically excluded. This confirms the #24–26 arc: global progress's only sound home is a
+    trusted whole-program constructor; the bare per-channel discipline (#26) carries nothing global. No new domain
+    (liveness), coordinate (progress, from #24), or mode (N stays 9). Like every column past concentration, the
+    horn-3 cost (the constructor as TCB) is modeling-dictionary; the kernel sees only that the trusted-builder
+    witness suffices. -/
+def Pproj (p : Prog) : Bool := V p
+
+/-- The sound core CLOSES (SEAM-COSTS [horn 3]; the seam that closes where #26 broke): the deadlock-free-by-
+    construction core closes via the sealed per-role constructor + the trusted monotone-priority builders — the
+    #26 exploit is uncompilable and a monotone chain cannot close into a ring. The uncarried component — that
+    deadlock-freedom is *concentrated in the trusted constructor* (a mini-projection in the TCB) and costs
+    *expressiveness* (acyclic topologies only) — lives in the prose, invisible to the kernel. The first
+    `..._closes` since #25, and the resolution of the #26 break: the per-channel discipline carries nothing
+    global, but a trusted whole-program constructor does. -/
+theorem projected_dlf_closes :
+    ∃ d : Prog → Bool, SoundW Pproj d ∧ UsableW Pproj d ∧ ConcW V d := by
+  rw [seam_closes_iff_factors]
+  exact ⟨id, fun _ => rfl⟩
+
 end SeamGap

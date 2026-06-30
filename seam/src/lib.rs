@@ -418,6 +418,22 @@ pub mod multiparty;
 /// `priority_typed_discipline_factors` (a `..._factors`, like `ordered_locks`). See `priority`.
 pub mod priority;
 
+/// Twenty-seventh seam (Phase Z — PROJECTED sessions, the #26 salvage): deadlock-freedom by construction. #26
+/// (`priority`) broke (SEAM-BREAKS [horn 1]) because its per-role constructor `role()` was public — a caller
+/// wired locally-valid roles into a deadlocking ring. The r33 verdict named the real carrier of deadlock-freedom
+/// as the *trusted, edge-consistent constructor*, not the per-channel `Lt` discipline. This seam makes that
+/// explicit: it **seals** the per-role constructor (`worker()` is module-private — the keystroke #26 skipped) and
+/// vends only trusted builders ([`projected::relay`], [`projected::relay4`]) that thread one strictly-increasing
+/// `Nat` per edge. Two mechanisms compound: (1) **access** — no public `worker()`, so the #26 exploit is
+/// uncompilable; (2) **structure** — a monotone-priority chain cannot close into a ring (the closing edge needs a
+/// decreasing `Lt` step, no instance). So deadlock-freedom HOLDS by construction. HYPOTHESIS
+/// (gauntlet-adjudicated): SEAM-COSTS [horn 3] — deadlock-freedom concentrated entirely in the trusted
+/// constructor (the mini-projection), at the trilemma's *expressiveness* cost: only acyclic topologies are
+/// expressible (each needs a foundation-authored builder); genuinely-deadlock-free *cyclic* protocols are
+/// categorically excluded. Confirms the #24–26 arc: global progress's only sound home is a trusted whole-program
+/// constructor. Lean `projected_dlf_closes` (a `..._closes`, the first since #25). See `projected`.
+pub mod projected;
+
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 use core::sync::atomic::{AtomicUsize, Ordering};
