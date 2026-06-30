@@ -370,7 +370,7 @@ the second alone. A 0/N adversarial result is only as good as your ability to ru
 "the proposer was just weak," and the cleanest way to do that is to *hand the proposer
 the known-good sub-component and watch the failure move, not disappear.*
 
-## 10. The constructive phase — build and break thirty real seams
+## 10. The constructive phase — build and break thirty-one real seams
 
 The trilemma is a map, so the next step was to stop arguing in the abstract and **build**.
 A different harness shape: the negative half used cold instances to *propose* (and they
@@ -913,6 +913,42 @@ brand lifted verbatim from branded-index #5, the same trick) + #29's `finish`/`E
 `must_scoped_completion_closes` closes the scoped construction. No new domain (**liveness stays the third**), no
 new mode (**N stays 9**); **thirty primitives**. So the FAILED broken-seam tally **stays eight** (SEAM-COSTS, a
 held cost — not a break).
+
+**The last structural feature — recursion, and an over-concession that inverts the arc's usual error.** With
+every session connective probed (delegation #24, multiparty #25, projection #27, choice #28) and completion
+concentrated (#29/#30), one CORE structural session-type feature stayed unbuilt: **recursion** — `Rec<P>`/`Var`
+(`μX.T`), the looping connective — built to probe #30's **boundary** at **unbounded depth**. A *thirty-first*
+primitive (`recursion.rs`) carries it with a single-level `Rec<P>`/`Var` over an env-threaded `Session<P, E>`
+(default `E = NoRec`): `enter()` unfolds `Rec<P>` into the body with `P` recorded in the environment, and
+`recur()` exists **only** for `Session<Var, Rec<P>>`, so a top-level `Var` is **inert** — there is no way to step
+it without a recursion binder in scope, sound *by construction* (the **branded-#5 analogue**: the type shape
+itself forecloses the ill-formed move). `HasDual` threads the recursion. The cold panel (r38) ruled the
+re-import rule **SOUND** — Horn 1 holds (the `Var`/environment encoding admits no safe ill-formed unfolding; the
+worst case is a *starved peer*, never UB), Horn 2 holds (decidable, **Θ(type-size)**) — so the horn-classifier
+landed **SEAM-COSTS [horn 3, concentration]**, but the judge ruled the §6 deliverable **FAILED** — the
+**rejection mode's seventh firing** (after `typed_nat` #8, `delegation` #24, `multiparty` #25, `projected` #27,
+`choice` #28, and `must_complete` #29). Sound — a deliverable rejection, **not** a soundness break — so the
+FAILED broken-seam tally **stays eight**. What HELD includes a **#30-bounding finding**: without choice,
+single-level recursion is necessarily **non-terminating** (no reachable `End`), which makes #30's `Done`-forcing
+**vacuous** — recursion exposes #30's *unstated precondition*, a reachable terminal. The rejection is the
+now-familiar self-refutation: **I OVER-CONCEDED.** I filed **productivity / guardedness** as an undecidable NONE
+*alongside* termination — but it is a **DECIDABLE COST**. `Rec<Var>` = `µX.X` is the **non-contractive** type
+every system I cited (Coq/Agda **guarded corecursion**, contractive recursive types) rejects **syntactically**; a
+sealed **`Guarded` marker** (impl for `Tx`/`Rx`/`End`/`Rec`, **not** `Var`) bounding `enter`/`Rec`-formation
+carries it in **Θ(type-size), no SMT — the SAME machinery as order**. So guardedness **CONCENTRATES (horn 3)**;
+**only TERMINATION is the genuine undecidable NONE** (halting). Refuted from my own cited lineage again
+(#24/#25/#29). The meta is the **inverse** of the arc's usual over-claim, *same shape*: prior rejections
+over-claimed concentration **total**; #29/#30 over-claimed the danger **irreducible / global**; here I
+**over-conceded** — put guardedness at the **undecidable extreme** when the truth was a **decidable cost
+between**. Unifying: **I flee the MIDDLE toward whichever extreme is cleaner.** Corrected: order + duality +
+**guardedness** CLOSE; **termination alone** is the NONE. The natural #32 salvage is to *build* that sealed
+`Guarded` marker so `Rec<Var>` won't form. Deflation, conceded: no new mechanism — single-level `Rec`/`Var` +
+#5's brand-style inertness + #8's `typed_nat`-style sealed markers. The Lean witness
+`recursion_guarded_order_closes` (renamed from `recursion_order_unfolding_closes`) closes the sound order core;
+the horn-3 completion/guardedness residue stays invisible to the kernel (verified: default **172** / lockdep
+**179** tests green, `lean proof/SeamGap.lean` exit 0). No new domain (**liveness stays the third**), no new mode
+(**N stays 9** — rejection's seventh firing); **thirty-one primitives**. So the FAILED broken-seam tally **stays
+eight** (SOUND — a deliverable rejection, not a break).
 
 **Decontamination, across primitives.** The seamful2 theorem predicted that a failing seam's
 obstruction *relocates* to the re-import boundary rather than vanishing. SPSC: it **vanished**
