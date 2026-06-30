@@ -98,7 +98,27 @@ delegation is the *recognized* feature that breaks first-order sessions' automat
 the progress axis; "no new coordinate" was an artifact of a single-threaded witness that cannot deadlock. So the
 liveness domain gains **progress as a third coordinate** (the lock seams #15/#16 were its *lock* face;
 delegation its *session* face); the seam is sound, so the FAILED tally **stays seven**; N stays **9** (rejection
-is one of the nine modes). The probe earned its keep by being **instructively wrong**.
+is one of the nine modes). The probe earned its keep by being **instructively wrong**. And a twenty-fifth —
+**multiparty** (an n-party session assembled from #23's binary edges) — built the very feature #23's deflation #1
+named (*global deadlock-freedom needs multiparty typing*), and the method caught me **a third time**. A
+`RecvThenSend` role enforces recv-before-send; `ring()` — three perfectly-dual binary edges in a source-less
+cycle — **type-checks a globally-deadlocked system** (the per-edge floor cannot range over global topology),
+while the coherent `relay()` completes. The seam is **sound** (SEAM-COSTS [horn 3]; no UB — a memory-safe
+recv-`Err` hang; decidable), but the gauntlet **FAILED the §6 deliverable** — the *rejection mode*'s **3rd
+firing** (after `typed_nat` #8 and `delegation` #24), again refuted from my own cited lineage. My deliverable
+staked a **false dichotomy**: that global progress lives *only* whole-protocol in a *generative* global-type
+projection, no per-role discipline able to reject the ring. **False** — the omitted middle rung, **per-channel
+priority/obligation typing** (Kobayashi linear-π; Padovani; **Dardha–Gay FoSSaCS 2018**; Kokke–Dardha), rejects
+the source-less ring *compositionally, with no global type*, via `prio(recv) < prio(send)` chaining to a
+contradictory `p < p` on the cycle — and I had **mis-filed Kobayashi as *support* when he is the
+*counterexample***. The honest taxonomy has **three rungs**: (a) the per-edge `HasDual` floor [doesn't carry];
+(b) per-channel priority typing + a whole-program acyclicity check [no global type]; (c) generative MPST
+projection. What survives is the *weaker* truth: global progress is **not concentrable per-call** and needs
+strictly more than the per-edge floor — but it is a **whole-program** obligation, *not* necessarily a generative
+one. The sound role-local order + linearity core CLOSES (Lean `multiparty_role_order_core_closes`); liveness
+stays the third domain, **progress** its third coordinate (multiparty = its *global-topology* face); N stays
+**9** (rejection's 3rd firing); the FAILED tally **stays seven**; 25 primitives — instructively **wrong** a third
+time.
 
 ## The headline result
 

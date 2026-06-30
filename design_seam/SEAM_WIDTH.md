@@ -318,3 +318,32 @@ entirely** — a progress coordinate, like the lock seams' (#15/#16) deadlock, n
 not a soundness break; N stays **nine** modes; Lean `delegation_handoff_core_closes`, a `..._closes`, like
 `typed_nat`) yet earned its keep by being **instructively wrong**: it opened the progress coordinate I had tried
 to fold into leak-freedom.
+
+**The twenty-fifth seam: the order core is zero-width again, but the *global*-progress obligation is off the
+per-call width map — it is a whole-program proof obligation.** Multiparty (`seam/src/multiparty.rs`, an n-party
+session assembled from #23's binary edges; a `RecvThenSend` role typestate enforces recv-before-send) builds the
+very feature #23's deflation #1 named — *global deadlock-freedom needs multiparty typing*. `relay()` mints a
+coherent `A→B→C` (a source role exists → it completes); `ring()` mints an incoherent `A→B→C→A` where every role
+is `RecvThenSend`, so there is **no source** — and it **type-checks a globally-deadlocked system**, the floor
+unable to range over the global topology (#23's asserted interleaved mutual-wait deadlock, now a compiled
+three-party artifact). The carried core has the **same zero-width profile** as #18/#23/#24: each op is O(1), and
+role-local order + linearity are fully concentrated in affine typestate (Lean `multiparty_role_order_core_closes`,
+a `..._closes`). The cold panel (r32) confirmed the *mechanism* sound — horn-classifier **SEAM-COSTS [horn 3]**,
+no UB (the worst case is a memory-safe recv-`Err` hang), decidable. **But the headline is again a width
+non-event:** the judge ruled the §6 deliverable **FAILED** — the **rejection mode**, 3rd after `typed_nat` #8 and
+`delegation` #24 — because global progress is **not a per-call width cost at all**. I had staked a **false
+dichotomy**: that global progress lives *only* whole-protocol in a *generative* global-type projection, no
+per-role discipline able to reject the ring. The panel refuted it from my own cited lineage — **per-channel
+priority/obligation typing** (Kobayashi linear-π; Padovani; **Dardha–Gay, FoSSaCS 2018**; Kokke–Dardha) rejects
+the source-less ring *compositionally, with no global type*, via `prio(recv) < prio(send)` chaining to a
+contradictory `p < p` on the cycle — and I had **mis-filed Kobayashi as *support* when he is the
+*counterexample***. The honest taxonomy has **three rungs**: (a) the per-edge `HasDual` floor [doesn't carry];
+(b) per-channel priority typing + a whole-program acyclicity check [no global type]; (c) generative MPST
+projection. What survives is the *weaker* truth: global progress is **not concentrable per-call** and needs
+strictly more than the per-edge floor — but it is a **whole-program** obligation, *not* necessarily a generative
+one. So the width map gains **no new column** (the carried core is still zero-width), and the new obligation lands
+**off the per-call width map entirely** — a whole-program proof obligation, like the lock seams' (#15/#16)
+deadlock and delegation's (#24) progress, not a seam-width cost. The probe **held** at the mechanism level
+(FAILED *broken-seam* count stays **seven** — a deliverable rejection, not a soundness break; N stays **nine**
+modes) yet earned its keep by being **instructively wrong** a third time: it restored the three-rung taxonomy I
+had collapsed to two.

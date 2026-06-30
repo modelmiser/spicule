@@ -370,7 +370,7 @@ the second alone. A 0/N adversarial result is only as good as your ability to ru
 "the proposer was just weak," and the cleanest way to do that is to *hand the proposer
 the known-good sub-component and watch the failure move, not disappear.*
 
-## 10. The constructive phase — build and break twenty-four real seams
+## 10. The constructive phase — build and break twenty-five real seams
 
 The trilemma is a map, so the next step was to stop arguing in the abstract and **build**.
 A different harness shape: the negative half used cold instances to *propose* (and they
@@ -730,6 +730,31 @@ carries don't-use-after-delegate — the one linearity delegation needs the floo
 stays **seven** (a deliverable rejection, not a soundness break); **N stays 9** (rejection is one of the nine
 modes, its second firing); twenty-four primitives.
 
+Then a *twenty-fifth* primitive (`multiparty.rs`) built the very feature #23's deflation #1 had named — *global
+deadlock-freedom needs multiparty typing* — by assembling an n-party session from #23's binary edges. A
+`RecvThenSend` role typestate enforces recv-before-send; `relay()` mints a coherent `A→B→C` (a source role
+exists → it completes), while `ring()` mints an incoherent `A→B→C→A` where **every** role is `RecvThenSend`, so
+there is **no source** — and it **type-checks a globally-deadlocked system** (the per-edge floor cannot range
+over the global topology), turning #23's asserted interleaved mutual-wait deadlock into a compiled three-party
+artifact. The seam is **sound** (horn-classifier **SEAM-COSTS [horn 3]**; no UB — a memory-safe recv-`Err` hang;
+decidable), but the judge ruled the §6 deliverable **FAILED** — the **rejection mode's third firing** (after
+`typed_nat` #8 and `delegation` #24), and, as with #24, **refuted from my own cited lineage**. I had staked a
+**false dichotomy**: that global progress lives *only* whole-protocol in a *generative* projection of a coherent
+global type, with no per-role discipline able to reject the ring. **False** — the rung I omitted is **per-channel
+priority/obligation typing** (Kobayashi linear-π; Padovani; **Dardha–Gay, FoSSaCS 2018**; Kokke–Dardha), which
+rejects the source-less ring *compositionally, with no global type*, via `prio(recv) < prio(send)` chaining to a
+contradictory `p < p` around the cycle while admitting the relay — and I had **mis-filed Kobayashi as *support*
+for the whole-protocol thesis when he is its *counterexample***. The honest taxonomy has **three rungs**: (a) the
+per-edge `HasDual` floor [does not carry it]; (b) per-channel priority typing plus a whole-program acyclicity
+check [no global type]; (c) a generative MPST projection (Honda–Yoshida–Carbone; `mpstthree`). What survives is
+the *weaker* truth the soundness seat credited: global progress is **not concentrable per-call** and needs
+strictly more than the per-edge floor — but it is a **whole-program** obligation, *not* necessarily a generative
+one. The sound role-local order + linearity core **closes** (`multiparty_role_order_core_closes`), so the FAILED
+broken-seam tally stays **seven** and **N stays 9** (rejection's third firing); twenty-five primitives. Liveness
+stays the third domain, **progress** its third coordinate (the lock seams #15/#16 are its *lock* face,
+delegation its *session* face, multiparty its *global-topology* face) — the probe earned its keep by being
+instructively wrong a third time.
+
 **Decontamination, across primitives.** The seamful2 theorem predicted that a failing seam's
 obstruction *relocates* to the re-import boundary rather than vanishing. SPSC: it **vanished**
 (precondition factors through the witness). MMIO: it **moved and stayed decidable** (the
@@ -878,7 +903,7 @@ cold review had flagged to a genuine characterization — `seam_closes_iff_facto
 closes **iff** its precondition factors through the safe witness — with the regimes as
 machine-checked instances (`spsc_seam_closes`, `intrusive_seam_does_not_close`, the slab's
 `slab_runtime_closes_but_static_does_not`: the same precondition closes through a *runtime*
-witness but not the *static* one, and `branded_seam_closes`/`refined_seam_closes`/`shared_seam_closes`/`typed_nat_seam_closes`/`take_seam_closes`/`drain_seam_closes`/`selfref_seam_closes`/`validity_seam_closes`/`secret_typed_discipline_factors`/`labeled_typed_discipline_factors`/`ordered_locks_typed_discipline_factors`/`lock_registry_typed_discipline_factors`/`linear_typed_discipline_factors`/`restore_ownership_core_closes`/`reseat_typed_discipline_factors`/`crdt_typed_discipline_factors`/`wcet_typed_discipline_factors`/`binary_session_progress_core_closes`/`delegation_handoff_core_closes`:
+witness but not the *static* one, and `branded_seam_closes`/`refined_seam_closes`/`shared_seam_closes`/`typed_nat_seam_closes`/`take_seam_closes`/`drain_seam_closes`/`selfref_seam_closes`/`validity_seam_closes`/`secret_typed_discipline_factors`/`labeled_typed_discipline_factors`/`ordered_locks_typed_discipline_factors`/`lock_registry_typed_discipline_factors`/`linear_typed_discipline_factors`/`restore_ownership_core_closes`/`reseat_typed_discipline_factors`/`crdt_typed_discipline_factors`/`wcet_typed_discipline_factors`/`binary_session_progress_core_closes`/`delegation_handoff_core_closes`/`multiparty_role_order_core_closes`:
 all close like SPSC in the kernel — the recovered axes, the seven broken seams' domain gaps, the graded floor-match, the non-monotone floor-upgrade, the structural-logic (affine-vs-linear) break, the forced borrowed-slot double-free, the unsound real-time op-count proxy, and the real binary session's order+per-session-progress core (whose horn-3 completion cost and per-session-only deadlock-freedom it cannot see) alike invisible to it), `propext` only. Honest bound unchanged: the
 *math* is now a real characterization, but the faithfulness of "precondition" and "witness" to
 actual Rust primitives — *which axis a closing seam spends* (zero-cost, API-locality, legibility,
