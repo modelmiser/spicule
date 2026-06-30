@@ -347,6 +347,21 @@ pub mod wcet;
 /// (this survived). See `binary_session`.
 pub mod binary_session;
 
+/// Twenty-fourth seam (Phase W — DELEGATION, channel-over-channel): the higher-order session step #23's
+/// straight-line `i32` witness lacked (the r30 expressiveness attacker named it as *the* feature distinguishing
+/// session types from coupled typestate). A `Chan<TxChan<Q, C>>::send_chan(c: Chan<Q>)` hands off a whole live
+/// session as a payload; `RxChan<Q, C>::recv_chan` receives it. Still a LIVENESS probe, testing whether the
+/// higher-order step opens new ground or deflates onto the basis. The floor carries: order (affine typestate)
+/// and **don't-use-after-delegate for free** (the affine *move* consumes the delegated handle — exactly the
+/// linearity delegation needs here). It does NOT carry: completion (the #17/#18/#23 horn-3 gap, now
+/// **three-party** — the delegatee can `mem::forget` a session it never contracted to complete, starving the
+/// third party); and **leak-freedom** — the new hazard: the payload is now an `Rc<RefCell<Transport>>`, so
+/// abandoning a carrier with a delegated channel *in flight* leaks the payload session (the canonical
+/// `Rc<RefCell>` leak, leakpocalypse / #9 / #10, *amplified* through delegation). Tests whether that new hazard
+/// PROJECTS ONTO the leak-freedom axis (a Phase-K-style closed-basis confirmation in the session domain) rather
+/// than opening a new coordinate. See `delegation`.
+pub mod delegation;
+
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 use core::sync::atomic::{AtomicUsize, Ordering};
