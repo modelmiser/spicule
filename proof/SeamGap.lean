@@ -1019,4 +1019,36 @@ theorem must_complete_scoped_completion_closes :
   rw [seam_closes_iff_factors]
   exact ⟨id, fun _ => rfl⟩
 
+/-- Scoped-session shape — the **thirtieth** seam, the concrete **salvage of #29** (mirroring #26→#27), and (under
+    the pre-registered HYPOTHESIS) a *holding* seam. Read `Pr`/`Wt` by analogy: the precondition is again
+    *completion* (the session runs to `End`), but the witness is now the **scoped-closure combinator** #29's r36
+    reversal named — `session_scope`/`with_session`, the `std::thread::scope` analogue. In the kernel the discipline
+    factors (`Pmustscoped` is definitionally `V`), as always.
+
+    The point #29 conceded and this seam discharges: #29's **free-handle** `Drop`-bomb only *factored* (it is
+    `mem::forget`-able), but a **scoped** witness that moves the completion obligation to the re-import boundary —
+    where the consumer never holds a forgettable handle, and the only normal exit is a `Done` certificate mintable
+    solely by `finish` at `End` — *closes* completion. The destructor obligation (forgettable) becomes a
+    return-type obligation (not forgettable); the invariant `'scope` brand (branded #5's generativity, reused on
+    purpose) traps the session in the closure, which **is** the horn-3 **API-locality** cost. The HYPOTHESIS (the
+    cold panel adjudicates, not the builder): **SEAM-COSTS [horn3-concentration]**, HOLDING — completion is
+    concentrable at that cost, with an honest residue that is *not* a break (forcing is **modulo divergence**: a
+    diverging body hangs observably rather than abandoning silently; and **per-endpoint**: global completion needs
+    every endpoint scoped). So the #17–#28 residue was the price of the *free-handle API*, and paying API-locality
+    buys it back. A `..._closes` (like `session`/`projected`/`must_complete`'s scoped reading): the scoped witness
+    suffices; the API-locality cost is modeling-dictionary the kernel cannot see. Tally stays 8 (this holds); N
+    stays 9. If the panel instead finds a safe escape (a forgeable/smuggleable `Done`, or divergence re-opening the
+    #29 NONE), this becomes a `..._factors`/break — but the pre-registered prediction is that it closes. -/
+def Pmustscoped (p : Prog) : Bool := V p
+
+/-- The sound core CLOSES (HYPOTHESIS: SEAM-COSTS [horn3-concentration], HOLDING): completion closes through the
+    **scoped-closure** witness (`session_scope`, the `thread::scope` analogue) — the consumer never holds a
+    forgettable handle, the only normal exit is a `finish`-minted `Done`, so the obligation is carried at an
+    API-locality cost the kernel cannot see. The concrete witness the #29 reversal promised; it closes the #29
+    finding that completion is concentrable, not the irreducible NONE the free-handle bomb suggested. -/
+theorem must_scoped_completion_closes :
+    ∃ d : Prog → Bool, SoundW Pmustscoped d ∧ UsableW Pmustscoped d ∧ ConcW V d := by
+  rw [seam_closes_iff_factors]
+  exact ⟨id, fun _ => rfl⟩
+
 end SeamGap

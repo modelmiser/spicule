@@ -489,6 +489,30 @@ pub mod choice;
 /// *closes* completion at a cost; the free-handle witness only factored). See `must_complete`.
 pub mod must_complete;
 
+/// Thirtieth seam (Phase AC — the SCOPED SALVAGE of #29, mirroring #26→#27): the concrete `with_session`
+/// combinator the #29 reversal named. #29 (`must_complete`) forced completion with a `Drop` **bomb** and the r36
+/// panel reversed it — the bomb is `mem::forget`-able, yet completion is **concentrable** via a **scoped-closure /
+/// CPS** witness (the `std::thread::scope` analogue). This seam builds it: there is **no free `start`**; the only
+/// way to obtain a [`must_scoped::Session`] is [`must_scoped::session_scope`], which hands two **dual** role
+/// closures a brand-trapped endpoint each and **requires each to return a [`must_scoped::Done`]** — a completion
+/// certificate mintable **only** by [`must_scoped::Session::finish`] at `End`. So a body's only fates are
+/// **complete** (finish ⇒ `Done`), **diverge** (`loop`/`panic` ⇒ never returns), or **nothing** — it cannot
+/// return without a `Done` and cannot fabricate one (`mem::forget` conjures no certificate; the invariant
+/// `'scope` brand — lifted verbatim from branded #5 — blocks smuggling a foreign one). The destructor obligation
+/// of #29 (forgettable) becomes a **return-type** obligation (not forgettable). HYPOTHESIS (pre-registered; the
+/// cold panel rules): **SEAM-COSTS [horn3-concentration / API-locality], that HOLDS** — completion is genuinely
+/// concentrable at the cost of surrendering the free movable handle (the session is trapped in the closure, the
+/// `thread::scope` ergonomic tax = branded #5's "the API-locality tax IS the soundness mechanism"). Honest residue
+/// (not a break): forcing is **modulo divergence** (a `loop {}` body hangs — *observable* — rather than silently
+/// `mem::forget`-ing, so the residue shrinks from silent abandonment to non-termination) and **per-endpoint**
+/// (global completion needs every endpoint scoped — the #23/#27 per-session-vs-global theme). Deflation (conceded):
+/// no new mechanism — `thread::scope` + generativity (branded #5) + the #29 `finish`/`End` typestate; the
+/// contribution is *locating* completion as concentrable-at-API-locality-cost, the concrete witness closing the
+/// #29 reversal. Predicted: no new domain/coordinate/mode; tally stays 8; N stays 9. Lean (HYPOTHESIS)
+/// `must_scoped_completion_closes` (a `..._closes`: the scoped witness closes completion, as #29's renamed
+/// theorem records the free-handle witness only factored). See `must_scoped`.
+pub mod must_scoped;
+
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 use core::sync::atomic::{AtomicUsize, Ordering};
