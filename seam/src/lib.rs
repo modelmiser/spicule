@@ -334,8 +334,17 @@ pub mod wcet;
 /// NEW positive the single-handle walk couldn't show); (3) abandonment starvation is **not** foreclosed — a
 /// peer's safe `mem::forget` starves its dual *forever*, now genuinely **peer-observable** (a second party
 /// waits), where #18's non-completion was only self-observable. No `unsafe` (the danger is liveness; `Rc`/
-/// `RefCell` mediate sharing — the worst case is a starved peer, not UB). Tests whether #18's component-wise
-/// grading SURVIVES removing the single-handle limitation. See `binary_session`.
+/// `RefCell` mediate sharing — the worst case is a starved peer, not UB). The cold panel (r30) ruled
+/// **SEAM-COSTS [horn 3], TRADEOFF** — it HOLDS, and #18's component-wise grading SURVIVES (order closes,
+/// *per-session* progress closes, completion costs horn 3) — but **deflated** the "real binary session"
+/// framing to "#18 with a duplicated handle and a `RefCell` between the copies": relative progress closes
+/// only **per session** (two interleaved `session()`s type-check a mutual-wait deadlock — global
+/// deadlock-freedom needs multiparty/Kobayashi typing), the single-threaded witness makes "peer waits
+/// forever" self-abandonment-flavored (only the **static** two-live-endpoint limitation is lifted, not
+/// `session_types` 2015's real concurrency), and the fallible `recv`'s `Err` is **non-actionable** because
+/// `mem::forget` leaks the `Rc` (the leakpocalypse double-bind: the gap that costs completion also denies an
+/// actionable abandonment signal). N stays 9; liveness stays the third domain; the FAILED tally stays 7
+/// (this survived). See `binary_session`.
 pub mod binary_session;
 
 use core::cell::UnsafeCell;

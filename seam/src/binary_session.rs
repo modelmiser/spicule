@@ -68,28 +68,67 @@
 //! }
 //! ```
 //!
-//! ## THE HYPOTHESIS THIS SPEC PUTS TO THE COLD PANEL (to be replaced by the r30 verdict)
+//! ## The cold panel's verdict (REPORT_SEAM_SPEC_binary_session, r30): SEAM-COSTS [horn 3], TRADEOFF — it
+//! ## HOLDS with a cost, and #18's component-wise grading SURVIVES — but the "real binary session" framing was
+//! ## substantially DEFLATED (single-threaded, straight-line, single-session) and five costs were recorded.
 //!
-//! `design_seam/SEAM_SPEC_binary_session.md` asks: removing #18's single-handle limitation — building the
-//! REAL binary session #18 could not — does the **component-wise grading survive**? The predicted verdict is
-//! **SEAM-COSTS [horn 3]**, a SURVIVAL that **deepens liveness** (not a fourth domain, not a new mode):
-//! - order **closes** (typestate, as #18); relative progress **closes** (duality — a *new positive*);
-//! - mutual completion **costs horn 3**, now peer-observable — the same `mem::forget` gap, across a real
-//!   two-party boundary, recurring at every `?`/panic/early-return on either side.
-//! - No `unsafe` anywhere (the danger is liveness/semantic, like `secret`/`crdt`/`wcet`); `Rc`/`RefCell`
-//!   mediate sharing with runtime borrow checks, so there is no UB path — the worst case is a starved peer,
-//!   which is **not UB**.
+//! The seam **survived** (TRADEOFF, 1/1) — its *exact, scoped* soundness claims held and **every attacker
+//! granted Horn 1 / no-UB** (no out-of-turn typed op, no UB path; the worst case is a starved, memory-safe
+//! handle). Order **closes** (method availability + nominal/affine typing), *per-session* relative progress
+//! **closes** (duality preserved under reduction; `HasDual` sealed by coherence), decidability holds
+//! (`HasDual` projection is Θ(depth), single-occurrence RHS — no SMT, no higher-order unification), and
+//! completion is honestly conceded a **horn-3 cost**. But three "BREAKS" attackers converged on one thing:
+//! the **deliverable framing overclaimed** relative to the witness actually shipped. All five corrections
+//! accepted:
 //!
-//! Deflation pre-registered (so the seam SURVIVES honestly, the `crdt` discipline, not the `wcet` over-claim):
-//! real binary sessions in Rust are **documented folklore** — Honda 1993 / Honda–Vasconcelos–Kubo 1998
-//! (binary session types + the progress theorem), the `session_types` Rust crate (Jespersen–Munksgaard–Larsen
-//! 2015, real two-endpoint sessions over channels), and ECOOP 2022 "Stay Safe Under Panic"
-//! (Cutner–Yoshida–Vassor), which *names* the abandonment gap. The contribution is **locating the real
-//! binary session on the realizability lattice** and showing #18's grading was **not an artifact** of the
-//! single-handle limitation. The open question the spec poses: does forcing `recv` fallible, foreclosing
-//! mutual-wait by duality, and exposing peer-observable starvation change the **horn** or merely make the #18
-//! cost **sharper**? And — the meta-question — does liveness stay the **third domain** (N stays 9), confirming
-//! the frontier's expectation that, after two deflated fourth-domain candidates, the three domains hold?
+//! 1. **Relative progress closes only PER SESSION — the sharpest finding (expressiveness).** Two interleaved
+//!    `session()` calls produce a **type-checking mutual-wait deadlock** (the Kobayashi/Padovani fact:
+//!    interleaved binary sessions deadlock under plain duality — each session is individually dual, the
+//!    *composition* has no terminating schedule, both endpoints permanently `Err`). So the re-import rule's
+//!    *flat* sentence "mutual-wait deadlock is a type error you cannot write" is **false** and is narrowed to
+//!    *the two endpoints of one session*. Worse: within one session two endpoints trivially can't both be
+//!    `Rx` (one is the `Tx` dual), so the "new positive" is true by a **triviality** — binary duality's
+//!    progress theorem only has *teeth* in the interleaved-session case, which the spec scoped out. **Global
+//!    deadlock-freedom is out of reach of binary session types — it needs multiparty/Kobayashi typing.** This
+//!    is the real refinement of liveness's partial-match: even "relative progress closes" is bounded to a
+//!    single session.
+//! 2. **The single-threaded witness makes "peer waits forever" self-abandonment-flavored (prior-art).** One
+//!    thread owns *both* `Chan` handles and chooses the interleaving, so there is no genuine second party —
+//!    "the verbatim r25 deflation #1 of #18, recurring as a two-handle walk in one thread." The contribution
+//!    is therefore **real but modest**: the judge confirmed the **static** limitation *is* lifted (#18 could
+//!    not hold two concurrently-live endpoints *at all*, `E0499`; this vends two live dual affine handles) —
+//!    but *not* more than the `session_types` crate (2015), which had genuine two-thread concurrency a decade
+//!    earlier. The honest contribution is **locating** the binary session on the lattice + lifting the static
+//!    two-live-endpoint limitation, **not** "built a more-real session than prior art."
+//! 3. **The fallible `recv`'s `Err` is NON-ACTIONABLE — and the same `mem::forget` gap forecloses the fix
+//!    (ergonomics, the decisive sharpening).** Because `mem::forget` **leaks the `Rc`** (skips `Drop`, strong
+//!    count *not* decremented), a starved dual cannot distinguish "not-yet" from "abandoned": `strong_count`
+//!    still sees the peer's reference alive, and no closed-flag is set. So `Err` **conflates "not ready" with
+//!    "never,"** and the design forecloses any fix — an *actionable* signal (like `mpsc::Recv`'s disconnect
+//!    `Err`) would need `Drop` to fire, which `forget` skips. This dents deliverable #2's "honest surfacing"
+//!    and horn-3's "consumer writes no protocol bookkeeping" (the consumer writes the scheduler **and** a
+//!    non-actionable `match` at every `recv`). The judge's resolution: it does **not** kill the rule (the rule
+//!    never claims `Err` is actionable — `recv` is fallible *precisely because* completion is unguaranteed),
+//!    so honesty-at-the-type-level is real (vs #18's hidden `.expect`) while **actionability is absent**. The
+//!    sharp liveness finding: *the leakpocalypse gap that costs completion ALSO forecloses detection of the
+//!    abandonment* — a double bind; the actionable version requires the linear/`Drop`-guaranteed floor Rust
+//!    lacks.
+//! 4. **Only straight-line `i32` protocols (expressiveness).** No `offer`/`choose` (`&`/`⊕`), no **delegation**
+//!    (channel-over-channel — *the* feature distinguishing session types from coupled typestate; the payload
+//!    is `i32`, a `Chan` is not), no recursion. Without delegation a "binary session" collapses to "two
+//!    coupled typestate walks — #18 doubled," so "real binary session" overclaims breadth.
+//! 5. **Citation fix (prior-art).** ECOOP 2022 "Stay Safe Under Panic" is **Lagaillardie–Neykova–Yoshida**,
+//!    not Cutner–Yoshida–Vassor (the attribution #18's doc also carried — corrected in both).
+//!
+//! **The net finding.** The seam HELD (horn-3 cost, no UB, **N stays 9**, **liveness stays the third domain**,
+//! the FAILED broken-seam tally **stays 7**) and **confirms #18's component-wise grading transfers** — order
+//! and *per-session* progress close, completion costs horn 3. But the genuinely new content, once the "real
+//! binary session" framing is deflated to "#18 with a duplicated handle and a `RefCell` between the copies,"
+//! is **two sharpenings of the liveness map**: (a) binary duality gives only **per-session** progress —
+//! global deadlock-freedom needs multiparty session types (Kobayashi/Padovani); and (b) the **leakpocalypse
+//! double-bind** — the same `mem::forget` gap that costs completion *also* denies the consumer an actionable
+//! abandonment signal, deepening the #17/#18 linearity gap. The probe earned its keep by **refuting its own
+//! headline** while confirming the underlying grading.
 //!
 //! The sound two-party session runs in order, both peers complete, and abandonment starves the dual — see
 //! `tests/binary_session_use.rs`.

@@ -731,4 +731,43 @@ theorem wcet_typed_discipline_factors :
   rw [seam_closes_iff_factors]
   exact ⟨id, fun _ => rfl⟩
 
+/-- Real-binary-session shape — the *two-endpoint liveness-deepening* probe (a `session::<P>()` vending two
+    dual affine `Chan<P>`/`Chan<P::Dual>` handles, both live, over `Rc<RefCell<Transport>>`). NOT a
+    fourth-domain bid — after `crdt`/`wcet` deflated, this stays in the third domain (liveness) and removes
+    #18's most-cited limitation: one `&mut Transport` could not hold two concurrently-live endpoints (`E0499`),
+    so #18's "peer waits forever" hazard was inexpressible. Read `Pr`/`Wt` by analogy: like #18 the kernel
+    models only the component the seam CLOSES — the *order-safety* + *per-session relative-progress* core
+    factors through the affine-typestate + `HasDual` witness (`Pbinsession` is definitionally `V`): `send`/
+    `recv`/`close` exist only at the matching state (order), and the two endpoints hold dual protocols so they
+    cannot both block within one session (relative progress). It CLOSES.
+
+    The cold panel (REPORT_SEAM_SPEC_binary_session, r30) ruled the whole seam **SEAM-COSTS [horn 3]**
+    (TRADEOFF, survived) — it HOLDS with a cost, and **#18's component-wise grading SURVIVES** the removal of
+    the single-handle limitation: order closes, per-session progress closes, **completion** is an
+    undischargeable horn-3 *concentration* cost (the #17/#18 linearity gap — a peer's `mem::forget` starves
+    its dual — now peer-observable), NOT a horn-1 break (no `unsafe`; the worst case is a starved memory-safe
+    handle). But the panel substantially **deflated the framing** (five recorded costs, all accepted): (1) the
+    sharpest — relative progress closes only **per session**, since two interleaved `session()` calls
+    type-check a mutual-wait deadlock (Kobayashi/Padovani), so global deadlock-freedom is out of reach of
+    binary session types (needs multiparty typing); (2) the single-threaded witness makes "peer waits forever"
+    self-abandonment-flavored — only the *static* two-live-endpoint limitation is lifted, not `session_types`
+    2015's real two-thread concurrency; (3) the fallible `recv`'s `Err` is **non-actionable** because
+    `mem::forget` leaks the `Rc` (the leakpocalypse double-bind: the gap that costs completion also denies an
+    actionable abandonment signal); (4) only straight-line `i32` protocols (no choice/delegation/recursion);
+    (5) citation fix (ECOOP 2022 = Lagaillardie–Neykova–Yoshida). Like every column past concentration, the
+    horn-3 cost is modeling-dictionary; the kernel sees only that the order+progress witness suffices. N stays
+    9 modes; liveness stays the third domain; the FAILED broken-seam tally stays 7 (this survived). -/
+def Pbinsession (p : Prog) : Bool := V p
+
+/-- The seam HOLDS with a cost (SEAM-COSTS [horn 3]): its *order-safety* + *per-session relative-progress* core
+    closes via affine typestate + the `HasDual` duality relation (sound, usable, concentrated), exactly as a
+    closing seam does in the kernel. The completion component is a horn-3 concentration cost (the #17/#18
+    linearity gap, now peer-observable via two real endpoints), invisible to the kernel — and the panel's
+    deflation (per-session-only progress; non-actionable `Err` from the leaked `Rc`; single-threaded,
+    straight-line witness) lives in the prose, not the checked sub-fact. -/
+theorem binary_session_progress_core_closes :
+    ∃ d : Prog → Bool, SoundW Pbinsession d ∧ UsableW Pbinsession d ∧ ConcW V d := by
+  rw [seam_closes_iff_factors]
+  exact ⟨id, fun _ => rfl⟩
+
 end SeamGap

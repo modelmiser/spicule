@@ -96,7 +96,7 @@
 //!    conceded abandonment. With `offer`/`choose`/`Cancel` scoped out, there is no faithful failure path.
 //! 3. **Not "first" — documented folklore.** The affine-typestate-order / cannot-force-completion split is
 //!    Jespersen–Munksgaard–Larsen 2015 (`session_types`), RFC 1066 / the leakpocalypse, and especially
-//!    **ECOOP 2022 "Stay Safe Under Panic" (Cutner–Yoshida–Vassor)**, which *names* it. The contribution is
+//!    **ECOOP 2022 "Stay Safe Under Panic" (Lagaillardie–Neykova–Yoshida)**, which *names* it. The contribution is
 //!    **locating** this known split on the realizability lattice (with #15-minus-`root` typestate and the
 //!    #17 linearity gap as its only structural content), not discovering it.
 //!
