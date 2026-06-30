@@ -370,7 +370,7 @@ the second alone. A 0/N adversarial result is only as good as your ability to ru
 "the proposer was just weak," and the cleanest way to do that is to *hand the proposer
 the known-good sub-component and watch the failure move, not disappear.*
 
-## 10. The constructive phase — build and break twenty real seams
+## 10. The constructive phase — build and break twenty-one real seams
 
 The trilemma is a map, so the next step was to stop arguing in the abstract and **build**.
 A different harness shape: the negative half used cold instances to *propose* (and they
@@ -617,6 +617,31 @@ the un-compellable closure** — an owned value can (⇒ cost), a borrowed slot 
 (⇒ forced break). Phase Q: the horn moves. Phase R: within a fence (confounded). Phase S: the fence is real,
 FORCED, and sits at owned-vs-borrowed.
 
+**The fourth domain that wasn't — convergence deflates.** With three domains mapped (memory safety, matched;
+information-flow, mismatched; liveness, partial) a *twenty-first* primitive (`crdt.rs`) aimed at a candidate
+**fourth**: distributed/replicated **convergence**, whose danger is *replica divergence* — two replicas that
+saw the same updates disagree, neither UB nor leak nor deadlock nor timing — and, like the constant-time
+secret, with **no `unsafe`** (the danger is semantic). A `Replica<T>` merges via `T: JoinSemilattice`;
+convergence holds iff `join` is commutative + associative + idempotent. The cold panel's horn-classifier ruled
+**SEAM-BREAKS [floor-mismatch]** *floor-relatively* — the trait bound is a **syntactic proxy, not a witness**:
+`merge` applies whatever `join` the impl supplies, the bound checks only the *signature*, so a safe lawless
+`impl` (non-commutative overwrite, or non-idempotent `+=` that double-counts on at-least-once redelivery)
+type-checks and diverges replicas, and closing it needs a semilattice-law pass **undecidable by Rice**. But
+the panel scored it a **TRADEOFF survival** (the break was pre-registered) and **deflated the domain**, three
+corrections. (i) The blessed-CRDT TCB rescue is **not MMIO-shaped**: unlike MMIO's *finite, foundation-owned*
+registers, the lattice space is **open-ended**, so the law-trust **recurs per user-defined CRDT** rather than
+amortizing into one axiom. (ii) "Dischargeable" holds only at the *model* level — Liquid-Haskell/Coq proofs are
+about a mathematical model, and **no Rust pass checks model-to-shipped-code refinement**, so the trust stays
+irreducible at the compilation boundary (subtler than the secret seam's constant-time, which CompCert-CT/Jasmin
+*do* preserve). (iii) The decisive deflation: the gap is the **generic unchecked-typeclass-law phenomenon** —
+Rust checks the *signatures* of `Ord`, `Eq`/`Hash`, `Monoid`, and semilattice alike, but **none of their
+algebraic laws** — so convergence is **not a fourth soundness domain**; it **projects onto `restore`'s
+application-correctness basis** (a logical property the type system never promised). The refined finding: the
+fourth-domain probe found **no clean fourth domain here** — the soundness-domain map stays at **three**
+(memory / IFC / liveness) plus the application-correctness basis, into which convergence folds. Floor-relatively
+the supply-side break stands (the affine floor does not carry the laws — the IFC-shaped mismatch), but the
+*structural* result is a deflation, not new ground; **N stays 9**, and the FAILED broken-seam tally stays six.
+
 **Decontamination, across primitives.** The seamful2 theorem predicted that a failing seam's
 obstruction *relocates* to the re-import boundary rather than vanishing. SPSC: it **vanished**
 (precondition factors through the witness). MMIO: it **moved and stayed decidable** (the
@@ -645,7 +670,7 @@ was the whole verdict — including the one mirage (the fuel knob), the two genu
 the one *real-but-inseparable* destination (immovability), and the one that landed *on coordinates already
 on the map* (validity) — the last of which is what closes the basis.
 
-**The adversary earned its keep — twenty times.** On MMIO it named the axiom's category correctly
+**The adversary earned its keep — twenty-one times.** On MMIO it named the axiom's category correctly
 (a TCB boundary, not a horn) and surfaced a horn-3 cost the builder had under-weighted. On the
 intrusive list it proved something *worse* than the builder predicted: branding does not restore
 soundness at all (a brand is an *access* capability, not a *storage* lifetime), correcting a real
@@ -731,7 +756,16 @@ same `into_inner` that *cost* horn 3 over an owned value is a safe-code double-f
 *sixth* broken seam) **and** rejected the spec's *movable*-fence framing as the defect — the `into_inner`-less
 "sound" subset is degenerate (dominated by `&mut T`), so every *usable* packaging breaks and the fence is
 **FORCED** at owned-vs-borrowed, not movable. Confirm, confound-repair, and a ruling against the proposal's
-own hedge in one verdict.
+own hedge in one verdict. And on the **state-based CRDT merge** it did the thirteenth thing — it **refuted
+the builder's fourth-domain hypothesis**: the supply-side break is conceded floor-relatively (the
+`JoinSemilattice` bound is a *syntactic proxy* — a safe lawless `join` type-checks and diverges replicas,
+undecidable by Rice), but the panel killed the "fourth domain" framing on three counts — the blessed-CRDT TCB
+rescue is *not* MMIO-shaped (the lattice space is open-ended, so the law-trust recurs per user CRDT rather than
+amortizing), "dischargeable" holds only at the *model* level (no Rust pass checks model-to-shipped-code), and,
+decisively, the gap is the *generic* unchecked-typeclass-law phenomenon (`Ord`/`Eq`/`Hash`/`Monoid`/semilattice
+checked by signature, never by law), so convergence is **not a fourth domain** — it **projects onto `restore`'s
+application-correctness basis**. A probe that earned its keep by collapsing: the map stays at three domains plus
+application-correctness, N stays 9, the FAILED tally stays six.
 Spec↔impl divergences, sharpened overclaims, novelty-deflations, one axis-rejection, one relabel,
 one distinctness-ruling, an inseparable-category finding (twice), the closed-basis certification, a
 domain-generalization, a floor-domain-mismatch diagnosis (two horn-drops in the IFC domain), and a
@@ -756,7 +790,7 @@ cold review had flagged to a genuine characterization — `seam_closes_iff_facto
 closes **iff** its precondition factors through the safe witness — with the regimes as
 machine-checked instances (`spsc_seam_closes`, `intrusive_seam_does_not_close`, the slab's
 `slab_runtime_closes_but_static_does_not`: the same precondition closes through a *runtime*
-witness but not the *static* one, and `branded_seam_closes`/`refined_seam_closes`/`shared_seam_closes`/`typed_nat_seam_closes`/`take_seam_closes`/`drain_seam_closes`/`selfref_seam_closes`/`validity_seam_closes`/`secret_typed_discipline_factors`/`labeled_typed_discipline_factors`/`ordered_locks_typed_discipline_factors`/`lock_registry_typed_discipline_factors`/`linear_typed_discipline_factors`/`restore_ownership_core_closes`/`reseat_typed_discipline_factors`:
+witness but not the *static* one, and `branded_seam_closes`/`refined_seam_closes`/`shared_seam_closes`/`typed_nat_seam_closes`/`take_seam_closes`/`drain_seam_closes`/`selfref_seam_closes`/`validity_seam_closes`/`secret_typed_discipline_factors`/`labeled_typed_discipline_factors`/`ordered_locks_typed_discipline_factors`/`lock_registry_typed_discipline_factors`/`linear_typed_discipline_factors`/`restore_ownership_core_closes`/`reseat_typed_discipline_factors`/`crdt_typed_discipline_factors`:
 all close like SPSC in the kernel — the recovered axes, the six broken seams' domain gaps, the graded floor-match, the non-monotone floor-upgrade, the structural-logic (affine-vs-linear) break, and the forced borrowed-slot double-free alike invisible to it), `propext` only. Honest bound unchanged: the
 *math* is now a real characterization, but the faithfulness of "precondition" and "witness" to
 actual Rust primitives — *which axis a closing seam spends* (zero-cost, API-locality, legibility,

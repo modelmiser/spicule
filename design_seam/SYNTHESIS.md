@@ -61,7 +61,14 @@ confirmed the flip is clean (cost-3 → break-1, co-varying *neither* variable),
 *degenerate* (it deletes the by-value move-out that defines `take_mut`, strictly dominated by `&mut T`), so
 every *usable* packaging breaks. The trilogy closes: *the horn is movable iff the value-ownership model lets
 soundness **decouple** from the un-compellable closure* — owned can (⇒ cost), borrowed cannot (⇒ forced
-break), and the fence sits at the **owned-vs-borrowed** line.
+break), and the fence sits at the **owned-vs-borrowed** line. And a twenty-first — a *state-based CRDT merge*
+— aimed at a **fourth soundness domain** (distributed/replicated **convergence**), and the candidate domain
+**deflated**: the supply-side break is real floor-relatively (`T: JoinSemilattice` is a syntactic proxy, so a
+safe lawless `join` diverges replicas), but the gap is the *generic* unchecked-typeclass-law phenomenon (Rust
+checks the *signatures* of `Ord`/`Eq`/`Hash`/`Monoid`/semilattice, none of their *laws*), so convergence
+**projects onto `restore`'s application-correctness basis** rather than opening a fourth domain — the
+soundness-domain map stays at **three** (memory / information-flow / liveness) plus application-correctness.
+N stays **9** modes; the FAILED broken-seam tally stays **six** (this *survived* as a TRADEOFF).
 
 ## The headline result
 
@@ -623,11 +630,35 @@ The adversarial process earned its keep eighteen times:
     un-compellable closure** — owned can (⇒ cost), a borrowed slot cannot for any usable packaging (⇒ forced
     break). Phase Q: the horn moves. Phase R: within a fence (confounded). Phase S: the fence is real, FORCED,
     at owned-vs-borrowed.
+20. **State-based CRDT merge (the fourth-domain probe that DEFLATED):** a `Replica<T: JoinSemilattice>` whose
+    `merge` applies the semilattice join — the **first probe aimed at a fourth soundness domain**,
+    distributed/replicated **convergence**, after memory safety (match), information flow (mismatch, the
+    `secret`/`labeled` siblings), and liveness (partial). Like the IFC seams it has **no `unsafe`**; the danger
+    is **replica divergence** (two replicas that saw the same updates disagree). The panel ruled **SEAM-BREAKS
+    [floor-mismatch]** *floor-relatively* but scored a **TRADEOFF survival** (r28) — the break was
+    pre-registered, and the dominant finding is the **deflation**. The supply-side break is real: `T:
+    JoinSemilattice` is a **syntactic proxy, not a witness** — `merge` runs whatever `join` the impl supplies,
+    the bound checks only the *signature*, so a safe non-commutative/non-idempotent `impl` type-checks and
+    diverges replicas (closing it is **undecidable by Rice**). But the candidate fourth domain **collapsed**,
+    three corrections accepted: (a) the **blessed-CRDT TCB rescue is NOT MMIO-shaped** — MMIO has finitely many
+    foundation-owned registers, but the lattice space is **open-ended**, so the law-trust **recurs per
+    user-defined CRDT** instead of amortizing into one axiom; (b) **'dischargeable' holds only at the model
+    level** — Liquid-Haskell/Coq proofs are about a mathematical model, and no Rust pass checks
+    model-to-shipped-code, so the trust is **irreducible at the compilation boundary** (subtler than `secret`'s
+    constant-time, which CompCert-CT/Jasmin *do* preserve); (c) **the decisive deflation** — the gap is the
+    *generic* unchecked-typeclass-law phenomenon (Rust checks the **signatures** of `Ord`/`Eq`/`Hash`/`Monoid`/
+    semilattice, none of their **laws**), so convergence is **not a fourth soundness domain** — it **projects
+    onto `restore`'s application-correctness basis** (#19). The finding: **no clean fourth domain here.** The
+    soundness-domain map stays at **three** (memory safety / information flow / liveness) plus the
+    **application-correctness** basis, into which convergence folds. Floor-relatively the supply-side break
+    stands (the affine floor does not carry the semilattice laws — the IFC-shaped mismatch), but the
+    *structural* result is a **deflation**, not new ground. N stays **9** modes; the FAILED broken-seam tally
+    stays **six** (this one *survived*).
 
 ## Artifacts
 
-- Specs (attacked as text): `SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat,take,drain,selfref,validity,secret,labeled,ordered_locks,lock_registry,linear,session,restore,reseat}.md`
-- Cold verdicts: `REPORT_SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat,take,drain,selfref,validity,secret,labeled,ordered_locks,lock_registry,linear,session,restore,reseat}.md` (+ raw transcripts in `runs_seam/`)
+- Specs (attacked as text): `SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat,take,drain,selfref,validity,secret,labeled,ordered_locks,lock_registry,linear,session,restore,reseat,crdt}.md`
+- Cold verdicts: `REPORT_SEAM_SPEC_{spsc,mmio,intrusive,slab,branded,refined,shared,typed_nat,take,drain,selfref,validity,secret,labeled,ordered_locks,lock_registry,linear,session,restore,reseat,crdt}.md` (+ raw transcripts in `runs_seam/`)
 - Real Rust (rustc-checked, `#![no_std]`): `../seam/` — `src/lib.rs` (SPSC), `src/mmio.rs`,
   `src/intrusive.rs`, `src/slab.rs`, `src/branded.rs`, `src/refined.rs`, `src/shared.rs` (the lone
   `alloc` user), `src/typed_nat.rs` (eighth-axis probe 1 — sound, no new axis), `src/take.rs`
@@ -649,17 +680,25 @@ The adversarial process earned its keep eighteen times:
   `take_mut` in guard form over a **borrowed slot**; *breaks* — SEAM-BREAKS [horn 1], the sixth broken seam:
   the controlled counterpart to `restore` keeps the packaging byte-identical and flips only owned→borrowed,
   so `into_inner` becomes a safe-code double-free; the fence is **FORCED**, not movable, confirming the
-  decoupling envelope under a clean single variable); consumer code is
+  decoupling envelope under a clean single variable), `src/crdt.rs` (the *fourth-domain* probe — `core`-only,
+  no `unsafe`; a `Replica<T: JoinSemilattice>` over distributed/replicated **convergence**; *breaks
+  floor-relatively* — SEAM-BREAKS [floor-mismatch], a TRADEOFF survival — but the candidate fourth domain
+  **DEFLATED**: the trait bound checks only the signature so a safe lawless `join` diverges replicas, yet the
+  gap is the *generic* unchecked-typeclass-law phenomenon, so convergence projects onto `restore`'s
+  application-correctness basis, not a new domain); consumer code is
   `#![forbid(unsafe_code)]`; laundering paths are `compile_fail`
-  doctests (76 `tests/` integration tests + 41 doctests = 117 total in the default `no_std` build; with
-  `--features lockdep` the runtime registry adds its tests for **124 total**).
+  doctests (80 `tests/` integration tests + 45 doctests = 125 total in the default `no_std` build; with
+  `--features lockdep` the runtime registry adds its tests for **132 total**).
 - Seam-width instrument: `SEAM_WIDTH.md`; full face lattice: `REALIZABILITY.md`
 - Mechanization: `../proof/SeamGap.lean` — `seam_closes_iff_factors` + the
   `spsc`/`intrusive`/`slab`/`branded`/`refined`/`shared`/`typed_nat`/`take`/`drain`/`selfref`/`validity` instances,
   plus `secret_typed_discipline_factors`, `labeled_typed_discipline_factors`,
   `ordered_locks_typed_discipline_factors`, `lock_registry_typed_discipline_factors`,
   `linear_typed_discipline_factors`, and `reseat_typed_discipline_factors` (the two IFC seams' + the three
-  liveness seams' + the borrowed-slot reseat's trivial sub-facts — all six break), plus
+  liveness seams' + the borrowed-slot reseat's trivial sub-facts — all six break), and
+  `crdt_typed_discipline_factors` (the fourth-domain probe's trivial sub-fact — it breaks *floor-relatively*
+  but DEFLATED to a TRADEOFF survival, projecting onto `restore`'s application-correctness basis, so it is
+  **not** one of the six FAILED breaks), plus
   `session_order_safety_closes` (the eighteenth seam *holds* with a horn-3 cost — its
   order-safety component closes like a closing seam; the completion cost is modeling-dictionary) and
   `restore_ownership_core_closes` (the nineteenth seam *holds* with a horn-3 cost — its affine-ownership core

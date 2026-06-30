@@ -9,7 +9,7 @@ languages"; and (c) what newlang discovered and *why it matters*.
 **What newlang is.** Not a language. It is a research project that asked "what would the
 perfect systems language look like?", listed seven properties such a language should have,
 and then **proved — adversarially — that the seven cannot coexist**, mapped exactly where the
-wall is, and then **built twenty real things that live right up against the wall (seven that close, plus thirteen probes — ending by showing the closed basis is *per soundness domain*, that which seams close is *graded* by the *floor-precondition match* (full for memory safety, none for information flow, partial then none for liveness), that *upgrading the floor is non-monotone* — the granularity gap is a ladder — that a floor can be the *wrong structural logic* (affine vs linear) no upgrade fixes, and finally that the *same* danger is a soundness *break* or a mere concentration *cost* depending on how the re-import rule **packages** it — a dial that proves **real but bounded**: a controlled probe moved one identical danger across horns, yet the move only works where soundness can be *decoupled* from the un-compellable closure, and a clean single-variable follow-up confirmed the fence is *forced* — the same packaging over a borrowed slot breaks)** to show what
+wall is, and then **built twenty-one real things that live right up against the wall (seven that close, plus fourteen probes — ending by showing the closed basis is *per soundness domain*, that which seams close is *graded* by the *floor-precondition match* (full for memory safety, none for information flow, partial then none for liveness), that *upgrading the floor is non-monotone* — the granularity gap is a ladder — that a floor can be the *wrong structural logic* (affine vs linear) no upgrade fixes, and finally that the *same* danger is a soundness *break* or a mere concentration *cost* depending on how the re-import rule **packages** it — a dial that proves **real but bounded**: a controlled probe moved one identical danger across horns, yet the move only works where soundness can be *decoupled* from the un-compellable closure, and a clean single-variable follow-up confirmed the fence is *forced* — the same packaging over a borrowed slot breaks — and finally that a *fourth domain* (replicated convergence) need not even be one: the candidate **deflated** into the generic unchecked-typeclass-law gap, projecting onto an existing basis)** to show what
 you *can* do. The deliverables are an impossibility result, a theorem (the *Seam Trilemma*),
 a Lean proof, and a small Rust crate of worked examples.
 
@@ -84,17 +84,22 @@ point at real files in this repo (`seam/`, `proof/`, `design_seam/`).
 > to the decoupling property *alone*, and the panel rejected the "maybe-movable" hedge (the sound subset is
 > degenerate, dominated by `&mut T`), so the fence is **forced**, at the owned-vs-borrowed line — the
 > packaging trilogy closes with one law: the horn is movable **iff** the value-ownership model lets soundness
-> decouple from the un-compellable closure. The Seam Trilemma is *domain-general*, the
+> decouple from the un-compellable closure. And finally (21, a *state-based CRDT merge*) aimed at a **fourth
+> domain** — replicated convergence — and the candidate **deflated**: the supply-side break is real (a safe
+> lawless `join` diverges replicas) but it is the *generic unchecked-typeclass-law* gap (`Ord`/`Eq`/`Monoid`/
+> semilattice — signatures checked, laws not), projecting onto `restore`'s application-correctness basis, so
+> convergence opens no new domain and the map stays at three soundness domains plus application-correctness.
+> The Seam Trilemma is *domain-general*, the
 >    cost-basis *per-domain*, the match *graded* along *granularity* and *coverage* and keyed to the
 >    *precondition*, *upgrading the floor trades one gap for a finer one*, *a floor can be the wrong
 >    structural logic*, and *the horn a danger threatens is a packaging choice*. A discovery procedure that
 >    only confirms is measuring nothing; this one rejected, confirmed, distinguished, recognised the
 >    inseparable, certified closure, recognised a new domain, diagnosed a floor-domain mismatch, graded a
 >    partial match, showed the grade cannot be bought up by upgrading the floor, *and named a
->    wrong-structural-logic floor* — all **nine** verdict modes (the eighteenth, nineteenth, and twentieth seams add no new mode; they
+>    wrong-structural-logic floor* — all **nine** verdict modes (the eighteenth through twenty-first seams add no new mode; they
 >    *re-package* an existing one, turning #17's break into a cost — #19 then maps the *limit* of that re-packaging (the horn moves only where soundness decouples from the danger), and #20 *forces* the horn at that limit, confirming the fence under a clean single variable.)
 >
-> If you read the earlier version, the genuinely new content is **Primitives 5–19** (Part 9), the
+> If you read the earlier version, the genuinely new content is **Primitives 5–21** (Part 9), the
 > "un-bundlings" + the rejection + the inseparable ruling + the closed-basis capstone + the
 > domain-generalization + the floor-domain refinement + the **graded** (full/partial/none) match + the
 > **non-monotone floor-upgrade** (granularity is a ladder) + the **wrong-structural-logic** mode (affine vs
@@ -493,7 +498,7 @@ doesn't exist.
 
 ---
 
-# Part 9 — Build and break: twenty real seams (the heart of it)
+# Part 9 — Build and break: twenty-one real seams (the heart of it)
 
 Theory in hand, the project stopped arguing and *built*. Crucial design of the experiment:
 **build and break are different machines.** Construction is continuity, so a *stateful builder*
@@ -1245,6 +1250,43 @@ slot cannot, for any usable packaging (#20 → forced break). Phase Q: the horn 
 deflation: no novel mechanism — `take_mut` + `scopeguard`-`into_inner` + RFC 1066 reassembled; the
 contribution is the clean controlled pair and *locating* the fence. No new verdict mode.)
 
+### Primitive 21 — a state-based CRDT merge, the fourth-domain probe → the domain *deflated* (`seam/src/crdt.rs`)
+
+The packaging trilogy closed, so the twenty-first turns *away* from packaging and aims at a **fourth soundness
+domain**: distributed/replicated **convergence** (eventual consistency), after memory-safety (full match),
+information-flow (mismatch), and liveness (partial). Take a state-based CRDT — a `Replica<T: JoinSemilattice>`
+whose `merge` applies the semilattice `join` — with a blessed `GCounter` (element-wise `max`) as the sound
+baseline. The danger is **replica divergence** (two replicas that observed the same updates disagree): neither
+UB, nor a leak, nor a deadlock, nor a timing channel, and — like the constant-time `secret` seam — **no
+`unsafe`**. Convergence holds iff `join` is commutative, associative, and idempotent.
+
+The supply-side break is real and conceded (horn-classifier **SEAM-BREAKS [floor-mismatch]**, cold panel
+r28): `T: JoinSemilattice` is a **syntactic proxy, not a witness** — the bound checks only the method
+*signature*, so a safe `impl` that adds instead of taking the max type-checks and **double-counts on
+at-least-once redelivery**, diverging replicas with no `unsafe` in sight (closing it needs a law-verification
+pass that is undecidable by Rice). But the panel scored it a **TRADEOFF survival** — the break was
+pre-registered — and the headline is the **deflation**: the candidate fourth domain *collapsed*. Three
+corrections, all accepted:
+
+> - **The blessed-CRDT TCB rescue is *not* MMIO-shaped.** Unlike MMIO's finite, foundation-owned registers,
+>   the **lattice space is open-ended**, so the law-trust **recurs per user-defined CRDT** instead of
+>   amortizing into one foundation axiom — every real use falls back to supply-your-own-`join`.
+> - **"Dischargeable" holds only at the *model* level.** Liquid-Haskell/Coq *can* verify the semilattice laws,
+>   but about a mathematical model; **no Rust pass checks model-to-shipped-code**, so the trust stays
+>   irreducible at the compilation boundary (subtler than `secret`'s constant-time, which CompCert-CT/Jasmin
+>   *do* preserve to shipped code).
+> - **The decisive deflation: it is the *generic* unchecked-typeclass-law gap.** Rust checks the *signatures*
+>   of `Ord`, `Eq`/`Hash`, `Monoid`, and `JoinSemilattice` alike — but **none of their algebraic laws**. So
+>   "convergence" is not a fourth soundness domain parallel to information-flow; it **projects onto
+>   `restore`'s application-correctness basis** (a logical property the type system never promised).
+
+So the fourth-domain probe found **no clean fourth domain here**: the soundness-domain map stays at **three**
+(memory safety / information flow / liveness) plus the **application-correctness** basis, into which
+convergence folds. Floor-relatively the supply-side break stands (the floor does not carry the semilattice
+laws — the IFC-shaped mismatch), but the *structural* result is a deflation, not a new domain. N stays **nine**
+verdict modes; the FAILED broken-seam tally stays **six** (this survived). A probe that earned its keep by
+collapsing.
+
 ### The taxonomy (the whole point, in one table)
 
 | Primitive | What the missing conjunct *is* | Fate | Pays with |
@@ -1268,6 +1310,7 @@ contribution is the clean controlled pair and *locating* the fence. No new verdi
 | Must-run cleanup guard | a finalizer that must run *exactly* once (a *liveness/correctness* obligation — **not UB**) | **breaks (liveness sense)** | **WRONG STRUCTURAL LOGIC** (new verdict mode) — `mem::forget` is safe, so the affine floor (*at most* once) cannot compel a *linear* (*exactly* once) finalizer; the leakpocalypse. Grade is a clean **none** (the `#[must_use]` lint is a cosmetic advisory, not a floor fragment — `scopeguard`). The match unit is the *precondition*, not the domain (deadlock-freedom is *partial*, this is *none*, same liveness domain). N unchanged — the *enforcement* face of axis 9 (`drain` was *tolerance*). No decidable price closes it; sharpened to Boats' scoped-task trilemma (Rust rejected the linear horn) |
 | Scope-restore guard (`scopeguard`) | #17's *identical* un-compellable finalizer — but packaged as a side-obligation beside a sound ownership core | **costs (holds)** | **PACKAGING DIAL — real but BOUNDED** — the `mem::forget` gap that *broke* #17's horn 1 only **costs horn 3** here (a stranded invariant, recurring per `?`/panic/return — not UB), because soundness is *decoupled* from the closure (an owned value). But the move is **confounded** (a side-obligation needs a sound core to sit beside, so value-ownership co-varies) and the horn is **forceable** (borrowed-slot/`take_mut` packaging forces horn-1 UB; `Pin` / `thread::scope` are un-repackageable) — *which horn* depends on **where safety rests**, partly danger-intrinsic. Not novel (`JoinGuard` horn-1 / `scopeguard` horn-3, RFC 1066). No new mode |
 | Borrowed-slot take-and-reseat (`take_mut` as guard) | #19's *identical* packaging (a guard with `into_inner`/Drop-restore) but over a **borrowed slot**, not an owned value — single ownership across the transient `ptr::read` duplicate | **breaks (horn 1)** | **FORCING THE HORN — the fence is real** — `into_inner` (sound for #19's owned value) is a safe-code **double-free** here (returns the value while the slot keeps the duplicate — two owners; a 4-line `String` witness, no `unsafe`). The single-variable flip #19→#20 (only owned→borrowed) is **clean**, repairing #19's confound; and the fence is **forced** (the `into_inner`-less sound subset is degenerate, dominated by `&mut T`, so every *usable* packaging breaks). Closes the trilogy: the horn is movable **iff** soundness can decouple from the un-compellable closure. Not novel (`take_mut`+`scopeguard`+RFC 1066). No new mode |
+| State-based CRDT merge (`Replica<T: JoinSemilattice>`) | replicas must *converge* — `join` must obey the semilattice laws (commutative/associative/idempotent — **not UB**) | **breaks (floor-mismatch), but DEFLATES** | **FOURTH-DOMAIN PROBE — NO NEW DOMAIN** — the `T: JoinSemilattice` bound is a *syntactic proxy, not a witness*; a safe lawless `join` type-checks and diverges replicas (double-counts on redelivery; undecidable by Rice). But the candidate fourth domain **deflated**: the blessed-CRDT TCB rescue is *not* MMIO-shaped (open lattice space → trust recurs per CRDT), 'dischargeable' only at the model level (no Rust pass checks model-to-shipped-code), and the gap is the *generic* unchecked-typeclass-law phenomenon (`Ord`/`Eq`/`Hash`/`Monoid`/semilattice — signatures checked, laws not), so convergence **projects onto `restore`'s application-correctness basis**. The map stays at three domains + application-correctness; scored a TRADEOFF survival, FAILED tally stays 6. No new mode |
 
 The decontamination signal (Part 6) held across all twelve **memory-safety** primitives: the obstruction
 *vanished* (SPSC), *moved and stayed decidable* (MMIO), *moved onto a runtime witness* (slab), *moved onto
@@ -1345,6 +1388,13 @@ must-run guard on a floor of the *wrong structural logic*, affine where linear i
 pattern: it breaks *inside* memory safety (a safe-code `into_inner` double-free over a borrowed slot), so the
 kernel *could* in principle see it, yet the Boolean witness still factors — it models single ownership but not
 the transient `ptr::read` duplicate window, exactly the gap the cold panel's `String` witness drove through.
+A **seventh** — `crdt_typed_discipline_factors`, the twenty-first seam — is the fourth-domain probe that
+*deflated*: it breaks *floor-relatively* (a safe lawless `join` diverges replicas, the semilattice laws being
+unenforceable — undecidable by Rice), and the kernel sees only that the `T: JoinSemilattice` trait bound
+factors, never the divergence. But the cold panel ruled the candidate fourth domain a **deflation** — the
+generic unchecked-typeclass-law gap (`Ord`/`Eq`/`Hash`/`Monoid`/semilattice signatures checked, laws not),
+projecting onto `restore`'s application-correctness basis — so convergence opens no new domain, and the map
+stays at three soundness domains plus application-correctness.
 
 **The honest bound — and why it matters as a lesson.** A cold adversarial review of the proof
 returned the right verdict: the *checked* math is a real characterization, but the *faithfulness*
@@ -1383,7 +1433,7 @@ You can forget every primitive and keep these.
    the professional move is to (a) put it in one place (concentration), (b) make the obligation
    at it as visible as possible, and (c) choose *consciously* whether the boundary costs you
    soundness, decidability, concentration, runtime, API surface, a solver in your toolchain, or
-   exception-safety, leak-freedom. The twenty-primitive taxonomy is a decision procedure for that choice.
+   exception-safety, leak-freedom. The twenty-one-primitive taxonomy is a decision procedure for that choice.
 
 4. **Adversarial separation of build and break.** Construction wants continuity; demolition wants
    a cold, context-free skeptic. Keeping them as separate machines — and *calibrating* your
@@ -1538,10 +1588,15 @@ witness, and the honest move is to drop the claim.
 - `lean proof/SeamGap.lean` — read the characterization; change a definition and watch it break.
 - Skim `design_seam/REPORT_SEAM_SPEC_*.md` — the cold attackers' actual verdicts, in their words.
 
-**Build a twenty-first primitive — grade a fourth domain, or probe another structural logic.** (The packaging
-trilogy is now *closed*: #18 found the horn moves, #19 that it moves within a fence, #20 that the fence is
-*forced* — see below; a further packaging probe will only re-confirm.) The memory-safety basis is closed; a
-within-memory-safety probe will *project*, not extend. Primitives 13–20 opened the live frontiers. Primitive
+**Build a twenty-second primitive — grade a *different* fourth domain, or probe another structural logic.**
+(The packaging trilogy is now *closed*: #18 found the horn moves, #19 that it moves within a fence, #20 that
+the fence is *forced* — see below; a further packaging probe will only re-confirm. And the *first* fourth-
+domain attempt — #21, **distributed/replicated convergence** via a state-based CRDT — **deflated**: it breaks
+floor-relatively but the candidate domain folded into the *generic unchecked-typeclass-law* gap, projecting
+onto `restore`'s application-correctness basis, so convergence opened *no* new domain. A second fourth-domain
+attempt should pick a candidate *less* likely to be "just an unchecked typeclass law" — a timing/WCET floor,
+not another algebraic-law trait.) The memory-safety basis is closed; a within-memory-safety probe will
+*project*, not extend. Primitives 13–21 opened the live frontiers. Primitive
 13 showed information flow is a *distinct*
 domain; 14, that *no IFC seam closes on Rust's affine floor*; 15, that liveness **half-closes** on a static
 type-level order (a *partial* match); 16, that *upgrading* that floor to a runtime registry is
@@ -1552,17 +1607,22 @@ linear), which **no floor upgrade fixes**; 18, that the *same* gap can be a *cos
 how the rule **packages** it; 19, that this packaging dial is **real but bounded** — the horn moves only
 where soundness *decouples* from the danger, and is **forceable** where it does not; and 20, that the fence is
 **forced** — the *same* packaging over a *borrowed slot* (vs #19's owned value) breaks horn 1, the clean
-single-variable confirmation #19's confound could not give. So the twenty-first has two honest directions and
-a warning (the third, *forcing the horn*, the twentieth already did). (i) **Grade a FOURTH domain:** a
-**timing/cache side-channel** (quantitative/effect floor — Jif, FlowCaml, QIF), a **real-time / WCET**
-deadline miss (WCET-annotated floor), or a **distributed-consistency** anomaly (session types — Honda et al.)
-— a precondition with no memory-safety analog. (ii) **Probe another STRUCTURAL LOGIC** (linear was the first
+single-variable confirmation #19's confound could not give; and 21, that the first **fourth-domain** attempt
+(replicated convergence) *deflated* into the generic unchecked-typeclass-law gap, opening no new domain. So
+the twenty-second has two honest directions and a warning (the third, *forcing the horn*, the twentieth
+already did). (i) **Grade a FOURTH domain — but pick one that is not just an unchecked algebraic law** (the
+trap #21 fell into): a **timing/cache side-channel** (quantitative/effect floor — Jif, FlowCaml, QIF) or a
+**real-time / WCET** deadline miss (WCET-annotated floor) — a precondition with no memory-safety analog whose
+gap is *structural*, not a missing typeclass-law check. (Distributed **convergence** is now settled: it
+deflated to application-correctness; a genuinely distributed probe would need the *liveness*/deadlock bite —
+two dual session endpoints, "peer waits forever" — not a merge law.) (ii) **Probe another STRUCTURAL LOGIC** (linear was the first
 *wrong-structural-logic* verdict): a **relevant**-type precondition — *must-use-at-least-once with an error
 channel*, i.e. fallible must-run, the exact gap Primitive 17's infallible scope exposed — or an **ordered /
 session-typed** protocol where the floor's substructural logic is again the mismatch. Write the spec + a
 checked toy, run the *same*
 harness (`python3 -m orchestrator.seam_phase --spec ... --gauntlets 1 --prior-art-web`). Predict, because
-the five out-of-domain/precondition probes got them all: (a) the Rust Abstract Machine sees *nothing*; (b)
+the six out-of-domain/precondition probes got them all (the sixth, convergence, by *deflating* — a real
+outcome: not every candidate domain is one): (a) the Rust Abstract Machine sees *nothing*; (b)
 the Seam Trilemma *recurs* with the domain's own bite; (c) the domain has its *own* axes; (d) **a seam
 closes only if your floor matches the precondition**; (e) **the match is graded** (full/partial/none), and
 the unit is the *precondition*, not the whole domain; (f) **upgrading the floor is non-monotone** *and* may
@@ -1599,7 +1659,7 @@ mode.)
    shared ownership trades *unbounded dynamic allocation* against *caller-provided bounded storage*.
 8. **Verus** and **Creusot** docs — what "Rust but `unsafe` is proof" actually looks like when
    someone ships it (the productive horn from Part 8).
-9. This repo's `WRITEUP.md` (the full result), `design_seam/SYNTHESIS.md` (the twenty-primitive map),
+9. This repo's `WRITEUP.md` (the full result), `design_seam/SYNTHESIS.md` (the twenty-one-primitive map),
    `design_seam/REALIZABILITY.md` (the face lattice / 3-of-N proof), and `THE-SAME-WALL.md` (the
    cross-field boundary/veil discipline).
 

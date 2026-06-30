@@ -77,7 +77,20 @@ reassembled; contribution analytical.) Phase Q said the horn moves; Phase R says
 Phase S proves the fence **real and FORCED** at owned-vs-borrowed, closing the packaging trilogy: **the horn
 is movable iff the value-ownership model lets soundness DECOUPLE from the un-compellable closure** (owned
 can ⇒ cost; borrowed cannot, for any *usable* packaging ⇒ forced break). N stays 9 verdict modes; **the
-broken-seam count rises to six** (this one breaks).** (Phases L–S.)*
+broken-seam count rises to six** (this one breaks). And a twenty-first — a *state-based CRDT merge*
+(`Replica<T: JoinSemilattice>`, the first probe aimed at a **fourth** soundness domain, distributed/replicated
+**convergence**) — found **no clean fourth domain there.** Floor-relatively the cold panel (r28) confirmed
+**SEAM-BREAKS [floor-mismatch]** (the `T: JoinSemilattice` bound is a *syntactic proxy, not a witness* — a
+safe non-commutative/non-idempotent `join` type-checks and **diverges replicas that saw the same updates**;
+closing it is undecidable by Rice), but it scored a **TRADEOFF survival** and the candidate domain
+**DEFLATED**: the gap is the *generic unchecked-typeclass-law phenomenon* — Rust checks the **signatures** of
+`Ord`/`Eq`/`Hash`/`Monoid`/semilattice, **none of their laws** — so convergence **projects onto `restore`'s
+application-correctness basis**, not a new domain. (Two corrections: the blessed-CRDT TCB rescue is *not
+MMIO-shaped* — the lattice space is open-ended, so law-trust recurs per user CRDT, never amortizing; and
+'dischargeable' holds only at the *model* level — no Rust pass checks model-to-shipped-code.) So the
+soundness-domain map **stays at three** (memory / IFC / liveness) + the application-correctness basis, into
+which convergence folds; the **FAILED broken-seam count stays six** (this one survived/deflated); N stays 9.**
+(Phases L–T.)*
 
 > **A note on the "#5/#6/#7" shorthand (and a numbering collision).** `#6` (zero-cost) and `#7`
 > (AI-legible) are the literal seed-property numbers. The "**#5⟂#7 cell**" shorthand, coined for the
@@ -730,6 +743,21 @@ restore │  CONTROLLED PACKAGING probe  ⇒ HOLDS WITH COST: SEAM-COSTS [horn3]
         │                              ownership model lets soundness DECOUPLE from the closure (owned ⇒ cost; borrowed
         │                              ⇒ forced break). No new mode; N stays 9; broken-seam count → SIX.
         ▼
+   crdt │  FOURTH-DOMAIN probe          ⇒ candidate domain DEFLATED. Floor-relatively BREAKS [floor-mismatch]
+        │  (state-based CRDT merge =     (TRADEOFF survival, r28): T: JoinSemilattice is a SYNTACTIC PROXY not a
+        │   Replica<T:JoinSemilattice>)  witness — a safe non-commutative/non-idempotent join type-checks and
+        │                              DIVERGES replicas that saw the same updates (Horn 1, in safe code; closing
+        │                              it undecidable by Rice). No unsafe (semantic danger, like secret). BUT the
+        │                              candidate FOURTH domain (convergence) DEFLATED, 3 corrections: (1) blessed-
+        │                              CRDT TCB rescue NOT MMIO-shaped — lattice space OPEN-ENDED, law-trust recurs
+        │                              per user CRDT, never amortizes; (2) 'dischargeable' only at MODEL level (no
+        │                              Rust pass checks model→shipped-code); (3) DECISIVE — the gap is the GENERIC
+        │                              unchecked-typeclass-law phenomenon (Rust checks SIGNATURES of Ord/Eq/Hash/
+        │                              Monoid/semilattice, none of their LAWS) → convergence PROJECTS ONTO #19
+        │                              restore's application-correctness basis, NOT a fourth domain. Domain map
+        │                              stays at THREE + app-correctness. No new mode; N stays 9; broken-seam count
+        │                              stays SIX (this survived/deflated).
+        ▼
 Realizability table         MEMORY-SAFETY domain (on a MATCHED affine floor): N ≥ 9 CLOSED axes (sound,
                             decidable, concentration, API-locality, #6, #7, bare-metal, unwind-safety,
                             leak-freedom) + INSEPARABLE (move-stability, validity) + 2 outside-the-axes
@@ -756,7 +784,15 @@ Realizability table         MEMORY-SAFETY domain (on a MATCHED affine floor): N 
                             packaging byte-identical) REPAIRS the confound, and the fence is FORCED not movable (the
                             into_inner-less subset is degenerate, dominated by &mut T). The packaging trilogy closes:
                             the horn is movable IFF the ownership model lets soundness DECOUPLE from the closure
-                            (owned ⇒ cost; borrowed ⇒ forced break). The Seam Trilemma is DOMAIN-GENERAL, the cost-basis
+                            (owned ⇒ cost; borrowed ⇒ forced break). And a FOURTH-DOMAIN probe (state-based CRDT
+                            merge, r28) looked for a fourth soundness domain — distributed CONVERGENCE — and found
+                            NONE: floor-relatively it BREAKS [floor-mismatch] (the JoinSemilattice bound is a
+                            syntactic proxy; a safe lawless join diverges replicas), but the candidate domain
+                            DEFLATED — the gap is the GENERIC unchecked-typeclass-law phenomenon (Rust checks the
+                            signatures of Ord/Eq/Hash/Monoid/semilattice, none of their laws), so convergence
+                            PROJECTS ONTO restore's application-correctness basis, NOT new ground. The domain map
+                            stays at THREE (memory / IFC / liveness) + the application-correctness basis. The Seam
+                            Trilemma is DOMAIN-GENERAL, the cost-basis
                             PER-DOMAIN, and WHICH SEAMS CLOSE depends on the FLOOR-DOMAIN MATCH — GRADED (full /
                             partial / none), set per PRECONDITION not per domain, and not monotonically liftable.
                             Nine method modes:
@@ -869,7 +905,7 @@ The axes are not independent toggles you can set freely — **two trades and a d
   invisible in non-leak code), yet still real — a reminder that "deflatable" and "not an axis" are
   different verdicts (the rejected checker-tractability probe is the latter; leak-freedom the former).
 - The Lean kernel (`../proof/SeamGap.lean`) sees only whether a precondition factors through a
-  Boolean witness — so it certifies *closure* (`spsc`/`branded`/`refined`/`shared`/`typed_nat`/`take`/`drain`/`selfref`/`validity` — and `session_order_safety_closes`, the eighteenth seam, whose *order-safety* component closes like a holding seam (it HOLDS with a horn-3 completion cost the kernel cannot see), and `restore_ownership_core_closes`, the nineteenth seam, whose *ownership* core closes the same way (it HOLDS with a horn-3 restore cost — the controlled-packaging probe: the same `mem::forget` gap that broke #17 only costs here, but bounded — the horn is forceable in a borrowed-slot/`take_mut` packaging) — (+ `secret`/`labeled`/`ordered_locks`/`lock_registry`/`linear`/`reseat`, which certify only the trivial typed sub-fact — the two IFC seams break, three liveness-domain seams break (the static lock-ordering one partially-matches, the runtime registry shows the floor-upgrade is non-monotone, and the must-run-cleanup one is a clean NONE breaking on wrong-structural-logic, affine≠linear), and `reseat_typed_discipline_factors`, the twentieth seam, breaks on a forced horn-1 double-free — the controlled counterpart to #19 that proves the packaging fence FORCED at owned-vs-borrowed: `into_inner` over a borrowed slot hands out the value while the slot keeps the `ptr::read` duplicate, so the same packaging that *held* for #19's owned value breaks here)
+  Boolean witness — so it certifies *closure* (`spsc`/`branded`/`refined`/`shared`/`typed_nat`/`take`/`drain`/`selfref`/`validity` — and `session_order_safety_closes`, the eighteenth seam, whose *order-safety* component closes like a holding seam (it HOLDS with a horn-3 completion cost the kernel cannot see), and `restore_ownership_core_closes`, the nineteenth seam, whose *ownership* core closes the same way (it HOLDS with a horn-3 restore cost — the controlled-packaging probe: the same `mem::forget` gap that broke #17 only costs here, but bounded — the horn is forceable in a borrowed-slot/`take_mut` packaging) — (+ `secret`/`labeled`/`ordered_locks`/`lock_registry`/`linear`/`reseat`, which certify only the trivial typed sub-fact — the two IFC seams break, three liveness-domain seams break (the static lock-ordering one partially-matches, the runtime registry shows the floor-upgrade is non-monotone, and the must-run-cleanup one is a clean NONE breaking on wrong-structural-logic, affine≠linear), and `reseat_typed_discipline_factors`, the twentieth seam, breaks on a forced horn-1 double-free — the controlled counterpart to #19 that proves the packaging fence FORCED at owned-vs-borrowed: `into_inner` over a borrowed slot hands out the value while the slot keeps the `ptr::read` duplicate, so the same packaging that *held* for #19's owned value breaks here), and `crdt_typed_discipline_factors`, the twenty-first seam, breaks *floor-relatively* — the first probe at a fourth domain (distributed convergence), where a safe lawless `join` diverges replicas because `T: JoinSemilattice` is a syntactic proxy not a witness; but the candidate fourth domain DEFLATED — convergence is the generic unchecked-typeclass-law phenomenon, projecting onto `restore`'s application-correctness basis, not new ground (the domain map stays at three + application-correctness; the FAILED broken-seam count stays six — this one survived as a TRADEOFF)
   all close, like SPSC) but is blind to *which axis a closing seam spends* — or whether that "axis" is
   even separable (the self-ref cell closes in the kernel exactly like the rest; its inseparability is
   pure modeling-dictionary). Every column past

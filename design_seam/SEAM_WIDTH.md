@@ -220,3 +220,24 @@ strictly dominated by plain `&mut T`), so every *usable* packaging breaks, and t
 The broken count is now **six**; N stays **nine** verdict modes. The trilogy's refined finding: *the horn is
 movable iff the value-ownership model lets soundness **decouple** from the un-compellable closure* — owned
 **can** (⇒ cost), a borrowed slot **cannot**, for any usable packaging (⇒ forced break).
+
+**The twenty-first seam: a fourth-domain probe that earns no width row — because the domain DEFLATED.** The
+state-based CRDT merge (`seam/src/crdt.rs`, a `Replica<T: JoinSemilattice>` + blessed `GCounter<N>`, core-only,
+no `unsafe`) is the first primitive aimed at a *fourth* soundness domain — distributed/replicated
+**convergence** (eventual consistency), its danger *replica divergence* (two replicas that saw the same updates
+disagree). Like the five out-of-domain primitives above it carries no finite seam width: the cold panel (r28)
+ruled **SEAM-BREAKS [floor-mismatch]** *floor-relatively* — the `T: JoinSemilattice` bound is a **syntactic
+proxy, not a witness** (a safe non-commutative/non-idempotent `join` type-checks and **diverges replicas**;
+closing it is undecidable by Rice), so there is no sound width to measure. But it was scored a **TRADEOFF
+survival** (the break pre-registered), and the headline is the **deflation**: the candidate fourth domain
+**collapsed**, three corrections accepted. **(1)** The blessed-CRDT TCB-axiom rescue is **not MMIO-shaped** —
+unlike MMIO's finite, foundation-owned registers, the lattice space is **open-ended**, so the law-trust
+**recurs per user-defined CRDT** rather than amortizing into one axiom. **(2)** 'Dischargeable' holds only at
+the *model* level — Liquid-Haskell/Coq proofs are about a math model; no Rust pass checks model-to-shipped-code,
+so the trust stays irreducible at the compilation boundary (subtler than `secret`'s constant-time, which
+CompCert-CT *does* preserve). **(3)** The decisive deflation — the gap is the **generic unchecked-typeclass-law
+phenomenon** (Rust checks the *signatures* of `Ord`/`Eq`/`Hash`/`Monoid`/semilattice, **none** of their laws),
+so convergence is **not** a fourth domain: it **projects onto `restore`'s application-correctness basis** (#19).
+The refined finding: **no clean fourth domain here** — the soundness-domain map stays at **three** (memory
+safety / information flow / liveness) plus the application-correctness basis, into which convergence folds.
+The broken count **stays six** (this one *survived*, floor-relative break and all); N stays **nine** modes.
