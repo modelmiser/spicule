@@ -300,6 +300,20 @@ pub mod reseat;
 /// correctness basis. 21 primitives; FAILED broken-seam tally stays 6; N stays 9 modes. See `crdt`.
 pub mod crdt;
 
+/// Twenty-second seam (Phase U — the *second* fourth-domain probe): a cost-typed computation, targeting
+/// **real-time / worst-case execution time (WCET)** after the convergence probe (`crdt`) deflated. Its danger
+/// is a **deadline miss** (a computation runs past its cycle budget) — neither UB, leak, deadlock, timing
+/// side-channel, nor divergence. A cleaner candidate than convergence because a cycle budget is a
+/// *quantitative resource bound*, not an algebraic law. No `unsafe`: the danger is the semantic mismatch
+/// between a static cost and real time. A `Timed<C, T>` tracks a static op-count `C` (the *exact* sealed
+/// `Nat`/`Lt` machinery of `typed_nat`, reused on purpose) and `within::<D>` proves `C ≤ D` at compile time —
+/// but the op-count is an **unsound proxy** for real cycles: a single `step` can wrap a million-iteration loop
+/// or a cache-missing division, so "op-count ≤ deadline" does not imply "cycles ≤ deadline". The spec poses:
+/// real-time gets no closing seam (**SEAM-BREAKS [floor-mismatch]** — a proxy that is not the property), and
+/// does WCET **deflate** like convergence — static cost onto `typed_nat` (#8), the trusted cost-model onto an
+/// `mmio`-shaped-but-*unsound* axiom (#2) — rather than opening a genuine fourth domain? See `wcet`.
+pub mod wcet;
+
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 use core::sync::atomic::{AtomicUsize, Ordering};
