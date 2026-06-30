@@ -238,6 +238,19 @@ pub mod linear;
 /// is the first primitive whose sub-component cleanly closes while the whole breaks. See `session`.
 pub mod session;
 
+/// Nineteenth seam (Phase R — the *controlled packaging* probe): a value-owning scope-restore guard (the
+/// real `scopeguard::guard(value, f)` + `into_inner`, the shape #17's `MustRun` deliberately declined). It
+/// carries the **identical** un-compellable-finalizer danger as the seventeenth seam (`mem::forget` skips
+/// the closure) but wraps it in the **eighteenth seam's structure**: a sound affine-ownership core (the
+/// guard owns and vends scoped access to a `T`, no `unsafe`, no UAF) beside which the restore closure is a
+/// mere *side-obligation*. Built to turn Phase Q's headline — *which horn a danger threatens is a function
+/// of how the re-import rule packages it* — from an **observation** (across the different primitives #17 and
+/// #18) into a **controlled experiment** (the same danger, only the packaging changed). The hypothesis the
+/// spec poses: the `mem::forget` gap that **broke** #17's horn 1 here only **costs** horn 3 (an un-restored
+/// logical invariant — a lost lease, a stale global — never UB), so the horn is a design choice, not a
+/// property of the danger. See `restore`.
+pub mod restore;
+
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 use core::sync::atomic::{AtomicUsize, Ordering};
