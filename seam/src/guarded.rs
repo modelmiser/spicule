@@ -39,22 +39,38 @@
 //!   genuine undecidable NONE #31 correctly isolated (and #30 cannot force completion on a terminal-less protocol).
 //!   The marker concentrates productivity and leaves termination exactly where #31 left it.
 //!
-//! ## HYPOTHESIS (pre-registered; the cold panel adjudicates, not the builder)
+//! ## VERDICT (cold panel, REPORT_SEAM_SPEC_guarded.md, r39): SEAM-COSTS [none], SURVIVED — the salvage HELD
 //!
-//! **SEAM-COSTS [horn3-concentration], that HOLDS** — guardedness/productivity is concentrable: the sealed
-//! `Guarded` marker rejects the non-contractive `Rec<Var>` at the unfolding boundary in Θ(type-size), no SMT, the
-//! same machinery as order, closing the over-concession #31 was rejected for. Horn 1 holds (no `unsafe`; the marker
-//! only *removes* a degenerate program, never admits UB). Horn 2 holds (decidable, structural). The completion/
-//! progress story now reads cleanly: order + duality + **guardedness/productivity** all CLOSE (concentrable,
-//! decidable); **termination alone** stays the conceded undecidable NONE. Deflation (conceded, deliberately — #31
-//! was rejected for *under*-claiming, so I will not now *over*-claim): this is **textbook contractivity** (Coq/Agda
-//! guarded corecursion; contractive recursive types; `session_types` well-formedness) — the contribution is
-//! **building** the carriable half the #31 verdict identified, not a new mechanism, and it pointedly does **not**
-//! touch termination. The open rulings I ask for: (a) does the `Guarded` marker genuinely reject `Rec<Var>` while
-//! admitting every productive loop (`Rec<Tx<Var>>`, `Rec<Rx<Tx<Var>>>`, …), with no soundness regression? (b) is the
-//! shallow head-check really full single-level contractivity, or does it miss a case? (c) is "productivity
-//! concentrates, termination stays a NONE" the right final split — or did I *now over-claim* the marker's reach? (d)
-//! tally stays 8, N stays 9?
+//! Horn-classifier: **SEAM-COSTS [none]** — *"Sound, decidable, concentrated — but 'full contractivity' is
+//! single-level-only; completeness bought by restriction."* Judge: **SURVIVED (1/1)** — *"No safe unfold of
+//! `Rec<Var>`, no undecidability, no in-scope false positive; head-check = contractivity holds for the unary-guard
+//! fragment."* **`[none]` is the cleanest result in the arc** — all three horns hold, no horn dropped (stronger than
+//! #30's `[horn3]`). The salvage **closes #31's over-concession**: guardedness/productivity IS concentrable, exactly
+//! the decidable cost the r38 verdict said I owed. And — the point of this phase — I **did not fall into the #27
+//! salvage-over-claim trap**: by claiming only productivity and conceding termination up front, the split survived.
+//!
+//! What HELD (all three horns, for the stated fragment): no safe path unfolds `Rec<Var>` (sealed marker, depth-1
+//! resolution); no UB (Horn 1); zero-ceremony concentration (Horn 3); decidable, no SMT (Horn 2); and no in-scope
+//! false positive (every productive loop unfolds).
+//!
+//! What the panel **MARKED** (tradeoffs noted, **not** horn-drops — the seam still survived): **completeness is
+//! bought by RESTRICTION.** The shallow head-check equals full contractivity *only because* the single-level,
+//! choice-free grammar collapses guardedness to the one test "head ≠ `Var`". A richer grammar — **nested `Rec`**, or
+//! **choice inside the recursion** (`Rec<Offer<End, …Var>>`, recursion ⊗ #28) — would need the **real recursive
+//! contractivity walk**; this seam **scopes that out, it does not escape it**, so the precedent's incompleteness
+//! cost is relabeled out-of-scope, not solved. And my "textbook folklore" deflation **slightly overstated
+//! generality** (it is contractivity for *this restricted fragment*, not in general). These are honest caveats on a
+//! holding seam, not a rejection — I trimmed the over-claim small enough that it stayed a marked tradeoff.
+//!
+//! META: even in a clean survival the arc's "flee the middle" tendency surfaced once more, small — I wrote "full
+//! contractivity" where the honest claim is "full contractivity *for the single-level choice-free fragment*". The
+//! difference from #31: this time the overstatement was a **marked caveat on a seam that held**, not a horn-deciding
+//! over-concession. The final split the #31→#32 reject→salvage rhythm settles (mirroring #26→#27, #29→#30): order +
+//! duality + **guardedness/productivity** all CLOSE (concentrable, decidable — for the single-level fragment);
+//! **termination alone** stays the conceded undecidable NONE. No new domain (liveness), coordinate, or mode (N stays
+//! 9); tally STAYS 8 (this SURVIVED). Lean `guarded_recursion_productivity_closes` (a `..._closes`: guardedness
+//! concentrates via the sealed marker; the single-level-restriction caveat and termination stay in the prose,
+//! invisible to the kernel).
 //!
 //! ### CF1 — THE SALVAGE: the unguarded `Rec<Var>` = `µX.X` cannot be unfolded (`Var` is not `Guarded`):
 //! ```compile_fail

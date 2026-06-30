@@ -1103,26 +1103,31 @@ theorem recursion_guarded_order_closes :
     productivity** (every recursion `Var` sits under a communication action — no non-contractive `µX.X` spin),
     on top of #31's order + duality. In the kernel the discipline factors (`Pguarded` is definitionally `V`).
 
-    The HYPOTHESIS (the cold panel adjudicates, not the builder): **SEAM-COSTS [horn3-concentration]**, a *holding*
-    seam — the over-concession #31 was rejected for is now discharged. #31's r38 verdict said productivity/
-    guardedness is a *decidable cost*, not the undecidable NONE I filed it as; this seam builds the cost: a sealed
-    `Guarded` marker (impl for `Tx`/`Rx`/`End`, not `Var`) bounds `enter`, so the unguarded `Rec<Var>` cannot be
-    unfolded — rejected in Θ(type-size), no SMT, the *same machinery as order*. (For single-level recursion a
-    shallow head-check is full contractivity: an action head guards everything inside it.) The deliberate, honest
-    limit — so as not to *now* over-claim after #31 was rejected for *under*-claiming: the marker buys
-    **productivity**, NOT **termination** (`Rec<Tx<Var>>` is guarded and still infinite; forcing a loop to reach
-    `End` stays the halting problem). So the final split closes cleanly: order + duality + guardedness/productivity
-    all CLOSE (concentrable, decidable); termination alone is the conceded undecidable NONE. A `..._closes` (the
-    guarded core closes, like `session`/`projected`/`must_scoped`); termination lives in the prose, invisible to the
-    kernel. Tally stays 8 (this holds); N stays 9. Deflation conceded: textbook contractivity (Coq/Agda guarded
-    corecursion); the contribution is *building* the carriable half #31 identified. -/
+    The cold panel (REPORT_SEAM_SPEC_guarded, r39) ruled **SEAM-COSTS [none]** and the JUDGE ruled **SURVIVED
+    (1/1)** — the salvage HELD, and `[none]` is the cleanest result in the arc (all three horns hold, no horn
+    dropped, stronger than #30's `[horn3]`). The over-concession #31 was rejected for is **discharged**:
+    guardedness/productivity is concentrable, the decidable cost #31 owed — a sealed `Guarded` marker (impl for
+    `Tx`/`Rx`/`End`, not `Var`) bounds `enter`, so the unguarded `Rec<Var>` cannot be unfolded, rejected in
+    Θ(type-size), no SMT, the *same machinery as order*. And — the phase's point — I avoided the #27
+    salvage-over-claim trap by claiming only productivity and conceding termination up front. What the panel MARKED
+    (tradeoffs, NOT horn-drops, so the seam still survived): **completeness is bought by restriction** — the shallow
+    head-check equals full contractivity *only because* the single-level, choice-free grammar collapses it to
+    "head ≠ `Var`"; a richer grammar (nested `Rec`, or choice-in-recursion) needs the real recursive contractivity
+    walk, which this seam *scopes out, not escapes*; and my "folklore" deflation slightly overstated generality. The
+    marker buys **productivity**, NOT **termination** (`Rec<Tx<Var>>` is guarded and still infinite — the halting
+    problem). Final split: order + duality + guardedness/productivity all CLOSE (for the single-level fragment);
+    termination alone is the conceded undecidable NONE. A `..._closes` (the guarded core closes, like
+    `session`/`projected`/`must_scoped`); the restriction caveat and termination live in the prose, invisible to the
+    kernel. Tally stays 8 (this SURVIVED); N stays 9. -/
 def Pguarded (p : Prog) : Bool := V p
 
-/-- The sound core CLOSES (HYPOTHESIS: SEAM-COSTS [horn3-concentration], holding): guardedness/productivity
-    concentrates through the sealed `Guarded` marker (rejecting the non-contractive `Rec<Var>` at the unfolding
-    boundary in Θ(type-size), no SMT — the same trait-resolution machinery as order), discharging the decidable cost
-    #31 was rejected for over-conceding. Order + duality + guardedness all close; only termination stays the conceded
-    undecidable NONE (the halting problem), living in the prose, invisible to the kernel. -/
+/-- The sound core CLOSES (SEAM-COSTS [none], SURVIVED — the salvage held, all three horns intact):
+    guardedness/productivity concentrates through the sealed `Guarded` marker (rejecting the non-contractive
+    `Rec<Var>` at the unfolding boundary in Θ(type-size), no SMT — the same trait-resolution machinery as order),
+    discharging the decidable cost #31 was rejected for over-conceding. Order + duality + guardedness all close (for
+    the single-level fragment — completeness bought by restriction, a marked tradeoff not a horn-drop); only
+    termination stays the conceded undecidable NONE (the halting problem), living in the prose, invisible to the
+    kernel. -/
 theorem guarded_recursion_productivity_closes :
     ∃ d : Prog → Bool, SoundW Pguarded d ∧ UsableW Pguarded d ∧ ConcW V d := by
   rw [seam_closes_iff_factors]

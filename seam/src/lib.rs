@@ -560,17 +560,22 @@ pub mod recursion;
 /// recursion a **shallow head-check IS full contractivity** — if the body's head is an action (`Tx`/`Rx`),
 /// everything inside (incl. any `Var`) is under it ⇒ guarded; `End` is vacuously guarded; a bare `Var` head is
 /// unguarded ⇒ rejected — so `Guarded` need only be impl'd for the three heads, no recursive trait walk. HYPOTHESIS
-/// (pre-registered; the cold panel rules): **SEAM-COSTS [horn3-concentration], that HOLDS** — guardedness/
-/// productivity concentrates (decidable, the cost #31 owed), closing the over-concession. Horn 1 (no `unsafe`; the
-/// marker only *removes* a degenerate program) and Horn 2 (decidable, structural) hold. The honest, deliberate
-/// limit (so as not to now over-claim — #31 was rejected for *under*-claiming): the marker buys **productivity**
-/// (every unfolding is preceded by an action — no silent µX.X spin), **NOT termination** (`Rec<Tx<Var>>` is guarded
-/// and still infinite; forcing a loop to reach `End` stays the halting problem, the one conceded undecidable NONE).
-/// So the final split: order + duality + **guardedness/productivity** all CLOSE; **termination alone** is the NONE.
-/// Deflation (conceded): textbook contractivity (Coq/Agda guarded corecursion; contractive recursive types;
-/// `session_types` well-formedness) — the contribution is *building* the carriable half #31 identified. Predicted:
-/// tally stays 8; N stays 9. Lean (HYPOTHESIS) `guarded_recursion_productivity_closes` (a `..._closes`: guardedness
-/// concentrates via the sealed marker; termination stays in the prose, invisible to the kernel). See `guarded`.
+/// VERDICT (cold panel, r39): **SEAM-COSTS [none], SURVIVED (1/1) — the salvage HELD.** `[none]` is the cleanest
+/// result in the arc: all three horns hold, no horn dropped (stronger than #30's `[horn3]`). It **closes #31's
+/// over-concession** — guardedness/productivity IS concentrable, the decidable cost #31 owed — and I **avoided the
+/// #27 salvage-over-claim trap** by claiming only productivity and conceding termination up front. What HELD: no
+/// safe unfold of `Rec<Var>` (sealed marker, depth-1 resolution), no UB (Horn 1), zero-ceremony concentration
+/// (Horn 3), decidable no-SMT (Horn 2), no in-scope false positive. What the panel **MARKED** (tradeoffs, NOT
+/// horn-drops): **completeness is bought by RESTRICTION** — the shallow head-check = full contractivity *only
+/// because* the single-level, choice-free grammar collapses it to "head ≠ `Var`"; a richer grammar (nested `Rec`,
+/// or choice-in-recursion `Rec<Offer<End,…Var>>`) needs the real recursive contractivity walk, which this seam
+/// **scopes out, not escapes**; and my "folklore" deflation slightly overstated generality. META: the "flee the
+/// middle" tic surfaced small even here (I wrote "full contractivity" for what is full contractivity *for the
+/// single-level fragment*) — but as a marked caveat on a seam that HELD, not a horn-deciding over-claim. Final split
+/// (the #31→#32 reject→salvage rhythm, mirroring #26→#27, #29→#30): order + duality + **guardedness/productivity**
+/// all CLOSE; **termination alone** is the conceded undecidable NONE. No new domain/coordinate/mode; N stays 9;
+/// tally STAYS 8 (SURVIVED). Lean `guarded_recursion_productivity_closes` (a `..._closes`: guardedness concentrates;
+/// the restriction caveat + termination stay in the prose). See `guarded`.
 pub mod guarded;
 
 use core::cell::UnsafeCell;

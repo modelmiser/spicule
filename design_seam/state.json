@@ -2408,10 +2408,74 @@
       "outcome": "FAILED",
       "cost_usd": 2.8086,
       "timestamp": "2026-06-30T19:17:18+00:00"
+    },
+    {
+      "round": 39,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_guarded.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 guarded recursion (concentrating the cost I over-conceded in #31) (re-import rule under attack)\n\nThis is a **design proposal** for a thirty-second *seam*, the **direct salvage of the thirty-first** (`recursion`),\nmirroring the #26\u2192#27 and #29\u2192#30 reject\u2192salvage rhythm. #31 was SOUND but its \u00a76 deliverable was **REJECTED**\n(r38, the rejection mode's 7th firing): I **over-conceded** \u2014 I filed **productivity/guardedness** as an\n*undecidable NONE* alongside termination. The panel's correction: `Rec<Var>` = `\u00b5X.X` is the **non-contractive**\ntype every cited system (Coq/Agda guarded corecursion; contractive recursive types) rejects **syntactically**; a\nsealed `Guarded` marker carries it in `\u0398(type-size)`, no SMT \u2014 the same machinery as order. This seam **builds that\nmarker** and asks the panel to confirm guardedness genuinely concentrates, leaving **termination** as the *only*\nconceded NONE. It is **NOT a fourth-domain bid**; it stays inside the **third confirmed domain (liveness)**, on the\n**progress** coordinate (its productivity face).\n\nYou are attacking a **text specification** backed by real `rustc`-checked code (`seam/src/guarded.rs`, default\n`no_std` build \u2014 `core` +",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Guarded bound is auto-discharged (zero ceremony) and sound within the grammar; expressiveness gripe targets out-of-scope #31 base model.",
+          "strongest_point": "The grammar lacks any choice constructor, so every admitted loop is unconditionally infinite \u2014 but that attacks #31's base model (out of scope) and the seam only claims progress, not termination."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Head-check equals contractivity because grammar's guards are all unary; only Rec<Var> is non-contractive and marker rejects it.",
+          "strongest_point": "The head-check's soundness is entirely contingent on every guard being unary \u2014 a binary choice constructor like Choose<Var,Tx<Var>> would defeat it, but no such constructor exists in the stated grammar."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Head-only Guarded impls make the check depth-1 trait resolution; single-level grammar makes it exact. No blow-up.",
+          "strongest_point": "The implied pass cannot go super-polynomial because the impls carry no recursive `C: Guarded` premise, so the obligation resolves in one impl lookup against three disjoint head constructors."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "No in-scope productive loop is wrongly rejected; rejected Rec<Var> is meaningless, not restricted.",
+          "strongest_point": "The 'full contractivity / textbook folklore' claim is inflated \u2014 it is complete only for the choice-free prefix fragment, where contractivity trivially collapses to 'head \u2260 Var'; real choice-guarded recursive protocols would be false-positive-rejected, but those are scoped out as #31's limitation."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Precedents correct and pre-conceded; head-check completeness genuine for single-level; deferred-incompleteness flag only.",
+          "strongest_point": "The 'no false positive' boast is bought entirely by the single-level restriction \u2014 the precedent's incompleteness cost (Agda \u2192 sized types) is renamed 'out of scope,' not escaped, and returns at the nested seam."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "argued-past",
+          "attacker-soundness": "argued-past",
+          "attacker-implementation": "argued-past",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "SURVIVED",
+        "tradeoffs": [
+          "Head-check = full contractivity ONLY for the choice-free, all-unary-guard single-level fragment; completeness/'no false positive' is purchased by the grammar restriction, not by the marker \u2014 must be re-validated when any binary constructor (choice/branch, payload-typed Tx) lands, or choice-guarded loops like Rec<Offer<End,Tx<Var>>> become false positives.",
+          "The precedent's incompleteness cost (Agda \u2192 sized types) is DEFERRED to the announced nested-recursion seam, not escaped; that seam must NOT re-advertise 'admits every productive loop'.",
+          "Deliverable 4's 'full contractivity / textbook folklore' framing is inflated \u2014 scope the boast to the prefix-only fragment; textbook contractivity is non-trivial only with branching the fragment lacks.",
+          "Evidence-hardening (not a design cost): CF1 compile_fail doctest is brittle \u2014 assert the specific E0277 unsatisfied-`Guarded` diagnostic so it can't pass for an unrelated compile error."
+        ],
+        "headline": "Sealed Guarded marker concentrates single-level productivity; termination stays the sole conceded NONE.",
+        "rationale": "No safe unfold of Rec<Var>, no undecidability, no in-scope false positive; head-check = contractivity holds for the unary-guard fragment. Tradeoffs (completeness is grammar-bought; incompleteness deferred to nested seam; folklore boast inflated; CF1 brittle) are future-facing, so the in-scope rule survives."
+      },
+      "outcome": "SURVIVED",
+      "cost_usd": 2.7902,
+      "timestamp": "2026-06-30T20:49:04+00:00"
     }
   ],
   "settled": [],
   "incompatibilities": [],
   "blind_spot_flags": [],
-  "total_cost_usd": 82.2013
+  "total_cost_usd": 84.9915
 }
