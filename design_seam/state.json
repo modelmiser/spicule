@@ -2534,10 +2534,74 @@
       "outcome": "FAILED",
       "cost_usd": 2.4831,
       "timestamp": "2026-07-01T01:46:07+00:00"
+    },
+    {
+      "round": 41,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_total_div.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 total division (the salvage of #33, concentrating the overflow I over-conceded) (re-import rule under attack)\n\nThis is a **design proposal** for a thirty-fourth *seam*, the **direct salvage of the thirty-third** (`divisor`),\nmirroring the #31\u2192#32, #29\u2192#30, and #26\u2192#27 reject\u2192salvage rhythm. #33 was SOUND but its \u00a76 deliverable was\n**REJECTED** (r40, the rejection mode's 8th firing): I **over-conceded** \u2014 I filed the `i32::MIN / -1` overflow as an\n*undecidable whole-program range-analysis* residue. The panel's correction: `divide` overflows on **exactly**\n`a == i32::MIN && d == -1`, whose divisor-side conjunct lives on the very side the seam already refines, so a witness\n`d \u2209 {0, -1}` makes division **total for every `a`** via a `\u0398(1)` construction check \u2014 no range analysis, no SMT.\nThis seam **builds that witness** and asks the panel to confirm both of division's panic sources genuinely\nconcentrate, closing the over-concession. It is **NOT a fourth-domain bid**: the #33 domain finding stands\n(panic-freedom FOLDS into application-correctness); this corrects the *residue line*, not the domain.\n\nYou are attacking a **text specification** backed by real `rustc`-checked co",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Dominated by core::checked_div (omitted from prior art); -1 exclusion is a net capability loss, not free; niche empty.",
+          "strongest_point": "i32::checked_div \u2014 already in core, one call, total, and correctly serves division-by-(-1) for all representable dividends \u2014 strictly dominates TotalDivisor for every real pattern, so the '-1 costs nothing safe' claim only holds against a raw-`/` strawman, not against the baseline programmers actually use."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Excluding {0,-1} provably makes i32 div/rem total; \u0398(1) decidable; no accepted program panics.",
+          "strongest_point": "The cost argument covers only division-by-(-1) and omits remainder-by-(-1), but a % -1 is the constant 0, so no safe capability is lost and no soundness hole opens."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Trivially compilable smart-constructor newtype; \u0398(1) point-exclusion, nominal-privacy guarantee, undecidable cases explicitly conceded out of scope.",
+          "strongest_point": "No implied compiler pass blows up \u2014 the type carries the witness (decidable field-privacy) and the construction check is a two-point \u0398(1) comparison, while +/* range analysis and path-condition divisors are named and conceded as NONE rather than smuggled in."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Negation recovers every safe a/-1, constant-0 every a%-1; no program truly inexpressible, only uniformity lost.",
+          "strongest_point": "Claim #2 justifies excluding -1 only for division (a/-1==-a) but never for remainder, where a%-1==0 is representable even at i32::MIN \u2014 an incomplete justification, though still no lost capability."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Exactly Ada-2012 predicate-subtype + SPARK division_check/overflow_check + NonZero; folklore, but proposal correctly deflates and over-claims nothing.",
+          "strongest_point": "The entire construction \u2014 {0,-1} exclusion, the constructor-as-predicate, even the 'a/-1 == -a' completeness argument \u2014 is AdaCore's own stated signed-division precondition since SPARK 2014, so the contribution is folklore-thin but, because pre-conceded as 'not a new mechanism,' is not an over-claim."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "argued-past",
+          "attacker-implementation": "argued-past",
+          "attacker-expressiveness": "argued-past",
+          "attacker-prior-art": "argued-past"
+        },
+        "decision": "TRADEOFF",
+        "tradeoffs": [
+          "Relevant baseline is i32::checked_div/checked_rem (omitted from the pre-registered prior-art), which is already total and serves division-by-(-1) directly; 'excluding -1 costs nothing safe' holds only at the CAPABILITY level (-a recovers every safe a/-1), NOT ergonomically vs checked_div, and the \u00a73 pitch was stated against a raw-/ strawman.",
+          "The genuine advantage niche is narrow \u2014 amortized reusable RUNTIME divisor, where gate-once + bare -> i32 beats repeated Option handling; constant divisors were already total (pure ceremony) and one-shot runtime divisors are served equal-or-better by checked_div.",
+          "Contribution is folklore-thin: core::NonZero + one excluded value = a Rust re-encoding of Ada-2012 predicate subtypes + SPARK division_check/overflow_check + AdaCore's own a/-1==-a rationale; honest only because pre-conceded as 'built, not invented.'",
+          "The 'excluding -1 costs nothing' justification is stated for division only; remainder-by-(-1) (a % -1 == 0, representable even at i32::MIN) excludes a non-hazard and needs its own one-line justification."
+        ],
+        "headline": "Sound total-i32-division newtype; narrow niche, checked_div-dominated and omitted from the deflation.",
+        "rationale": "Totality, \u0398(1) decidability, concentration, and the three non-claims all confirmed \u2014 no over-claim, no panic path. Ergonomics lands no capability loss or unsoundness but exposes that the pre-registered deflation omits checked_div (the real baseline) and the value niche is narrow; admissible only with those costs recorded."
+      },
+      "outcome": "TRADEOFF",
+      "cost_usd": 1.7935,
+      "timestamp": "2026-07-01T02:31:37+00:00"
     }
   ],
   "settled": [],
   "incompatibilities": [],
   "blind_spot_flags": [],
-  "total_cost_usd": 87.4746
+  "total_cost_usd": 89.2681
 }

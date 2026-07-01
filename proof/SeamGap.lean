@@ -1171,19 +1171,23 @@ theorem divisor_nonzero_division_closes :
     returns a plain `i32` that cannot panic for any `a`. In the kernel the discipline factors (`Ptotaldiv` is
     definitionally `V`).
 
-    HYPOTHESIS (artifact instance; the cold panel adjudicates at the verdict arc): the salvage HOLDS — both panic
-    sources concentrate at construction, total `-> i32` division is realized, closing #33's over-concession (the
-    overflow was a decidable point-exclusion, not the undecidable range-analysis §2/§4 claimed). Conceded up front:
-    it does NOT reopen a fourth domain (panic-freedom still folds into application-correctness); the finite-exclusion
-    trick does NOT generalize to arbitrary `+`/`*` (a genuine range-analysis NONE — division is special); and
-    concentration stays value-threaded. A `..._closes` (the total-division core closes) pending the r41 verdict. -/
+    The cold panel (REPORT_SEAM_SPEC_total_div, r41) ruled **SEAM-HOLDS [none]** and the JUDGE ruled **TRADEOFF,
+    SURVIVED (1/1)** — the salvage HELD, the cleanest verdict in the project (a full HOLD, no horn even costed).
+    Soundness + implementation + expressiveness all argued-past: both panic sources sit in the excluded `{0,-1}`, so
+    a Θ(1) witness makes `total_divide`/`total_remainder` total for all `a`, no panic path. CLOSES #33's
+    over-concession — division's overflow was a decidable point-exclusion, not undecidable range-analysis — and
+    dodged the #27 over-claim trap (all three non-claims confirmed). The #33→#34 reject→salvage pair settles, the
+    fourth (after #26→#27, #29→#30, #31→#32). MARKED tradeoffs (ergonomic/novelty, not horn-drops): the honest
+    baseline is `checked_div`/`checked_rem` (omitted from prior-art, already total); the niche is narrow (amortized
+    reusable runtime divisor); folklore-thin. Tally stays 8 (SURVIVED); rejection count stays 8. A `..._closes`. -/
 def Ptotaldiv (p : Prog) : Bool := V p
 
-/-- Total division CLOSES: the `TotalDivisor` witness (`d ∉ {0, -1}`, a Θ(1) construction check, no SMT)
-    concentrates BOTH of division's panic sources, vending a total `-> i32 total_divide` — the fix #33 owed. What
-    stays outside the kernel, in the prose: that this does not reopen a fourth domain (panic-freedom folds), that
-    the finite-exclusion trick does not extend to arbitrary `+`/`*` (the genuine range-analysis NONE), and the
-    value-threaded concentration cost. HYPOTHESIS naming (`..._both_sources_closes`), pending the r41 verdict. -/
+/-- Total division CLOSES (SEAM-HOLDS [none], SURVIVED — the salvage held): the `TotalDivisor` witness (`d ∉ {0,
+    -1}`, a Θ(1) construction check, no SMT) concentrates BOTH of division's panic sources, vending a total `-> i32
+    total_divide` — the fix #33 owed, closing the over-concession. What stays outside the kernel, in the prose: the
+    ergonomic tradeoffs the r41 panel marked (the `checked_div` baseline; the narrow reusable-runtime-divisor niche;
+    the folklore-thin contribution) — none a horn-drop, so it SURVIVED. A `..._closes` (the total-division core
+    closes; the salvage held). -/
 theorem total_div_both_sources_closes :
     ∃ d : Prog → Bool, SoundW Ptotaldiv d ∧ UsableW Ptotaldiv d ∧ ConcW V d := by
   rw [seam_closes_iff_factors]
