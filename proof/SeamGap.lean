@@ -1133,4 +1133,29 @@ theorem guarded_recursion_productivity_closes :
   rw [seam_closes_iff_factors]
   exact ⟨id, fun _ => rfl⟩
 
+/-- Total(-ish) division — the **thirty-third** seam, the first pivot OFF the session family and a fresh
+    **fourth-domain probe**: **panic-freedom / totality** (SPARK "absence of run-time errors"), after `crdt` #21
+    and `wcet` #22 both deflated. Read `Pr`/`Wt` by analogy: the precondition the floor now *carries* is
+    **div-by-zero-freedom** — a `Divisor` witnesses a nonzero divisor (via `core::num::NonZeroI32`, the one
+    refinement type stock Rust ships, so *no SMT and no hypothetical floor*), and `divide a d` cannot divide by
+    zero. In the kernel the discipline factors (`Pdivisor` is definitionally `V`).
+
+    HYPOTHESIS (this is the artifact instance; the cold panel adjudicates at the verdict arc): the div-by-zero
+    fragment CLOSES (a horn-3 concentration on the real floor), while the `i32::MIN / -1` overflow — a valid
+    nonzero divisor may be `-1` — is the conceded residue, relocated to a runtime `Result`, not carried by the
+    type. Panic-freedom is predicted NOT to open a fourth *soundness* domain (a panic is defined behaviour, not
+    UB), so totality should fold toward the application-correctness basis (#19/#21); the closing fragment is the
+    decidable middle claimed honestly (not "total division"). A `..._closes` for the div-by-zero fragment pending
+    the verdict (or a `..._factors` if the panel rules it a DEFLATION into application-correctness, like `crdt`). -/
+def Pdivisor (p : Prog) : Bool := V p
+
+/-- The div-by-zero fragment CLOSES: the `Divisor` nonzero witness (`NonZeroI32`, on the real floor, no SMT)
+    concentrates div-by-zero-freedom at the construction check, so `divide` cannot hit its first panic source.
+    The `i32::MIN / -1` overflow and the general range-analysis case stay the conceded residue, in the prose,
+    invisible to the kernel. HYPOTHESIS naming (`..._nonzero_division_closes`), pending the r40 verdict. -/
+theorem divisor_nonzero_division_closes :
+    ∃ d : Prog → Bool, SoundW Pdivisor d ∧ UsableW Pdivisor d ∧ ConcW V d := by
+  rw [seam_closes_iff_factors]
+  exact ⟨id, fun _ => rfl⟩
+
 end SeamGap

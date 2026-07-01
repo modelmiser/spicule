@@ -578,6 +578,28 @@ pub mod recursion;
 /// the restriction caveat + termination stay in the prose). See `guarded`.
 pub mod guarded;
 
+/// Thirty-third seam (Phase AF — TOTAL(-ISH) DIVISION, the first pivot OFF the session family): the fresh
+/// **fourth-domain probe** — **panic-freedom / totality** (SPARK / Frama-C "absence of run-time errors"). Integer
+/// `/` panics on **two** independent inputs: div-by-zero (`b == 0`) and signed overflow (`i32::MIN / -1`). This
+/// seam re-exports division through a [`divisor::Divisor`] certified **nonzero** by a single check at construction
+/// ([`divisor::Divisor::new`] → `None` on `0`), witnessed thereafter by the type — so div-by-zero becomes
+/// **unwritable** ([`divisor::divide`] cannot even be called with a raw integer; see CF1). Crucially the witness
+/// is [`core::num::NonZeroI32`], the one refinement type stock Rust SHIPS — so this fragment closes on the **real**
+/// floor, no SMT and no hypothetical solver (unlike the refined index #6). HYPOTHESIS (artifact commit; the cold
+/// panel adjudicates): panic-freedom does **not** open a fourth *soundness* domain — a panic is *defined*
+/// behaviour (a clean abort, never UB), so totality is a **correctness** property that folds toward the
+/// application-correctness basis (#19/#21), NOT a peer of memory-safety/IFC/liveness. But — unlike `crdt`'s wholly
+/// uncheckable law — a **decidable fragment genuinely closes** (div-by-zero via `NonZero`), a horn-3 concentration
+/// that HOLDS for that fragment, while the general case escapes: `MIN / -1` (and arbitrary `+`/`*` overflow) needs
+/// whole-program **range analysis** (undecidable on the bare floor). So [`divisor::divide`] returns
+/// `Result<i32, DivOverflow>`, `Err` **iff** `MIN / -1` — the residue relocated to a runtime `Result`, conceded up
+/// front (the #32 discipline: claim only the carriable half, explicitly NOT "total division"). Predicted
+/// **SEAM-COSTS [horn3]** HOLDS (or a DEFLATION `..._factors` if the panel rules panic-freedom simply IS
+/// application-correctness). Pre-registered overlap: the mechanism echoes `refined` #6 (a nonzero refinement) — the
+/// *domain* finding is the contribution. Lean `divisor_nonzero_division_closes` (a `..._closes`, pending verdict).
+/// See `divisor`.
+pub mod divisor;
+
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 use core::sync::atomic::{AtomicUsize, Ordering};
