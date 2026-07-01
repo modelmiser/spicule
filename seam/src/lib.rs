@@ -585,19 +585,24 @@ pub mod guarded;
 /// ([`divisor::Divisor::new`] → `None` on `0`), witnessed thereafter by the type — so div-by-zero becomes
 /// **unwritable** ([`divisor::divide`] cannot even be called with a raw integer; see CF1). Crucially the witness
 /// is [`core::num::NonZeroI32`], the one refinement type stock Rust SHIPS — so this fragment closes on the **real**
-/// floor, no SMT and no hypothetical solver (unlike the refined index #6). HYPOTHESIS (artifact commit; the cold
-/// panel adjudicates): panic-freedom does **not** open a fourth *soundness* domain — a panic is *defined*
-/// behaviour (a clean abort, never UB), so totality is a **correctness** property that folds toward the
-/// application-correctness basis (#19/#21), NOT a peer of memory-safety/IFC/liveness. But — unlike `crdt`'s wholly
-/// uncheckable law — a **decidable fragment genuinely closes** (div-by-zero via `NonZero`), a horn-3 concentration
-/// that HOLDS for that fragment, while the general case escapes: `MIN / -1` (and arbitrary `+`/`*` overflow) needs
-/// whole-program **range analysis** (undecidable on the bare floor). So [`divisor::divide`] returns
-/// `Result<i32, DivOverflow>`, `Err` **iff** `MIN / -1` — the residue relocated to a runtime `Result`, conceded up
-/// front (the #32 discipline: claim only the carriable half, explicitly NOT "total division"). Predicted
-/// **SEAM-COSTS [horn3]** HOLDS (or a DEFLATION `..._factors` if the panel rules panic-freedom simply IS
-/// application-correctness). Pre-registered overlap: the mechanism echoes `refined` #6 (a nonzero refinement) — the
-/// *domain* finding is the contribution. Lean `divisor_nonzero_division_closes` (a `..._closes`, pending verdict).
-/// See `divisor`.
+/// floor, no SMT and no hypothetical solver (unlike the refined index #6). VERDICT (cold panel, r40):
+/// **SEAM-COSTS [horn3], SOUND — but the DELIVERABLE is REJECTED (the rejection mode's 8th firing, after
+/// #8/#24/#25/#27/#28/#29/#31).** SURVIVED: the domain finding — panic-freedom **FOLDS** into the
+/// application-correctness basis (#19/#21), NOT a fourth soundness domain (a panic is defined behaviour, never UB;
+/// prior-art confirms the fold as the historical default — SPARK's division/overflow split, LH nonzero-`div`;
+/// expressiveness granted it). So the **third** fourth-domain probe deflates (crdt fold, wcet break, divisor fold).
+/// THE REJECTION — I **OVER-CONCEDED**: `divide` overflows on **exactly** `a == i32::MIN && d == -1`, whose
+/// divisor-side conjunct lives on the side I already refine, so a witness `d ∉ {0,-1}` makes division **total for
+/// every `a`** via the same `Θ(1)` check — no range analysis, no SMT. My §2/§4 "overflow needs undecidable
+/// whole-program range analysis" is **false for division**: a decidable corner I *declined*, not an irreducible
+/// one. "One source closes, one escapes" is WRONG — **BOTH** close; by returning `Result` I force `.unwrap()` on
+/// provably-total divisions, reintroducing the panic the seam exists to remove. META: the **SAME tic as #31**,
+/// inverted onto a new domain — over-CONCEDE a decidable cost as undecidable (fleeing the middle toward the cleaner
+/// extreme). MARKED tradeoffs (not horn-drops): concentration overstated (value-threaded divisors only;
+/// path-condition-nonzero still needs a runtime `Option`); ergonomic tax + `.unwrap()` re-panic. Salvage **#34**
+/// (mirroring #31→#32): a `TotalDivisor` (`d ∉ {0,-1}`) vending total `-> i32` division. Tally STAYS 8 (sound —
+/// deliverable rejection); N stays 9. Lean `divisor_nonzero_division_closes` (a `..._closes`: the div-by-zero
+/// fragment closes; the owed `-1` exclusion + the rejection live in the prose). See `divisor`.
 pub mod divisor;
 
 use core::cell::UnsafeCell;

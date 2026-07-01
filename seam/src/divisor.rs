@@ -35,22 +35,54 @@
 //!   (zero is already excluded), so the second panic source is relocated to a **runtime `Result`**, not carried by
 //!   the type. That `Err` arm *is* the conceded residue.
 //!
-//! ## HYPOTHESIS (this is the artifact commit; the cold panel adjudicates, not the builder)
+//! ## VERDICT (cold panel, REPORT_SEAM_SPEC_divisor.md, r40): SEAM-COSTS [horn3], SOUND — but the DELIVERABLE is
+//! ## REJECTED (the rejection mode's 8th firing): I OVER-CONCEDED — the `MIN/-1` overflow is DECIDABLE, not
+//! ## undecidable range-analysis, so "one source closes, one escapes" is WRONG for division — BOTH close.
 //!
-//! Panic-freedom does **not** open a fourth *soundness* domain. A panic is **defined behaviour** — a clean abort,
-//! never UB — so totality is a **correctness** property, not a "can safe code reach UB?" property; it should fold
-//! toward the **application-correctness basis** (#19 `restore` / #21 `crdt`), *not* stand beside memory safety /
-//! IFC / liveness. Yet — unlike `crdt`, whose algebraic law was wholly uncheckable — a **decidable fragment
-//! genuinely closes**: div-by-zero, via the shipped `NonZero` refinement, a horn-3 concentration that *holds for
-//! that fragment*. The general case escapes: `MIN / -1` (and arbitrary `+`/`*` overflow) needs whole-program
-//! **range analysis** (SPARK's prover, refinement over QF-LIA) — undecidable on the bare floor. Predicted verdict:
-//! **SEAM-COSTS [horn3]** that HOLDS for the div-by-zero fragment, the residue conceded up front (the #32
-//! discipline — I claim only the carriable half, and explicitly *not* "total division"). Pre-registered
-//! deflations the panel may sharpen: (a) the mechanism overlaps `refined` #6 (a nonzero refinement); the *domain*
-//! finding is the contribution, not the mechanism; (b) the closing fragment may be judged **degenerate** (one
-//! rarely divides by a statically-unknown value one has separately proven nonzero), echoing `wcet`'s degenerate-
-//! Peano dock; (c) if the panel rules panic-freedom simply *is* application-correctness, this is a DEFLATION
-//! (a `..._factors`, like `crdt`), not a fourth domain.
+//! Horn-classifier: **SEAM-COSTS [horn3-concentration]** — sound and decidable, but concentration overstated and
+//! a "total division" forces a consumer-written `.unwrap()` panic. Judge: **FAILED** on the §6 deliverable.
+//! Soundness and implementation attacks both **conceded the rule holds** (no zero-`Divisor` mintable; `MIN/-1` is
+//! `Err`, not a panic; a panic is not UB; the check is `Θ(1)`, no SMT) — so Horns 1/2/3 hold and this is **SOUND**
+//! (tally STAYS 8). But the JUDGE rejected the deliverable, the method's **REJECTION mode, 8th firing** (after
+//! #8/#24/#25/#27/#28/#29/#31).
+//!
+//! **What SURVIVED — the domain finding:** panic-freedom **FOLDS** into the application-correctness basis
+//! (#19/#21), **not** a fourth soundness domain. A panic is *defined behaviour* (a clean abort, never UB), so
+//! totality is a correctness property; prior-art confirms the fold as the historical default (SPARK's
+//! `division_check`/`overflow_check` split; Liquid-Haskell's nonzero-`div`; `core::NonZero`), and expressiveness
+//! explicitly granted it. So the **third** fourth-domain probe deflates (after `crdt` #21 fold, `wcet` #22 break);
+//! the confirmed map (memory safety / information flow / liveness) still looks special.
+//!
+//! **THE REJECTION (I OVER-CONCEDED, refuted from my own §2):** `divide` overflows on **exactly** `a == i32::MIN
+//! && d == -1` — a conjunction whose *divisor-side* conjunct lives on the very side this seam already refines. So
+//! a witness `d ∉ {0, -1}` makes `a / d` **total for every `a`**, via a `Θ(1)` constructor check identical in cost
+//! and character to the nonzero check — **no range analysis, no SMT.** My §2/§4 claim that the overflow residue
+//! "needs whole-program range analysis, undecidable" is therefore **false for the primitive I actually chose**: it
+//! is a **decidable corner I declined to carry**, not an irreducible one. The pedagogical conceit — "two
+//! independent sources; one closes, one escapes; the honest partial result" — is **wrong for division: BOTH
+//! sources close.** By returning `Result` instead of vending total `-> i32` division, the panic-freedom seam
+//! forces callers of provably-total divisions (`x / 60`, `sum / count`) to write `.unwrap()` — **reintroducing the
+//! exact panic it exists to remove**. The `remainder` corner sharpens it: `i32::MIN % -1` has the defined answer
+//! `0`, yet the API returns `Err`. Refuted from my own framing — §2 explicitly lumped division overflow with
+//! "arbitrary `+`/`*`".
+//!
+//! **META — the SAME tic as #31, exactly inverted onto a new domain:** #31 over-conceded *guardedness* as an
+//! undecidable NONE when it was a decidable marker; #33 over-conceded the *`MIN/-1` overflow* as undecidable
+//! range-analysis when it is a decidable point-exclusion. Both are the project's unifying failure — **I flee the
+//! MIDDLE (a decidable partial cost) toward whichever EXTREME is cleaner** — here in its *over-concession*
+//! direction (toward "undecidable"), the 8th rejection. The natural **salvage (#34, mirroring #31→#32, #29→#30,
+//! #26→#27):** a `TotalDivisor` witnessing `d ∉ {0, -1}` that vends total `-> i32` division for the common case,
+//! proving the overflow residue concentrates too — leaving only *arbitrary* `+`/`*` range analysis as the genuine
+//! undecidable NONE.
+//!
+//! **What the panel MARKED (tradeoffs, NOT horn-drops — the seam is sound):** (1) **concentration overstated** —
+//! the newtype collapses only divisors *threaded by value* through `Divisor` to one boundary; a
+//! provably-nonzero-but-*computed* divisor (nonzero by path condition) still forces a redundant runtime `Option`
+//! or a prover, exactly the LH/SPARK use case (prior-art). (2) **standing ergonomic tax** — the mandatory
+//! `Result<_, DivOverflow>` is worse than `/`/`checked_div` for one-shot shapes, and the `.unwrap()` discharge
+//! reintroduces a panic (ergonomics; shared with expressiveness). No new domain, coordinate, or mode (N stays 9);
+//! tally STAYS 8 (sound — a deliverable rejection). Lean `divisor_nonzero_division_closes` (a `..._closes`: the
+//! div-by-zero fragment genuinely closes; the owed `-1` exclusion and the rejection live in the prose).
 //!
 //! ### CF1 — you cannot divide by a raw integer; the divisor must pass the nonzero construction check:
 //! ```compile_fail

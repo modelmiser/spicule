@@ -1140,19 +1140,25 @@ theorem guarded_recursion_productivity_closes :
     refinement type stock Rust ships, so *no SMT and no hypothetical floor*), and `divide a d` cannot divide by
     zero. In the kernel the discipline factors (`Pdivisor` is definitionally `V`).
 
-    HYPOTHESIS (this is the artifact instance; the cold panel adjudicates at the verdict arc): the div-by-zero
-    fragment CLOSES (a horn-3 concentration on the real floor), while the `i32::MIN / -1` overflow — a valid
-    nonzero divisor may be `-1` — is the conceded residue, relocated to a runtime `Result`, not carried by the
-    type. Panic-freedom is predicted NOT to open a fourth *soundness* domain (a panic is defined behaviour, not
-    UB), so totality should fold toward the application-correctness basis (#19/#21); the closing fragment is the
-    decidable middle claimed honestly (not "total division"). A `..._closes` for the div-by-zero fragment pending
-    the verdict (or a `..._factors` if the panel rules it a DEFLATION into application-correctness, like `crdt`). -/
+    The cold panel (REPORT_SEAM_SPEC_divisor, r40) ruled **SEAM-COSTS [horn3-concentration]** and the JUDGE ruled
+    **FAILED** on the §6 deliverable — the rejection mode's 8th firing (after #8/#24/#25/#27/#28/#29/#31), SOUND
+    (Horns 1/2/3 held; tally STAYS 8). SURVIVED: the domain finding — panic-freedom **FOLDS** into the
+    application-correctness basis (#19/#21), NOT a fourth soundness domain (a panic is defined behaviour, not UB;
+    prior-art confirms the historical fold). THE REJECTION: I **over-conceded** — `divide` overflows on exactly
+    `a == i32::MIN && d == -1`, so a witness `d ∉ {0,-1}` makes division total for every `a` via the same `Θ(1)`
+    check; the `MIN / -1` overflow is a DECIDABLE corner I declined, not the undecidable range-analysis residue §2/§4
+    claimed. "One source closes, one escapes" is wrong for division — BOTH close. META: the SAME "flee the middle"
+    tic as #31, inverted (over-CONCEDE a decidable cost as undecidable). Salvage #34: a `TotalDivisor` (`d ∉
+    {0,-1}`) vending total `-> i32` division. In the kernel the discipline factors (`Pdivisor` is definitionally
+    `V`); a `..._closes` (the sound div-by-zero core closes, like #31's `recursion_guarded_order_closes`). -/
 def Pdivisor (p : Prog) : Bool := V p
 
-/-- The div-by-zero fragment CLOSES: the `Divisor` nonzero witness (`NonZeroI32`, on the real floor, no SMT)
-    concentrates div-by-zero-freedom at the construction check, so `divide` cannot hit its first panic source.
-    The `i32::MIN / -1` overflow and the general range-analysis case stay the conceded residue, in the prose,
-    invisible to the kernel. HYPOTHESIS naming (`..._nonzero_division_closes`), pending the r40 verdict. -/
+/-- The div-by-zero fragment CLOSES (SOUND — SEAM-COSTS [horn3], the deliverable REJECTED but the core sound): the
+    `Divisor` nonzero witness (`NonZeroI32`, on the real floor, no SMT) concentrates div-by-zero-freedom at the
+    construction check, so `divide` cannot hit its first panic source. What the r40 verdict rejected — that the
+    `MIN / -1` overflow is *also* a decidable, concentratable corner (`d ∉ {0,-1}`) I over-conceded as undecidable,
+    the owed salvage #34 — and the general `+`/`*` range-analysis NONE both live in the prose, invisible to the
+    kernel. A `..._closes` (the sound div-by-zero core closes; the rejection is of the deliverable, not soundness). -/
 theorem divisor_nonzero_division_closes :
     ∃ d : Prog → Bool, SoundW Pdivisor d ∧ UsableW Pdivisor d ∧ ConcW V d := by
   rw [seam_closes_iff_factors]

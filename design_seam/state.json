@@ -2472,10 +2472,72 @@
       "outcome": "SURVIVED",
       "cost_usd": 2.7902,
       "timestamp": "2026-06-30T20:49:04+00:00"
+    },
+    {
+      "round": 40,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_divisor.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 total(-ish) division (the panic-freedom / totality probe) (re-import rule under attack)\n\nThis is a **design proposal** for a thirty-third *seam*, the **first pivot off the session family** (connectives\n#18\u2013#28, completion #29/#30, recursion #31/#32 \u2014 fully mapped). It is a fresh **fourth-domain candidate**:\n**panic-freedom / totality** \u2014 the SPARK / Frama-C / refinement-type \"absence of run-time errors\" property (no\ndiv-by-zero, no overflow, no out-of-bounds). Both previous fourth-domain probes DEFLATED \u2014 `crdt` #21 folded into\napplication-correctness, `wcet` #22 broke unsound \u2014 so the confirmed map (memory safety / information flow /\nliveness) looks special. This seam asks whether \"the program **aborts** at run time\" is a fourth **soundness**\ndomain, or folds.\n\nThe primitive is **integer division**, chosen because `a / b` panics on **two independent** inputs: div-by-zero\n(`b == 0`) and signed overflow (`i32::MIN / -1`). That two-source structure lets one operator show, self-contained,\nthat **one source closes and one escapes** \u2014 the honest partial result.\n\nYou are attacking a **text specification** backed by real `rustc`-checked code (`seam/src/divisor.rs`, default\n`",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Mandatory Result<_,DivOverflow> taxes every division; dead for unsigned/|d|\u22601, and .unwrap() to discharge it reintroduces the panic the seam removes.",
+          "strongest_point": "The vended divide/remainder force a DivOverflow error arm on every call \u2014 statically dead for unsigned and for |d|\u22601 \u2014 whose only ergonomic discharge is .unwrap(), which puts back the exact panic class the seam exists to eliminate, making it strictly worse than shipped `/` and `checked_div`."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "No safe path mints a zero Divisor; overflow honestly routed to Err; checked fragment is \u0398(1) decidable.",
+          "strongest_point": "The seam earns soundness by conceding rather than over-claiming \u2014 Result not total division \u2014 so no accepted program panics via / on a zero divisor and there is no undecidable check to attack."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Design pushes every hard obligation to runtime; only pass is trivial nominal type-checking. No blow-up exists.",
+          "strongest_point": "The undecidable range-analysis pass is explicitly conceded and never requested \u2014 the compiler runs only linear nominal type-checking, which admits no divergent input shape."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Overflow residue isn't irreducible: excluding d==-1 is a decidable refinement the seam declines, forcing .unwrap() panics on provably-total division.",
+          "strongest_point": "Since divide overflows only when a==MIN AND d==-1, a divisor witnessed d\u2209{0,-1} makes division total for all a via the seam's own \u0398(1) mechanism \u2014 so 'overflow is the conceded residue' mis-draws the line and total division is inexpressible without a panic-inducing .unwrap()."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "All precedent (SPARK division/overflow split, LH nonzero-div, NonZero) pre-registered and accurately conceded; fold prediction matches literature.",
+          "strongest_point": "The 'two-source, one-closes-locally' framing is SPARK's division_check/overflow_check taxonomy verbatim, and the 'no-SMT whole-program collapse' claim overstates concentration \u2014 it covers only value-threaded divisors, not the path-condition-nonzero cases LH/SPARK exist to discharge."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "argued-past",
+          "attacker-implementation": "argued-past",
+          "attacker-expressiveness": "genuine-flaw",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Concentration claim overstated: the newtype collapses only value-threaded divisors to one boundary; path-condition-nonzero computed divisors still force a runtime Option or a prover (prior-art).",
+          "Standing ergonomic tax: mandatory Result<_,DivOverflow> is worse than `/` and checked_div for one-shot/unsigned/|d|\u22601 shapes, and .unwrap() discharge reintroduces the panic the seam removes (ergonomics)."
+        ],
+        "headline": "Sound and folds, but the re-import rule mis-draws its overflow residue line.",
+        "rationale": "Soundness/implementation attacks fail; fold survives. But expressiveness shows division's overflow (a==MIN AND d==-1) is a decidable, concentratable d\u2209{0,-1} refinement \u2014 not the undecidable range-analysis residue \u00a72/\u00a74 claim. That mischaracterized concession is a genuine flaw requiring revision."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.4831,
+      "timestamp": "2026-07-01T01:46:07+00:00"
     }
   ],
   "settled": [],
   "incompatibilities": [],
   "blind_spot_flags": [],
-  "total_cost_usd": 84.9915
+  "total_cost_usd": 87.4746
 }
