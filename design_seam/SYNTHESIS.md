@@ -434,6 +434,100 @@ outside-the-axes — that dangers project onto, with finitely many answers to "w
 The full face lattice (axes, dissociation proofs, the five-mode meta-pattern, the closed-basis section)
 is `REALIZABILITY.md`.
 
+## The second movement: composite preconditions, the fourth-domain probes, and the builder's calibration
+
+The first movement (seams 1–17) answered *"what does a safe witness cost?"* — the closed nine-axis basis, the
+domain-parameterized trilemma, the graded floor-match. The next twenty seams (18–37) held those answers fixed and
+pushed on three new fronts: **how a floor matches a *composite* precondition**, **whether a *fourth* soundness domain
+exists**, and — the finding that only a stateful-builder-against-a-cold-gauntlet method could produce — **how the
+builder itself is miscalibrated, and how that miscalibration is measured and corrected.**
+
+**Liveness resolves into three coordinates, each with a lock face and a session face, and the packaging dial that
+sets which horn a danger threatens is itself fenced.** The session family (#18 `session` through #32 `guarded`)
+charted the liveness domain the way the first twelve seams charted memory safety. It has **three coordinates** —
+completion, leak-freedom, and progress/deadlock-freedom — and each surfaced *twice*, once on a lock and once on a
+session, breaking or costing the same way both times: progress broke on `ordered_locks` #15/#16 (the lock face) and
+again on `priority` #26 (the session face), each time because *type-level order carries the local bound while
+whole-program acyclicity escapes the per-edge floor*. Progress then **decomposed** (#24 `delegation`, #25
+`multiparty`, #27 `projected`): a trusted constructor can carry the **topology** obligation (no cycle) but the
+**execution** obligation (run-all, in-order, no-drop) never leaves the consumer — "schedulability by construction,
+*given all roles execute*." Completion, long treated as an irreducible residue (#17/#18/#23), turned out
+**concentrable** after all: #29 `must_complete` reversed its own prediction and #30 `must_scoped` built the fix — a
+scoped-CPS combinator (`thread::scope`'s trick) turns a forgettable `Drop` bomb into an unforgeable *return-type*
+obligation, defanging `mem::forget` — at the price of surrendering the free handle (and only **per-endpoint**: global
+completion still escapes via peer divergence). Recursion (#31/#32) split cleanly: guardedness/productivity
+**concentrates** (a sealed `Guarded` marker rejecting the non-contractive `µX.X` in Θ(type-size), the same machinery
+as order), leaving **termination alone** as the one genuinely undecidable NONE. Across all of it, the earlier
+*packaging-dial* finding (#19 `restore` owned-costs vs #20 `reseat` borrowed-forces) held as a **fence, not a free
+choice**: which horn a danger threatens is a design decision only *within* the structural envelope set by whether
+soundness can be decoupled from the danger.
+
+**Four probes for a fourth soundness domain; four deflations by four different mechanisms; the three-domain map is
+closed.** After memory safety, information flow, and liveness, the natural question was whether a *fourth* domain
+exists. Four seams went looking, each in a different candidate domain, and **none opened one**: `crdt` #21
+(distributed convergence) **folded** onto the application-correctness basis — replica divergence is the generic
+unchecked-typeclass-law phenomenon (Rust checks the *signatures* of `Ord`/`Monoid`/semilattice, none of their *laws*),
+undecidable by Rice, no new coordinate; `wcet` #22 (real-time/WCET) **broke** — an op-count is an unsound proxy for
+cycles, WCET's own founding premise, "pick a lane"; `divisor` #33 (panic-freedom/totality) **folded** — a panic is
+*defined behaviour*, a clean abort, never UB, so totality is a correctness property (SPARK's own division/overflow
+split); and `sync_cell` #35 (data-race/concurrency) **reclassified into memory safety** — a data race *is* UB. Four
+mechanisms — fold, break, fold, reclassify — and the same verdict each time. The map that survives is **three
+soundness domains** (memory safety / information flow / liveness) plus an **application-correctness basis** that
+absorbs the "semantic law" dangers (typeclass laws, totality, convergence) — the things a type floor checks the
+*shape* of but never the *meaning* of.
+
+**How a floor relates to its domain has exactly two shapes, not three — and the concentrating shape has a static and a
+dynamic end.** The concurrency probe forced the sharpest structural correction of the second movement. The earlier
+picture was an implicit *trichotomy*: information flow floor-closes-nothing, memory-aliasing concentrates, and
+concurrency looked *floor-closed-special* (the `Send`/`Sync` auto-traits seemed to close data-race freedom outright).
+`sync_cell` #35 collapsed it to a **dichotomy**: only information flow is special (the floor runs *no* non-interference
+pass, so every IFC seam breaks by omission — `secret` #13, `labeled` #14); **memory-aliasing and data-race freedom are
+the same shape** — the floor *propagates* the invariant structurally (borrowck for aliasing, the auto-traits for
+`Send`/`Sync`) but does **not close** it; closure comes from **concentrating seams**. So the memory-safety domain
+carries *two* concentrate-behind-a-seam coordinates, and the concentrating bucket itself has texture: a **static end**
+(SPSC #1, the slab #4 — discharge is compiler-verified, total, composable) and a **dynamic end** (`SpinLock` #37,
+`RefCell` — discharge is a runtime witness that leaves a compiler-invisible obligation, e.g. lock-ordering). This
+sharpened, in turn, what an `unsafe impl` *is*: not "just trust," but a proof obligation that is either **discharged**
+(met — `SpinLock`'s lock invariant plus the guard's `T: Sync` bound) or **false** (deleted — `SyncCell`'s
+unconditional `Sync`). That discharged-vs-false distinction is exactly RustBelt's semantic type soundness (POPL 2018),
+floor-relativized: a re-import inhabits the logical relation *iff* its invariant is provable.
+
+**The adjudication vocabulary closed at nine verdict modes, and the broken-seam count reached ten.** Distinct from the
+nine cost *axes*, the cold panel's *rulings* settled into **nine verdict modes** (SEAM-HOLDS [none]; SEAM-COSTS by
+horn; SEAM-BREAKS by horn; the sound-but-deliverable-rejected *rejection* mode; the real-but-inseparable mode; the
+projects-onto-basis mode; the tradeoff-survival; and so on) — a fixed taxonomy that absorbed every one of the last
+twenty seams without a tenth ever appearing. Ten seams **broke** a horn (nine *discovered* under adversarial pressure;
+one — `sync_cell` #35 — a *conceded folklore* strawman built as a probe vehicle), and each break, like each cost,
+mapped back to a missing precondition conjunct rather than to bad luck.
+
+**The genuinely new second-movement finding is about the *builder*, not the seams: a stateful builder has
+domain-local blind spots that a cold gauntlet measures and a salvage loop corrects.** Eight times the panel ruled a
+seam *sound* but **rejected its deliverable** — and in every case the refutation came from the builder's **own cited
+lineage** (Kobayashi as counterexample where I filed him as support; `checked_div` omitted from my own prior-art;
+`SpinMutex` omitted as the counterexample to "no concurrency seam exists"). The eight rejections share one shape: **I
+flee the *middle* — a decidable partial cost — toward whichever *extreme* is cleaner**, whether *total concentration*
+(#8/#24/#25/#27/#28), *irreducible/global* danger (#29/#30), or *undecidable* residue (#31/#33). That tic is not
+static: it traces a **calibration arc**. Early, it decided horns (the eight rejections, #8–#31, were horn-deciding
+over-claims). Then it fell *below* the horn-deciding threshold — #32 and #34 both *survived* with the tic present only
+as a **marked tradeoff** (an overstated baseline, an over-general "folklore" claim), because the builder had learned to
+pre-concede the uncarriable half up front. But the arc is **not monotonic**: on the *fresh* concurrency domain the tic
+re-fired at **full strength** — #35 over-claimed "floor-closed," and #36, the salvage built to prove the correction,
+**omitted a conjunct and broke the same way** — before receding again on #37 (whose only dings were the mild
+overstated-parity/nil-novelty shape). The coda: **on novel ground a builder's tic fires repeatedly until the gauntlet
+exhausts the domain's obligation set, then recedes** — concurrency took three seams (break, break, hold) to map an
+`unsafe impl`'s full four-obligation set, where a familiar domain took one. This is the load-bearing argument for the
+method: *coldness is the instrument that measures a warm builder's calibration*, and the measurement is domain-local.
+
+**The salvage rhythm is the method's self-correcting loop — five settled lineages, one of them two-step.** Every
+rejection and break **prescribes its own fix** (the panel names the missing conjunct), the stateful builder supplies
+it, and adjudication confirms or re-refutes. Five such lineages settled: four **one-step** pairs (#26→#27 sealed the
+public constructor; #29→#30 built the scoped combinator; #31→#32 added the `Guarded` marker; #33→#34 excluded the
+overflow point) and one **two-step** chain (#35→#36→#37 — two steps precisely because #36's salvage *also* broke, on
+the omitted guard bound, before #37 discharged all four obligations and held). The loop is the constructive analog of
+the impossibility result: you cannot build a *seamless* language, but against a cold adversary you *can* converge a
+*seam* to soundness, and the number of rounds it takes is a readout of how far the danger sits from the builder's
+prior.
+
 ## Decontamination (the prompt's C1): did the obstruction move or vanish?
 
 The seamful2 theorem predicted that when a seam fails to close, the obstruction *relocates*
@@ -943,3 +1037,26 @@ horn a danger threatens set by how the re-import rule packages it — yet that p
 *bounded*: it moves the horn only within a structural envelope set by whether soundness can be *decoupled*
 from the danger (owned ⇒ the danger costs; borrowed-across-unwind / address-pinned / borrow-scoped ⇒ it
 forces a fixed horn), so "which horn" is a design choice **within** a danger-intrinsic fence, not freely.**
+
+**The completed arc (37 seams), in one more sentence.** Everything above was settled by seam ~18; the remaining twenty
+close the account without adding a horn, an axis, or a domain — **the map is finite and it is now full.** Liveness
+turned out to have exactly **three coordinates** (completion, leak-freedom, progress), each appearing on both a lock
+face and a session face, with completion *concentrable* after all (a scoped-CPS combinator, per-endpoint) and only
+*termination* left as an undecidable NONE; **four probes for a fourth soundness domain all deflated** — convergence
+and totality *fold* onto the application-correctness basis, real-time *breaks* on the cost/cycles gap, and data-race
+freedom *reclassifies* into memory safety — so the domain count is **three, closed**; the floor-domain relation
+sharpened from a trichotomy to a **dichotomy** (information flow is the lone *floor-closes-nothing* domain, while
+memory-aliasing and data-race freedom are the *same* floor-propagates-but-concentrating shape, with a **static** end
+(SPSC, the slab) and a **dynamic** end (`SpinLock`, `RefCell`), and an `unsafe impl` revealed as a proof obligation
+that is either *discharged* or *false* — RustBelt semantic typing, floor-relativized); and the adjudication vocabulary
+closed at **nine verdict modes** over a **ten**-seam broken tally. But the second movement's own discovery is
+reflexive and could only come from *this* method — a warm, stateful builder red-teamed by a cold, stateless gauntlet:
+**the builder has a measurable, domain-local miscalibration** — a tic to *flee the decidable middle toward the cleaner
+extreme* (total / global / undecidable), which the gauntlet caught **eight** times as sound-but-rejected deliverables,
+each refuted from the builder's *own* citations, and which traces a **non-monotonic calibration arc** (horn-deciding
+early, a marked-tradeoff-below-threshold as the builder learned to pre-concede the uncarriable half, then re-firing at
+*full* strength on the fresh concurrency domain before receding) — so that **coldness is not merely a demolition tool
+but a calibration instrument**, and the **five settled salvage lineages** (four one-step, one two-step because the
+salvage itself first broke) are the constructive dual of the impossibility result: you cannot build a *seamless*
+language, but against a cold adversary a single *seam* can be **converged** to soundness, and the round-count of that
+convergence *measures how far the danger sat from what the builder already knew.***
