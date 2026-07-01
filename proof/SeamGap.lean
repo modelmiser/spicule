@@ -1193,4 +1193,31 @@ theorem total_div_both_sources_closes :
   rw [seam_closes_iff_factors]
   exact ⟨id, fun _ => rfl⟩
 
+/-- Shared mutability across threads — the **thirty-fifth** seam, the FIFTH fourth-domain probe: **data-race
+    freedom / concurrency** (after `crdt` #21, `wcet` #22, `divisor` #33). Read `Pr`/`Wt` by analogy: the danger is
+    a DATA RACE (concurrent unsynchronized access to shared mutable state = UB), the property Rust's `Send`/`Sync`
+    auto-traits enforce. `SyncCell<T>` re-exports the capability to share a non-atomic cell across threads via an
+    unconditional `unsafe impl Sync`/`Send`. In the kernel the discipline factors (`Psynccell` is definitionally
+    `V`), but — like `priority` #26 / `wcet` #22 — a `..._factors` (a BREAK), not a `..._closes`.
+
+    HYPOTHESIS (artifact instance; the cold panel adjudicates at the verdict arc): SEAM-BREAKS [horn1] — the
+    unconditional `unsafe impl Sync` is an unchecked TCB axiom that lets safe code race `&SyncCell` across threads
+    (UB), so if accepted the broken-seam tally rises 8→9 (the first concurrency-domain break). THE FINDING:
+    data-race freedom is NOT a fourth *seamable* domain — the floor's auto-derived `Send`/`Sync` (Rustbelt) already
+    closes it, so a re-import only restates the floor (bound `T: Sync`, vacuous) or breaks (the `unsafe impl`
+    axiom); the 3-domain map survives, concurrency folding into memory safety by a distinct mechanism. A
+    `..._factors` (it breaks) pending the r42 verdict. -/
+def Psynccell (p : Prog) : Bool := V p
+
+/-- The seam FACTORS (a BREAK, not a close): the discipline is the trivial `V`-carried floor fact, while the real
+    guarantee — data-race freedom under the unconditional `unsafe impl Sync` — is FALSE in safe code (a `&SyncCell`
+    shared across threads races a non-atomic write). Like `priority`/`wcet`, `..._factors` certifies only the
+    trivial factoring, not a genuine closure. The floor-closed classification (auto-`Send`/`Sync` already closes
+    data-race freedom, so no seam adds value) lives in the prose, invisible to the kernel. HYPOTHESIS naming
+    (`..._datarace_factors`), pending the r42 verdict. -/
+theorem sync_cell_datarace_factors :
+    ∃ d : Prog → Bool, SoundW Psynccell d ∧ UsableW Psynccell d ∧ ConcW V d := by
+  rw [seam_closes_iff_factors]
+  exact ⟨id, fun _ => rfl⟩
+
 end SeamGap

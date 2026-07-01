@@ -629,6 +629,27 @@ pub mod divisor;
 /// closes). See `total_div`.
 pub mod total_div;
 
+/// Thirty-fifth seam (Phase AH — SHARED MUTABILITY ACROSS THREADS, the FIFTH fourth-domain probe): a deliberate
+/// stress-test of the "3-domain map (memory/IFC/liveness) is complete" claim, probing **data-race freedom /
+/// concurrency** — the property Rust's `Send`/`Sync` auto-traits enforce. [`sync_cell::SyncCell`] wraps an
+/// `UnsafeCell` with a non-atomic `&self` get/set, plus the dangerous re-import: an **unconditional `unsafe impl
+/// Sync`/`Send`** asserting a `&SyncCell` is safe to share across threads. THE KEY OBSERVATION: data-race freedom
+/// sits at a *different structural place* than every prior domain — IFC's floor checks NOTHING (seams break by
+/// omission), memory-aliasing's floor checks via borrows (seams concentrate `unsafe`), but data-race freedom is
+/// **already closed by the floor's auto-derived `Send`/`Sync`** (Rustbelt-verified; a `Cell<i32>` is `!Sync`
+/// precisely to forbid cross-thread sharing — CF1). So a re-import has nothing to add: the only SOUND interface
+/// bounds `T: Sync`/uses atomics (= the floor, vacuous), and the only NON-trivial re-import is the `unsafe impl`
+/// escape — an unchecked TCB axiom (MMIO-shaped). HYPOTHESIS VERDICT (cold panel, r42): predicted **SEAM-BREAKS
+/// [horn1]** — the unconditional `unsafe impl Sync` lets safe code race `&SyncCell` across `thread::scope` (a data
+/// race = UB), no consumer `unsafe` (the `no_run` doctest shows it compiling; CF1 shows the floor rejecting a
+/// shared `Cell`); if accepted, tally 8→9 (first concurrency break). THE FINDING: data-race freedom is NOT a fourth
+/// *seamable* domain — it is memory-safety (UB) closed by the auto-trait mechanism, so a seam only restates the
+/// floor or breaks; the 3-domain map SURVIVES. Pre-registered: the `unsafe impl Send` footgun is textbook (the
+/// contribution is the floor-closed *classification*); the witness is a type-level hole (real UB needs a thread —
+/// no_std single-threaded-witness limit); overlaps `mmio` (axiom) + `secret` #13 (horn-1 break). Tally 8→9 if a
+/// break; N stays 9. Lean `sync_cell_datarace_factors` (a `..._factors`, pending verdict). See `sync_cell`.
+pub mod sync_cell;
+
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 use core::sync::atomic::{AtomicUsize, Ordering};
