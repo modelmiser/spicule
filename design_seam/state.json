@@ -2659,10 +2659,73 @@
       "outcome": "FAILED",
       "cost_usd": 2.5665,
       "timestamp": "2026-07-01T04:20:31+00:00"
+    },
+    {
+      "round": 43,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_spin_mutex.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 a core-only spinlock mutex (the sound concurrency seam; the salvage of #35) (re-import rule under attack)\n\nThis is a **design proposal** for a thirty-sixth *seam*, the **salvage of `sync_cell` #35** \u2014 mirroring #26\u2192#27,\n#29\u2192#30, #31\u2192#32, #33\u2192#34. #35 (`sync_cell`) was a deliberately-unsound strawman \u2014 an **unconditional** `unsafe impl<T>\nSync` whose data-race-freedom obligation was simply **deleted** \u2014 built as the *vehicle* for a domain probe. It BROKE\n(the broken-seam tally rose 8\u21929), but its **contribution FAILED**: I staked *\"no value-adding concurrency seam exists;\ndata-race freedom is **floor-closed**; a re-import is **categorically** an unchecked axiom,\"* and the r42 panel refuted\nit with one obvious omitted seam \u2014 a sound, `core`-only **`SpinMutex<T>`** whose `unsafe impl<T: Send> Sync` is\n**DISCHARGED by the lock's mutual-exclusion invariant**, not asserted false. **This seam builds exactly that.** The\nthesis under attack is the *corrected* classification: data-race freedom (DRF) is a **concentrate-behind-a-seam**\ndomain (locks/channels/atomics are its seams \u2014 the concurrency analog of SPSC #1 / the slab #4), a **discharged**\n`unsafe impl` is categorically di",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Ergonomically flawless (it IS spin::Mutex, zero ceremony); but the conceded liveness residue omits the interrupt-context deadlock that dominates its only core-only use case.",
+          "strongest_point": "The seam's sole value-add is being core-only, i.e. for no_std/interrupt contexts \u2014 exactly where a naive spinlock deadlocks or needs irqsave, a footgun the \u00a75 'visible relocation' residue never names."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "Guard auto-derives Sync at T:Send; sharing one guard across threads races a Send+!Sync payload (e.g. Cell).",
+          "strongest_point": "One live SpinGuard shared by reference lets two threads deref to &Cell<i32> concurrently \u2014 the spec omits std's mandatory `unsafe impl<T: Sync> Sync for Guard`, so exclusion of guards never implies exclusion of threads touching T."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "No compiler pass is forced into undecidable/super-poly territory; discharge is offloaded to trusted unsafe impl, not a checker.",
+          "strongest_point": "The exclusion obligation lives in the TCB (human RustBelt proof), so the compiler is never asked to solve race-freedom, alias analysis, or any hard decision procedure \u2014 leaving nothing on my axis to break."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "minor",
+          "summary": "Runtime (dynamic) discharge \u2260 static discharge; DRF-via-mutex can't deliver composable progress-guaranteed arbitrary-T sharing, so not 'same bucket'.",
+          "strongest_point": "Memory-aliasing seams discharge statically and totally (progress guaranteed, compiler-verified), while SpinMutex discharges via a runtime witness that leaves an unchecked, compiler-invisible lock-ordering obligation \u2014 so DRF is a strictly weaker bucket, refuting deliverable 2's 'same bucket as memory-aliasing.'"
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "The 'discharged\u2260false' classification billed as the finding is RustBelt's machine-verified semantic type soundness (POPL 2018), uncited for that purpose.",
+          "strongest_point": "The one thing the proposal refuses to concede as prior art \u2014 its discharged-vs-false unsafe-impl distinction \u2014 is verbatim RustBelt's definition of semantic type soundness, which already formally verified Mutex's Sync via a lock invariant."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "argued-past",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Liveness residue (\u00a75) must additionally name IRQ/interrupt-context self-deadlock (needs irqsave) and unbounded priority inversion \u2014 the acute footguns of the core-only use case the seam justifies itself by.",
+          "Deliverable 2 must record the static-vs-dynamic discharge asymmetry: SpinMutex discharges via a runtime witness leaving a compiler-invisible lock-ordering obligation; 'same bucket as memory-aliasing' holds only with the caveat that that bucket also spans static (split-borrow) and dynamic (RefCell, runtime, panic-on-violation) discharge.",
+          "The 'discharged != false' classification (deliverables 2/3) is RustBelt's semantic type soundness (POPL 2018) applied to Mutex; it must be cited for the distinction and state what the seam framing adds beyond semantic typing. The #35-refuting existential survives independently."
+        ],
+        "headline": "Re-import rule is unsound: guard omits std's mandatory `T: Sync` bound.",
+        "rationale": "SpinGuard auto-derives Sync at T:Send; sharing one guard by reference across threads derefs &Cell<i32> in two threads \u2014 safe-code UB, Horn-1 break. The discharge proves single-guard-liveness, not single-thread-access-to-T. Fatal; three non-fatal tradeoffs recorded for the revision."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.8492,
+      "timestamp": "2026-07-01T11:12:18+00:00"
     }
   ],
   "settled": [],
   "incompatibilities": [],
   "blind_spot_flags": [],
-  "total_cost_usd": 91.8346
+  "total_cost_usd": 94.6838
 }

@@ -667,17 +667,23 @@ pub mod sync_cell;
 /// (`Release`) on `Drop`. The **same-shaped** `unsafe impl<T: Send> Sync`/`Send` as #35 is here **earned, not
 /// asserted**: the CAS is a runtime witness that at most one guard is live, so every reference handed out is
 /// exclusive (the obligation #35 deleted is here MET); the `T: Send` bound is #35's missing conjunct (CF1:
-/// `SpinMutex<Rc<i32>>: !Sync`). VERDICT (HYPOTHESIS, to be gauntleted): **SEAM-COSTS [horn3-concentration] —
-/// SOUND** (the salvage HOLDS): the discharged impl launders no UB; the honest price is a **liveness residue** (a
-/// `mem::forget`-ten guard deadlocks; no poisoning; no reentrancy) — the #10/#17/#29 leak/completion coordinate on
-/// the lock face — never a soundness break. Staked contribution: DRF is a **concentrate-behind-a-seam** domain
-/// (locks are its seams, the concurrency analog of SPSC #1 / the slab #4); a **discharged** `unsafe impl` is
-/// categorically distinct from a **false** one; concurrency is the memory-aliasing bucket, NOT a floor-closed
-/// special case — settling #35's over-claim. NOT a fourth soundness domain (a data race is still UB). Deflation
-/// (pre-registered): `spin::Mutex`/textbook spinlock, no novel mechanism — the contribution is the CLASSIFICATION.
-/// If it HOLDS: tally STAYS 9; N stays 9; the #35→#36 reject/break→salvage pair settles (the FIFTH, after #26→#27,
-/// #29→#30, #31→#32, #33→#34). Lean `spin_mutex_lock_invariant_closes` (a `..._closes`: the lock invariant
-/// discharges the re-import). See `spin_mutex`.
+/// `SpinMutex<Rc<i32>>: !Sync`). VERDICT (cold panel, r43): **SEAM-BREAKS [horn1-sound-reimport], FAILED — THE
+/// SALVAGE ITSELF BROKE (a DISCOVERED break, tally 9→10).** I discharged the LOCK obligation but OMITTED the
+/// GUARD's: with no manual impl, `SpinGuard` auto-derives `Sync ⟺ SpinMutex<T>: Sync ⟺ T: Send`, so `&guard: Send`;
+/// share one guard by reference across `thread::scope` over `T = Cell<i32>` (`Send + !Sync`, past CF1's `Rc` filter)
+/// and two threads race `&Cell` — UB, zero consumer `unsafe`, lock never contended (VERIFIED: compiles under
+/// `forbid(unsafe_code)`). `std` writes the stricter `unsafe impl<T: Sync> Sync for MutexGuard` (+ `!Send`); a
+/// concurrency `unsafe impl` has TWO conjuncts (cross-thread exclusion AND guard-no-`&T`-leak), I discharged one.
+/// SURVIVES the break: the #35-refuting **existential** ("a sound, value-adding, `core`-only concurrency seam
+/// exists") stands on its own (a correctly-bounded SpinMutex IS sound — `spin::Mutex`, RustBelt), so the
+/// **concentrate-behind-a-seam classification** is NOT refuted — my artifact had a hole, the thesis holds. Three
+/// tradeoffs ride to #37: (1) §5 owes IRQ self-deadlock + priority inversion; (2) static-vs-dynamic discharge
+/// asymmetry (SPSC/slab static; SpinMutex dynamic, like `RefCell` in the memory-aliasing bucket); (3) cite RustBelt
+/// (POPL 2018) for discharged-vs-false. META: the "omit a conjunct" tic (as #35/#33) recurred INSIDE the salvage
+/// meant to prove I'd fixed it — calibration NOT converging on the concurrency domain. Tally 9→10 (9th DISCOVERED +
+/// #35's 1 conceded); N stays 9; rejection count STAYS 8 (a break). The #35→#36 pair does NOT settle — the chain
+/// extends to **#37** (the correctly-bounded `SpinGuard<T: Sync>` + `!Send`, folding in the three tradeoffs). Lean
+/// `spin_mutex_guard_sync_factors` (a `..._factors` — it breaks). See `spin_mutex`.
 pub mod spin_mutex;
 
 use core::cell::UnsafeCell;
