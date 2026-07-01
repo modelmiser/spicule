@@ -2722,10 +2722,73 @@
       "outcome": "FAILED",
       "cost_usd": 2.8492,
       "timestamp": "2026-07-01T11:12:18+00:00"
+    },
+    {
+      "round": 44,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_spin_lock.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 the correctly-bounded spinlock (the salvage of #36) (re-import rule under attack)\n\nThis is a **design proposal** for a thirty-seventh *seam*, the **salvage of `spin_mutex` #36** \u2014 mirroring #26\u2192#27,\n#29\u2192#30, #31\u2192#32, #33\u2192#34. #36 was itself the salvage of #35 (`sync_cell`), but it **broke** (r43, SEAM-BREAKS\n[horn1], tally 9\u219210): it discharged the LOCK obligation (the CAS witnesses one live guard) but **omitted the GUARD's**\n\u2014 with no manual guard impl, `SpinGuard` auto-derived `Sync \u27fa SpinMutex<T>: Sync \u27fa T: Send` (too weak), so sharing\none `&guard` across `thread::scope` over `T = Cell<i32>` (`Send + !Sync`) raced the interior cell \u2014 UB from safe code.\n**This seam adds the one missing bound** and stakes that the re-import is now sound in full. The thesis under attack:\na mutex has exactly **four** auto-trait obligations, #36 discharged three, this discharges the fourth, and the result\nis the sound, value-adding, `core`-only concurrency seam #35 claimed could not exist \u2014 settling the #35\u2192#36\u2192#37 chain\nand confirming data-race freedom is a **concentrate-behind-a-seam** domain.\n\nYou are attacking a **text specification** backed by real `rustc`-checked code (`seam/src/sp",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Consumer surface is stock spin::Mutex \u2014 zero annotations, no proof obligations, no ceremony; nothing to refuse writing.",
+          "strongest_point": "The Send guard removes std's !Send compile-time guardrail against holding across await/threads, but that lowers ceremony rather than raising it \u2014 the opposite of an ATS2-style unusability failure."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "Faithful spin::Mutex; four obligations complete, obligation-4 Send sound for atomic unlock, no fifth conjunct, decidable.",
+          "strongest_point": "Send-migrating a guard is sound because the Release store is thread-agnostic (unlike an OS futex), and the AtomicBool provably prevents two simultaneous live guards, so no safe path yields two concurrent &mut T."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "SURVIVES",
+          "severity": "none",
+          "summary": "No undecidable/super-poly compiler pass; DRF is a runtime CAS witness, compile-time obligation stays inside decidable auto-trait floor",
+          "strongest_point": "The design poses the compiler only monotone, non-recursive Send/Sync auto-trait queries and relocates all aliasing/happens-before reasoning to a runtime AtomicBool, so there is no input shape that makes any compiler pass diverge or blow up."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Sound textbook spin::Mutex; no fifth obligation or race. Only minor expressiveness gaps: no ?Sized, no into_inner/get_mut, IRQ variant unbuilt.",
+          "strongest_point": "It claims parity with std/spin::Mutex but omits the `T: ?Sized` bound, so `SpinLock<[u8]>`/`SpinLock<dyn Trait>` \u2014 expressible in both precedents \u2014 cannot be written."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Soundness holds because it verbatim-copies std/spin; #36's break is Ralf Jung's famous 2017 MutexGuard-Sync bug.",
+          "strongest_point": "Obligation 3 and its fix are the canonical 2017 std MutexGuard-Sync soundness bug and its shipped patch \u2014 so the four-obligation discharge is proven-sound prior art, and even the claimed 'finding' is a nine-year-old, named result the proposal already concedes."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "argued-past",
+          "attacker-soundness": "argued-past",
+          "attacker-implementation": "argued-past",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "tradeoff"
+        },
+        "decision": "SURVIVED",
+        "tradeoffs": [
+          "Stated std/spin::Mutex parity is overstated: no `T: ?Sized` (so `SpinLock<[u8]]>`/`SpinLock<dyn Trait>` are inexpressible), no `into_inner`/`get_mut`, and the flagship core-only IRQ-shared case is deferred to an unbuilt `irqsave` variant.",
+          "Novelty is ~nil: the four-obligation set is std's/spin's four impls, and obligation 3 (guard needs `T: Sync`) is verbatim Ralf Jung's named, dated 2017 MutexGuard-Sync std bug + shipped fix; the contribution is only the classification/relabeling, which the proposal largely pre-concedes.",
+          "The `Send` guard (obligation 4) is sound but deletes std's `!Send` compile-time guardrail against holding a guard across `.await`/thread boundaries \u2014 a runtime-liveness footgun, not a soundness break."
+        ],
+        "headline": "Four-obligation spinlock re-import is sound and complete; it is the RustBelt-proven std/spin::Mutex trait set.",
+        "rationale": "Three independent reconstructions confirm the guard's `T: Sync` fix closes r43 with no fifth conjunct; obligation-4 `Send` is sound (thread-agnostic Release store). No genuine-flaw. Recorded costs: overstated ?Sized/IRQ parity and near-zero novelty over Jung's 2017 fix."
+      },
+      "outcome": "SURVIVED",
+      "cost_usd": 1.9223,
+      "timestamp": "2026-07-01T11:59:54+00:00"
     }
   ],
   "settled": [],
   "incompatibilities": [],
   "blind_spot_flags": [],
-  "total_cost_usd": 94.6838
+  "total_cost_usd": 96.6061
 }

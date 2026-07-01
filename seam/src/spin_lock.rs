@@ -36,16 +36,39 @@
 //! invariant (the CAS) discharges cross-thread *exclusion*; the `T: Sync` bound discharges the guard's *sharing*;
 //! together they discharge the `unsafe impl` in full. This is the **discharged** re-import #35 claimed impossible.
 //!
-//! ## HYPOTHESIS (to be put through the cold gauntlet, REPORT_SEAM_SPEC_spin_lock.md):
-//! ## SEAM-COSTS [horn3-concentration] — SOUND (the salvage HOLDS): the correctly-bounded guard closes the r43
-//! ## break; both conjuncts (exclusion + guard-`Sync`) are discharged; the honest price is a **liveness residue**.
+//! ## VERDICT (cold panel, REPORT_SEAM_SPEC_spin_lock.md, r44): SEAM-HOLDS [none], SURVIVED (1/1) — the salvage
+//! ## HELD, the cleanest verdict tier (a full HOLD, no horn even costed; I predicted [horn3] and UNDER-claimed).
 //!
-//! Staked contribution: this **settles the #35→#36→#37 chain** — a sound, value-adding, `core`-only concurrency
-//! seam EXISTS (the thing #35 said could not), confirming data-race freedom is **concentrate-behind-a-seam** (locks
-//! are its seams; the memory-aliasing bucket; a **discharged** `unsafe impl` categorically distinct from a **false**
-//! one). NOT a fourth soundness domain (a data race is still UB). Tally STAYS 10 (this HOLDS); N stays 9.
+//! The **#35→#36→#37 chain SETTLES.** Three independent hand-reconstructions (soundness, expressiveness, prior-art)
+//! converged, and the pre-registered sharpest attack — hunt for a **fifth omitted conjunct** (the #36 failure mode)
+//! — **found none**: the soundness attacker ran *six* break attempts (`T: Sync + !Send`; the r43 `Send + !Sync`
+//! shape; a `Send`-migrated guard; variance via the invariant `UnsafeCell`; ordering; poison/forget) and all
+//! failed. The decisive validation of **obligation 4**: a spinlock's `Release` store is **thread-agnostic** (unlike
+//! an OS futex), so a migrated guard is sound and the `AtomicBool` provably forbids two live guards — exactly why
+//! `spin::MutexGuard` is `Send` where `std::MutexGuard` is `!Send`. Horn 1 HOLDS (r43 break closed, CF1; no fifth
+//! conjunct); Horn 2 (plain `lock`/`*guard`, no proof) and Horn 3 (`unsafe` in three impls + two `Deref`s, O(1)
+//! width) intact. Tally STAYS 10 (this HOLDS); N stays 9.
 //!
-//! Pre-conceded (the #34/#32 discipline — claim only the carriable half):
+//! Staked contribution CONFIRMED: a sound, value-adding, `core`-only concurrency seam EXISTS (the thing #35 said
+//! could not), so data-race freedom is **concentrate-behind-a-seam** (locks are its seams; the memory-aliasing
+//! bucket, *dynamic* end like `RefCell`); a **discharged** `unsafe impl` is categorically distinct from a **false**
+//! one. NOT a fourth soundness domain (a data race is still UB).
+//!
+//! **TWO recorded tradeoffs (SURVIVED-*with*-tradeoffs — the soundness verdict is not contingent on them, so this is
+//! not TRADEOFF-mode; but record them honestly):**
+//! - **Overstated `std`/`spin::Mutex` parity.** I wrote `SpinLock<T>`, not `SpinLock<T: ?Sized>` — so `SpinLock<[u8]>`
+//!   / `SpinLock<dyn Trait>`, expressible in *both* cited precedents, cannot be written; there is no `into_inner`/
+//!   `get_mut`; and the flagship `core`-only use case (interrupt-shared state) is deferred to an unbuilt `irqsave`
+//!   variant. The "parity" and "value-adding" framing is overstated (the calibration tic, mildest form — a marked
+//!   tradeoff below the horn-deciding threshold, as #34).
+//! - **Novelty is ~NIL, not merely "no novel mechanism."** Obligation 3 (the guard needs `T: Sync`) is *verbatim*
+//!   **Ralf Jung's named, dated June 2017 "How `MutexGuard` was `Sync` When It Should Not Have Been"** — a famous
+//!   `std` bug and its shipped patch; even the *classification* is Jung's 2017 conclusion, and RustBelt (POPL 2018)
+//!   proved the semantic soundness. So this is not generic folklore but a specific, celebrated fix being copied —
+//!   which is *why* nothing broke. (Bonus footgun, already in §5: obligation-4 `Send` deletes `std`'s `!Send`
+//!   compile-time guardrail against holding a guard across `.await` — a liveness footgun, not a soundness break.)
+//!
+//! Pre-conceded up front (the #34/#32 discipline — claim only the carriable half; all confirmed by the panel):
 //! - **No novel mechanism.** This is `spin::Mutex` / a textbook spinlock; the contribution is the **classification**
 //!   + closing the #36 break, not the lock. Discharged-vs-false is **RustBelt's semantic type soundness** (Jung et
 //!   al., POPL 2018) applied to `Mutex` — the guard inhabits the logical relation *iff* the `T: Sync` invariant is

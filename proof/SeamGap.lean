@@ -1263,14 +1263,18 @@ theorem spin_mutex_guard_sync_factors :
     discipline factors (`Pspinlock` is definitionally `V`); this is a `..._closes` — the first concurrency-domain
     close, the concurrency analog of SPSC #1 / the slab #4.
 
-    HYPOTHESIS (to be gauntleted, REPORT_SEAM_SPEC_spin_lock): **SEAM-COSTS [horn3-concentration] — SOUND** (the
-    salvage HOLDS): both conjuncts (exclusion via the CAS, guard-sharing via `T: Sync`) discharged; the honest price
-    is a liveness residue (a forgotten guard deadlocks; same-thread/IRQ re-lock self-deadlocks; unbounded priority
-    inversion; no poisoning; busy-wait) — the leak/completion coordinate on the lock face, never a soundness break.
-    Staked contribution: settles the #35 to #36 to #37 chain — a sound, value-adding, `core`-only concurrency seam
-    EXISTS (what #35 said could not), confirming data-race freedom is concentrate-behind-a-seam (locks are its
-    seams; the memory-aliasing bucket, dynamic end like `RefCell`); a discharged `unsafe impl` distinct from a false
-    one. NOT a fourth soundness domain (a data race is still UB). If it HOLDS: tally STAYS 10. A `..._closes`. -/
+    VERDICT (cold panel, REPORT_SEAM_SPEC_spin_lock, r44): **SEAM-HOLDS [none], SURVIVED (1/1)** — the salvage HELD,
+    the cleanest verdict tier (a full HOLD, no horn even costed). The pre-registered sharpest attack — hunt a FIFTH
+    omitted conjunct (the #36 failure mode) — found none (six break attempts failed; three reconstructions
+    converged); obligation-4 `Send` validated (the `Release` store is thread-agnostic, so a migrated guard is
+    sound). Both conjuncts (exclusion via the CAS, guard-sharing via `T: Sync`) discharged; the honest price is a
+    liveness residue (forget-deadlock; IRQ/reentrant self-deadlock; priority inversion; no poisoning; busy-wait) —
+    the leak/completion coordinate on the lock face, never a soundness break. Contribution CONFIRMED: settles the
+    #35 to #36 to #37 chain — a sound, value-adding, `core`-only concurrency seam EXISTS (what #35 said could not),
+    confirming data-race freedom is concentrate-behind-a-seam (the memory-aliasing bucket, dynamic end like
+    `RefCell`). NOT a fourth soundness domain (a data race is still UB). Tally STAYS 10; N stays 9. Two recorded
+    tradeoffs (SURVIVED-with-tradeoffs, not contingent): overstated ?Sized/IRQ parity; novelty nil (it is Ralf
+    Jung's 2017 std `MutexGuard`-`Sync` fix, RustBelt POPL 2018). A `..._closes`. -/
 def Pspinlock (p : Prog) : Bool := V p
 
 /-- The seam CLOSES (HYPOTHESIS SEAM-COSTS [horn3], SOUND — the salvage holds): the lock invariant discharges
