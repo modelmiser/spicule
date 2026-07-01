@@ -686,6 +686,31 @@ pub mod sync_cell;
 /// `spin_mutex_guard_sync_factors` (a `..._factors` — it breaks). See `spin_mutex`.
 pub mod spin_mutex;
 
+/// Thirty-seventh seam (Phase AJ — the CORRECTLY-BOUNDED SPINLOCK, the salvage of #36): closes the r43 break with
+/// the one bound #36 omitted. #36 (`spin_mutex`) discharged the LOCK obligation but left `SpinGuard` auto-deriving
+/// `Sync ⟺ T: Send` (too weak), so a shared `&guard` raced the interior of a `Send + !Sync` `T`. This seam enumerates
+/// a mutex's **four** auto-trait obligations and discharges all four: (1) `SpinLock<T>: Send where T: Send`; (2)
+/// `SpinLock<T>: Sync where T: Send` (exclusive access ⇒ `T` migrates, not shared — like `std::Mutex`); (3) **the
+/// fix** `unsafe impl<T: Sync> Sync for SpinLockGuard` — a shared `&guard` hands `&T` to many threads, sound only when
+/// `T: Sync`, which opts the guard out of the too-weak auto-`Sync` (CF1: `SpinLockGuard<Cell<i32>>: !Sync`, so the
+/// r43 witness no longer compiles); (4) `SpinLockGuard<T>: Send where T: Send`, left auto-derived — sound for a
+/// spinlock (`spin::MutexGuard` is `Send`; `std::MutexGuard`'s `!Send` is OS-futex conservatism, documented not
+/// cargo-culted). [`spin_lock::SpinLock`]'s mechanics are identical to #36; only the guard bound differs. VERDICT
+/// (HYPOTHESIS, to be gauntleted): **SEAM-COSTS [horn3-concentration] — SOUND** (the salvage HOLDS): both conjuncts
+/// (exclusion via the CAS + guard-sharing via `T: Sync`) are discharged; the honest price is a **liveness residue**
+/// (a `mem::forget`-ten guard deadlocks; same-thread/IRQ re-lock self-deadlocks — needs `irqsave`; unbounded
+/// priority inversion; no poisoning; busy-wait) — the #10/#17/#29 leak/completion coordinate on the lock face, never
+/// a soundness break. Staked contribution: **settles the #35→#36→#37 chain** — a sound, value-adding, `core`-only
+/// concurrency seam EXISTS (what #35 said could not), confirming DRF is **concentrate-behind-a-seam** (locks are its
+/// seams; the memory-aliasing bucket, *dynamic* end like `RefCell` — the static/dynamic caveat); a **discharged**
+/// `unsafe impl` distinct from a **false** one. NOT a fourth soundness domain (a data race is still UB). Deflation
+/// (pre-registered): `spin::Mutex`/textbook — no novel mechanism; the contribution is the CLASSIFICATION + closing
+/// the #36 break; discharged-vs-false is RustBelt's semantic type soundness (POPL 2018) applied to `Mutex`. If it
+/// HOLDS: tally STAYS 10; N stays 9; the #35→#36→#37 chain settles (the FIFTH reject/break→salvage lineage, though
+/// two-step). Lean `spin_lock_guard_sync_closes` (a `..._closes`: the correctly-bounded guard discharges the
+/// re-import). See `spin_lock`.
+pub mod spin_lock;
+
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 use core::sync::atomic::{AtomicUsize, Ordering};

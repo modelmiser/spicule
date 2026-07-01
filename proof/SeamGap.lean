@@ -1253,4 +1253,37 @@ theorem spin_mutex_guard_sync_factors :
   rw [seam_closes_iff_factors]
   exact ⟨id, fun _ => rfl⟩
 
+/-- Correctly-bounded spinlock — the **thirty-seventh** seam, the **salvage of #36** (`spin_mutex`), mirroring
+    #33→#34, #31→#32, #29→#30, #26→#27. Read `Pr`/`Wt` by analogy: the precondition the floor now *carries* is
+    **data-race freedom** for shared mutable state, discharged in FULL. #36 discharged the LOCK obligation but left
+    its guard auto-deriving `Sync` at `T: Send` (too weak); this seam adds the one missing bound — an explicit
+    `unsafe impl<T: Sync> Sync for SpinLockGuard` — so the guard is shareable only when the interior is, closing the
+    r43 break. All four of a mutex's auto-trait obligations are now discharged (lock `Send`/`Sync where T: Send`;
+    guard `Sync where T: Sync` the fix; guard `Send where T: Send` auto, sound for a spinlock). In the kernel the
+    discipline factors (`Pspinlock` is definitionally `V`); this is a `..._closes` — the first concurrency-domain
+    close, the concurrency analog of SPSC #1 / the slab #4.
+
+    HYPOTHESIS (to be gauntleted, REPORT_SEAM_SPEC_spin_lock): **SEAM-COSTS [horn3-concentration] — SOUND** (the
+    salvage HOLDS): both conjuncts (exclusion via the CAS, guard-sharing via `T: Sync`) discharged; the honest price
+    is a liveness residue (a forgotten guard deadlocks; same-thread/IRQ re-lock self-deadlocks; unbounded priority
+    inversion; no poisoning; busy-wait) — the leak/completion coordinate on the lock face, never a soundness break.
+    Staked contribution: settles the #35 to #36 to #37 chain — a sound, value-adding, `core`-only concurrency seam
+    EXISTS (what #35 said could not), confirming data-race freedom is concentrate-behind-a-seam (locks are its
+    seams; the memory-aliasing bucket, dynamic end like `RefCell`); a discharged `unsafe impl` distinct from a false
+    one. NOT a fourth soundness domain (a data race is still UB). If it HOLDS: tally STAYS 10. A `..._closes`. -/
+def Pspinlock (p : Prog) : Bool := V p
+
+/-- The seam CLOSES (HYPOTHESIS SEAM-COSTS [horn3], SOUND — the salvage holds): the lock invariant discharges
+    cross-thread exclusion AND the explicit `unsafe impl<T: Sync> Sync for SpinLockGuard` discharges the guard's
+    cross-thread sharing (the r43 bound #36 omitted), so all four auto-trait obligations are met — the correctly
+    bounded, sound, value-adding, `core`-only concurrency seam #35 claimed could not exist. What stays outside the
+    kernel, in the prose: the honest liveness residue (forget-deadlock; IRQ/reentrant self-deadlock; priority
+    inversion; no poisoning; busy-wait — all liveness, not soundness), the static-vs-dynamic discharge caveat on the
+    memory-aliasing bucket-merge, and the RustBelt POPL 2018 citation for discharged-vs-false. A `..._closes` (the
+    correctly-bounded guard discharges the re-import; the salvage holds; the #35 to #36 to #37 chain settles). -/
+theorem spin_lock_guard_sync_closes :
+    ∃ d : Prog → Bool, SoundW Pspinlock d ∧ UsableW Pspinlock d ∧ ConcW V d := by
+  rw [seam_closes_iff_factors]
+  exact ⟨id, fun _ => rfl⟩
+
 end SeamGap
