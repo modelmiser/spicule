@@ -1221,4 +1221,34 @@ theorem sync_cell_datarace_factors :
   rw [seam_closes_iff_factors]
   exact ⟨id, fun _ => rfl⟩
 
+/-- Spinlock mutex — the **thirty-sixth** seam, the **salvage of #35** (`sync_cell`), mirroring #33→#34, #31→#32,
+    #29→#30, #26→#27. Read `Pr`/`Wt` by analogy: the precondition the floor now *carries* is **data-race freedom**
+    for shared mutable state — a `SpinMutex<T>` guards an `UnsafeCell<T>` behind an `AtomicBool`, and `lock` vends a
+    `SpinGuard` (exclusive `&`/`&mut`) that releases on `Drop`. The same-shaped `unsafe impl<T: Send> Sync` as #35 is
+    here DISCHARGED (not deleted): the CAS is a runtime witness that at most one guard is live, so every reference is
+    exclusive. In the kernel the discipline factors (`Pspinmutex` is definitionally `V`); this is a `..._closes` (the
+    lock invariant discharges the re-import) — the first concurrency-domain close, the concurrency analog of SPSC #1.
+
+    HYPOTHESIS (to be gauntleted, REPORT_SEAM_SPEC_spin_mutex): **SEAM-COSTS [horn3-concentration] — SOUND** (the
+    salvage HOLDS): the discharged impl launders no UB; the honest price is a liveness residue (a forgotten guard
+    deadlocks; no poisoning; no reentrancy) — the #10/#17/#29 leak/completion coordinate on the lock face, never a
+    soundness break. Staked contribution: data-race freedom is a concentrate-behind-a-seam domain (locks are its
+    seams), settling #35's over-claim; a discharged `unsafe impl` is categorically distinct from a false one;
+    concurrency is the memory-aliasing bucket. NOT a fourth soundness domain (a data race is still UB). If it HOLDS:
+    tally STAYS 9; the #35→#36 pair settles (the fifth). A `..._closes`. -/
+def Pspinmutex (p : Prog) : Bool := V p
+
+/-- The seam CLOSES (HYPOTHESIS SEAM-COSTS [horn3], SOUND — the salvage holds): the lock invariant (the `AtomicBool`
+    CAS admitting at most one live `SpinGuard`) DISCHARGES the `unsafe impl<T: Send> Sync`, so the exclusive `&`/`&mut`
+    the guard vends launder no UB — the sound, value-adding, `core`-only concurrency seam #35 claimed could not exist.
+    What stays outside the kernel, in the prose: the honest liveness residue the seam pays (a forgotten guard
+    deadlocks; no poisoning; no reentrancy — all liveness, not soundness), and the r42 correction it confirms
+    (data-race freedom is floor-PROPAGATES-but-does-not-close, the memory-aliasing bucket, closed by concentrating
+    seams like this one; a discharged `unsafe impl` distinct from `SyncCell`'s false one). A `..._closes` (the lock
+    invariant discharges the re-import; the salvage holds). -/
+theorem spin_mutex_lock_invariant_closes :
+    ∃ d : Prog → Bool, SoundW Pspinmutex d ∧ UsableW Pspinmutex d ∧ ConcW V d := by
+  rw [seam_closes_iff_factors]
+  exact ⟨id, fun _ => rfl⟩
+
 end SeamGap

@@ -657,6 +657,29 @@ pub mod total_div;
 /// `..._factors` — it breaks). See `sync_cell`.
 pub mod sync_cell;
 
+/// Thirty-sixth seam (Phase AI — the CONCURRENCY SLAB, the salvage of #35): a `core`-only spinlock mutex. #35
+/// (`sync_cell`) was a deliberately-unsound strawman (`unsafe impl<T> Sync`, obligation **deleted**) that BROKE
+/// (tally 8→9), but its *contribution* FAILED (r42): my "**no value-adding concurrency seam / DRF is floor-closed /
+/// a re-import is categorically an unchecked axiom**" was refuted by one obvious omitted seam — a sound `SpinMutex<T>`
+/// whose `unsafe impl<T: Send> Sync` is **DISCHARGED by a lock invariant**. This seam builds it: a
+/// [`spin_mutex::SpinMutex`] wraps `UnsafeCell<T>` beside an `AtomicBool`; [`spin_mutex::SpinMutex::lock`] spins on a
+/// `compare_exchange` (`Acquire`) and returns a [`spin_mutex::SpinGuard`] that vends `&T`/`&mut T` and releases
+/// (`Release`) on `Drop`. The **same-shaped** `unsafe impl<T: Send> Sync`/`Send` as #35 is here **earned, not
+/// asserted**: the CAS is a runtime witness that at most one guard is live, so every reference handed out is
+/// exclusive (the obligation #35 deleted is here MET); the `T: Send` bound is #35's missing conjunct (CF1:
+/// `SpinMutex<Rc<i32>>: !Sync`). VERDICT (HYPOTHESIS, to be gauntleted): **SEAM-COSTS [horn3-concentration] —
+/// SOUND** (the salvage HOLDS): the discharged impl launders no UB; the honest price is a **liveness residue** (a
+/// `mem::forget`-ten guard deadlocks; no poisoning; no reentrancy) — the #10/#17/#29 leak/completion coordinate on
+/// the lock face — never a soundness break. Staked contribution: DRF is a **concentrate-behind-a-seam** domain
+/// (locks are its seams, the concurrency analog of SPSC #1 / the slab #4); a **discharged** `unsafe impl` is
+/// categorically distinct from a **false** one; concurrency is the memory-aliasing bucket, NOT a floor-closed
+/// special case — settling #35's over-claim. NOT a fourth soundness domain (a data race is still UB). Deflation
+/// (pre-registered): `spin::Mutex`/textbook spinlock, no novel mechanism — the contribution is the CLASSIFICATION.
+/// If it HOLDS: tally STAYS 9; N stays 9; the #35→#36 reject/break→salvage pair settles (the FIFTH, after #26→#27,
+/// #29→#30, #31→#32, #33→#34). Lean `spin_mutex_lock_invariant_closes` (a `..._closes`: the lock invariant
+/// discharges the re-import). See `spin_mutex`.
+pub mod spin_mutex;
+
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 use core::sync::atomic::{AtomicUsize, Ordering};
