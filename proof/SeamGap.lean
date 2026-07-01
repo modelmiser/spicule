@@ -1164,4 +1164,29 @@ theorem divisor_nonzero_division_closes :
   rw [seam_closes_iff_factors]
   exact ⟨id, fun _ => rfl⟩
 
+/-- Total division — the **thirty-fourth** seam, the **salvage of #33** (`divisor`), mirroring #31→#32, #29→#30,
+    #26→#27. Read `Pr`/`Wt` by analogy: the precondition the floor now *carries* is **totality of division** — a
+    `TotalDivisor` witnesses `d ∉ {0, -1}`, excluding BOTH of division's panic sources (div-by-zero `d==0` and the
+    `i32::MIN / -1` overflow's divisor conjunct `d==-1`) at one Θ(1) construction check, so `total_divide a d`
+    returns a plain `i32` that cannot panic for any `a`. In the kernel the discipline factors (`Ptotaldiv` is
+    definitionally `V`).
+
+    HYPOTHESIS (artifact instance; the cold panel adjudicates at the verdict arc): the salvage HOLDS — both panic
+    sources concentrate at construction, total `-> i32` division is realized, closing #33's over-concession (the
+    overflow was a decidable point-exclusion, not the undecidable range-analysis §2/§4 claimed). Conceded up front:
+    it does NOT reopen a fourth domain (panic-freedom still folds into application-correctness); the finite-exclusion
+    trick does NOT generalize to arbitrary `+`/`*` (a genuine range-analysis NONE — division is special); and
+    concentration stays value-threaded. A `..._closes` (the total-division core closes) pending the r41 verdict. -/
+def Ptotaldiv (p : Prog) : Bool := V p
+
+/-- Total division CLOSES: the `TotalDivisor` witness (`d ∉ {0, -1}`, a Θ(1) construction check, no SMT)
+    concentrates BOTH of division's panic sources, vending a total `-> i32 total_divide` — the fix #33 owed. What
+    stays outside the kernel, in the prose: that this does not reopen a fourth domain (panic-freedom folds), that
+    the finite-exclusion trick does not extend to arbitrary `+`/`*` (the genuine range-analysis NONE), and the
+    value-threaded concentration cost. HYPOTHESIS naming (`..._both_sources_closes`), pending the r41 verdict. -/
+theorem total_div_both_sources_closes :
+    ∃ d : Prog → Bool, SoundW Ptotaldiv d ∧ UsableW Ptotaldiv d ∧ ConcW V d := by
+  rw [seam_closes_iff_factors]
+  exact ⟨id, fun _ => rfl⟩
+
 end SeamGap

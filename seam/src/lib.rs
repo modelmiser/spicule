@@ -605,6 +605,24 @@ pub mod guarded;
 /// fragment closes; the owed `-1` exclusion + the rejection live in the prose). See `divisor`.
 pub mod divisor;
 
+/// Thirty-fourth seam (Phase AG — TOTAL DIVISION, the salvage of #33): builds the exact fix the r40 panel handed
+/// back. #33 (`divisor`) was SOUND but its deliverable was REJECTED because I **over-conceded** — the `i32::MIN /
+/// -1` overflow is not an undecidable range-analysis residue but a **decidable point-exclusion**. This seam carries
+/// it: a [`total_div::TotalDivisor`] minted only by [`total_div::TotalDivisor::new`] (`None` iff `d == 0 || d ==
+/// -1`) excludes **both** of division's panic sources at one `Θ(1)` construction check, so
+/// [`total_div::total_divide`]/[`total_div::total_remainder`] return a plain `-> i32` that **cannot panic for any
+/// `a: i32`** — no `Result`, no `.unwrap()`, no panic path (the thing #33 could not express). A *finite* exclusion
+/// suffices because division's panic set is finite on the divisor side (`{0, -1}`); and excluding `-1` costs
+/// nothing safe (`a / -1 == -a`, and the only overflowing `a == i32::MIN` is exactly where `-a` overflows too).
+/// HYPOTHESIS VERDICT (cold panel, r41): predicted **SEAM-COSTS [horn3] HOLDS** (or SEAM-HOLDS) — the salvage of
+/// #33, mirroring #30/#32. Conceded up front (dodging the #27 over-claim trap as #32 did): (a) it does NOT reopen a
+/// fourth domain — the #33 finding stands, panic-freedom FOLDS into application-correctness (#19/#21); (b) the
+/// finite-exclusion trick does NOT generalize to arbitrary `+`/`*` (whose overflow is a genuine range-analysis NONE
+/// — division is special); (c) concentration stays value-threaded (a divisor `∉ {0,-1}` by path condition still
+/// needs a runtime `Option`/prover — the unchanged #33 prior-art cost). Tally STAYS 8; N stays 9. Lean
+/// `total_div_both_sources_closes` (a `..._closes`, pending verdict). See `total_div`.
+pub mod total_div;
+
 use core::cell::UnsafeCell;
 use core::mem::MaybeUninit;
 use core::sync::atomic::{AtomicUsize, Ordering};
