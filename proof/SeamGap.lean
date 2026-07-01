@@ -1193,7 +1193,7 @@ theorem total_div_both_sources_closes :
   rw [seam_closes_iff_factors]
   exact ⟨id, fun _ => rfl⟩
 
-/-- Shared mutability across threads — the **thirty-fifth** seam, the FIFTH fourth-domain probe: **data-race
+/-- Shared mutability across threads — the **thirty-fifth** seam, the FOURTH fourth-domain probe: **data-race
     freedom / concurrency** (after `crdt` #21, `wcet` #22, `divisor` #33). Read `Pr`/`Wt` by analogy: the danger is
     a DATA RACE (concurrent unsynchronized access to shared mutable state = UB), the property Rust's `Send`/`Sync`
     auto-traits enforce. `SyncCell<T>` re-exports the capability to share a non-atomic cell across threads via an

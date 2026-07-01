@@ -1,6 +1,6 @@
 //! # Thirty-fifth seam — SHARED MUTABILITY ACROSS THREADS: the data-race / concurrency probe.
 //!
-//! *(Project ordinal: the thirty-fifth primitive, and the **fifth fourth-domain probe** — after `crdt` #21
+//! *(Project ordinal: the thirty-fifth primitive, and the **fourth fourth-domain probe** — after `crdt` #21
 //! (convergence → folded into application-correctness), `wcet` #22 (real-time → broke unsound), and `divisor` #33
 //! (panic-freedom → folded into application-correctness). This one probes **data-race freedom / concurrency** — the
 //! property Rust's `Send`/`Sync` auto-traits enforce ("fearless concurrency"). The `secret` #13 panel explicitly
@@ -55,7 +55,7 @@
 //! special third bucket.
 //!
 //! **What SURVIVES:** DRF is **not a fourth soundness domain** — a data race *is* UB (memory-safety); the judge did
-//! not dispute this. So the **5th fourth-domain probe also fails to open a fourth domain** (after `crdt`/`wcet`/
+//! not dispute this. So the **4th fourth-domain probe also fails to open a fourth domain** (after `crdt`/`wcet`/
 //! `divisor`) — the 3-domain map + application-correctness basis holds — but the *reason* I gave (floor-closed) was
 //! wrong; the right reason is that concurrency is a *concentrate-behind-a-seam* domain like memory-aliasing.
 //!

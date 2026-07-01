@@ -629,7 +629,7 @@ pub mod divisor;
 /// closes). See `total_div`.
 pub mod total_div;
 
-/// Thirty-fifth seam (Phase AH — SHARED MUTABILITY ACROSS THREADS, the FIFTH fourth-domain probe): a deliberate
+/// Thirty-fifth seam (Phase AH — SHARED MUTABILITY ACROSS THREADS, the FOURTH fourth-domain probe): a deliberate
 /// stress-test of the "3-domain map (memory/IFC/liveness) is complete" claim, probing **data-race freedom /
 /// concurrency** — the property Rust's `Send`/`Sync` auto-traits enforce. [`sync_cell::SyncCell`] wraps an
 /// `UnsafeCell` with a non-atomic `&self` get/set, plus the dangerous re-import: an **unconditional `unsafe impl
@@ -649,7 +649,7 @@ pub mod total_div;
 /// freedom as **"floor-PROPAGATES-but-does-not-close," analogous to borrowck/memory-aliasing** — the auto-trait
 /// propagates `Send`/`Sync` but closure comes from concentrating seams (locks/channels/atomics). So my trichotomy
 /// (IFC / memory / concurrency-special) collapses to a **dichotomy** (concurrency = the memory-aliasing bucket).
-/// SURVIVES: DRF is NOT a fourth soundness domain (a data race IS UB) — the 5th fourth-domain probe also fails to
+/// SURVIVES: DRF is NOT a fourth soundness domain (a data race IS UB) — the 4th fourth-domain probe also fails to
 /// open one, the map holds, but for the RIGHT reason (concentrate-behind-a-seam, not floor-closed). META: the same
 /// clean-framing tic as #33 (omitted `SpinMutex` like #33 omitted `checked_div`) — but a horn-deciding failure this
 /// time, the tic at full strength on fresh ground. Salvage **#36**: build the `SpinMutex<T>` (discharged `unsafe

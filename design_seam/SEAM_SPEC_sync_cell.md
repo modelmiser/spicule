@@ -1,6 +1,6 @@
 # Seam spec — shared mutability across threads (the data-race / concurrency probe) (re-import rule under attack)
 
-This is a **design proposal** for a thirty-fifth *seam*, the **fifth fourth-domain probe** — after `crdt` #21
+This is a **design proposal** for a thirty-fifth *seam*, the **fourth fourth-domain probe** — after `crdt` #21
 (convergence → folded into application-correctness), `wcet` #22 (real-time → broke unsound), and `divisor` #33
 (panic-freedom → folded into application-correctness). It probes **data-race freedom / concurrency** — the property
 Rust's `Send`/`Sync` auto-traits enforce ("fearless concurrency"). The `secret` #13 panel named "concurrency
