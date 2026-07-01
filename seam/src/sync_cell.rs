@@ -28,23 +28,49 @@
 //!   (or uses atomics) — which **is** the auto-trait, i.e. vacuously the floor — and the only **non-trivial**
 //!   re-import is the `unsafe impl` escape, which is an **unchecked TCB axiom** (MMIO-shaped), not a checkable rule.
 //!
-//! ## HYPOTHESIS (this is the artifact commit; the cold panel adjudicates, not the builder)
+//! ## VERDICT (cold panel, REPORT_SEAM_SPEC_sync_cell.md, r42): SEAM-BREAKS [horn1] — but the CONTRIBUTION FAILED:
+//! ## my "floor-closed / no value-adding seam" classification is REFUTED by `SpinMutex` (the calibration tic again).
 //!
-//! Predicted **SEAM-BREAKS [horn1-sound-reimport]** — the unconditional `unsafe impl Sync` lets safe code share
-//! `&SyncCell<i32>` across threads and race the non-atomic `set` (a data race = UB), with **no consumer `unsafe`**;
-//! the `no_run` doctest below shows `std::thread::scope` *accepting* the racing shares (the type-level soundness
-//! hole), while CF1 shows the floor correctly **rejecting** a shared `Cell`. If accepted as a soundness break, the
-//! broken-seam tally rises 8→9 — the **first concurrency-domain break**. THE FINDING (the point of the probe):
-//! data-race freedom is **NOT a fourth *seamable* domain** — it is **memory-safety (UB) closed by the floor's
-//! auto-trait mechanism**, so a re-import can only restate the floor (vacuous, `T: Sync`) or break (the `unsafe
-//! impl` axiom). So the 3-domain map **survives** the stress test: concurrency folds into memory safety, closed
-//! structurally rather than by a new coordinate. Pre-registered deflations the panel may sharpen: (a) the `unsafe
-//! impl Send/Sync` footgun is textbook (the Rustonomicon) — the contribution is the **domain classification**
-//! (floor-closed, unlike IFC), not the break; (b) the witness is a **type-level** soundness hole (the unsound
-//! `Sync` grant), degenerate on the `no_std` floor — real UB needs a spawned thread, shown *compiling* via a
-//! `no_run` doctest, not run (the same single-threaded-witness limit the session seams carried); (c) it overlaps
-//! `mmio` (an unchecked TCB axiom) and `secret` #13 (a horn-1 break) — the novelty is the *floor-closed*
-//! classification that distinguishes concurrency from both.
+//! Horn-classifier: **SEAM-BREAKS [horn1-sound-reimport]** — *"the unconditional `unsafe impl Sync` is an
+//! undischarged axiom; safe `thread::scope` races the non-atomic `set` — real UB."* The break survives every
+//! attacker (`&SyncCell<i32>` shared across `thread::scope`, two racing non-atomic writes, **zero consumer
+//! `unsafe`**). By the mechanical convention the broken-seam tally rises **8→9** — the first concurrency-domain
+//! break — **but this break was pre-CONCEDED as folklore** (a deliberately-unsound strawman built as the probe's
+//! vehicle), qualitatively unlike the 8 *discovered* breaks. The break is not the point.
+//!
+//! **JUDGE → FAILED, and the point is the refuted contribution.** My staked §6 deliverable — *"no value-adding
+//! concurrency seam exists; data-race freedom is **floor-closed**; a re-import is **categorically** an unchecked
+//! axiom"* — is **genuinely refuted**. The counterexample is one obvious seam I omitted: a sound, non-vacuous,
+//! `core`-only **`SpinMutex<T>`** (or a lock-based channel) whose `unsafe impl<T: Send> Sync` is **DISCHARGED by the
+//! lock's mutual-exclusion invariant** — not asserted false like `SyncCell`'s. That is *exactly* the seam I claimed
+//! cannot exist. `SpinMutex` is the concurrency **slab**.
+//!
+//! **THE CORRECTION (the honest classification).** Distinguish a **discharged** `unsafe impl` (SpinMutex — sound,
+//! the obligation met by a lock invariant) from a **false** one (SyncCell — the obligation simply deleted). Then
+//! data-race freedom (DRF) is **"floor-PROPAGATES-but-does-not-close,"** *analogous to borrowck / memory-aliasing*:
+//! the auto-trait **propagates** `Send`/`Sync` structurally (like borrowck propagates ownership) but does **not
+//! close** DRF — **closure comes from concentrating seams** (locks, channels, atomics). So my trichotomy (IFC
+//! floor-closes-nothing / memory concentrates / concurrency *floor-closed-special*) **collapses to a dichotomy**:
+//! concurrency is in the **same bucket as memory-aliasing** (floor propagates + concentrating seams close), not a
+//! special third bucket.
+//!
+//! **What SURVIVES:** DRF is **not a fourth soundness domain** — a data race *is* UB (memory-safety); the judge did
+//! not dispute this. So the **5th fourth-domain probe also fails to open a fourth domain** (after `crdt`/`wcet`/
+//! `divisor`) — the 3-domain map + application-correctness basis holds — but the *reason* I gave (floor-closed) was
+//! wrong; the right reason is that concurrency is a *concentrate-behind-a-seam* domain like memory-aliasing.
+//!
+//! **META — the same calibration tic, at full strength on fresh ground.** I over-claimed the **cleaner framing** (a
+//! neat 3-way trichotomy with concurrency as a special floor-closed bucket) when the truth is the messier middle
+//! (concurrency = the memory-aliasing bucket; locks are its seams). Refuted by the **obvious omitted seam**
+//! (`SpinMutex`, standard ecosystem — I cited `SendWrapper`/`fragile` but missed the sound lock), the **same shape
+//! as #33** (omitted `checked_div`). Unlike #32/#34 (tics trimmed below the horn-deciding threshold), this one was a
+//! **horn-deciding failure** — moving to a fresh domain, my over-confidence about the classification reasserted the
+//! tic at full strength. The **salvage #36** (mirroring #26→#27): build the `SpinMutex<T>` — the sound,
+//! value-adding, `core`-only concurrency seam with a *discharged* `unsafe impl` — proving DRF is a
+//! concentrate-behind-a-seam domain and closing the over-claim. Tally 8→9 (conceded-folklore break); N stays 9;
+//! rejection-mode count STAYS 8 (this is a break, not a sound-seam rejection). Lean `sync_cell_datarace_factors`
+//! (a `..._factors`: the seam breaks/factors; the refuted classification and the `SpinMutex` correction live in the
+//! prose).
 //!
 //! ### CF1 — the FLOOR closes data-race freedom: a shared `Cell` is rejected (`Cell<i32>: !Sync`):
 //! ```compile_fail

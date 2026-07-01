@@ -1200,21 +1200,22 @@ theorem total_div_both_sources_closes :
     unconditional `unsafe impl Sync`/`Send`. In the kernel the discipline factors (`Psynccell` is definitionally
     `V`), but — like `priority` #26 / `wcet` #22 — a `..._factors` (a BREAK), not a `..._closes`.
 
-    HYPOTHESIS (artifact instance; the cold panel adjudicates at the verdict arc): SEAM-BREAKS [horn1] — the
-    unconditional `unsafe impl Sync` is an unchecked TCB axiom that lets safe code race `&SyncCell` across threads
-    (UB), so if accepted the broken-seam tally rises 8→9 (the first concurrency-domain break). THE FINDING:
-    data-race freedom is NOT a fourth *seamable* domain — the floor's auto-derived `Send`/`Sync` (Rustbelt) already
-    closes it, so a re-import only restates the floor (bound `T: Sync`, vacuous) or breaks (the `unsafe impl`
-    axiom); the 3-domain map survives, concurrency folding into memory safety by a distinct mechanism. A
-    `..._factors` (it breaks) pending the r42 verdict. -/
+    The cold panel (REPORT_SEAM_SPEC_sync_cell, r42) ruled **SEAM-BREAKS [horn1-sound-reimport]** — the break is
+    real (safe `thread::scope` races the non-atomic `set`, UB, no consumer `unsafe`), tally 8→9 (a pre-CONCEDED
+    folklore break, the probe's vehicle). But the JUDGE **FAILED the contribution**: my classification ("no
+    value-adding concurrency seam / DRF floor-closed") is REFUTED by a sound `core`-only `SpinMutex<T>` whose
+    `unsafe impl<T: Send> Sync` is DISCHARGED by the lock invariant — the concurrency slab. CORRECTION: data-race
+    freedom is "floor-PROPAGATES-but-does-not-close," analogous to memory-aliasing (closure via concentrating seams:
+    locks/channels/atomics), NOT floor-closed-special. SURVIVES: DRF is not a fourth soundness domain (a data race
+    IS UB). Salvage #36: the `SpinMutex<T>`. A `..._factors` (it breaks). -/
 def Psynccell (p : Prog) : Bool := V p
 
 /-- The seam FACTORS (a BREAK, not a close): the discipline is the trivial `V`-carried floor fact, while the real
     guarantee — data-race freedom under the unconditional `unsafe impl Sync` — is FALSE in safe code (a `&SyncCell`
     shared across threads races a non-atomic write). Like `priority`/`wcet`, `..._factors` certifies only the
-    trivial factoring, not a genuine closure. The floor-closed classification (auto-`Send`/`Sync` already closes
-    data-race freedom, so no seam adds value) lives in the prose, invisible to the kernel. HYPOTHESIS naming
-    (`..._datarace_factors`), pending the r42 verdict. -/
+    trivial factoring, not a genuine closure. The r42 correction — DRF is floor-PROPAGATES-but-does-not-close
+    (analogous to memory-aliasing; closed by concentrating seams like `SpinMutex`, whose `unsafe impl` is
+    discharged), NOT floor-closed, and NOT a fourth soundness domain — lives in the prose, invisible to the kernel. -/
 theorem sync_cell_datarace_factors :
     ∃ d : Prog → Bool, SoundW Psynccell d ∧ UsableW Psynccell d ∧ ConcW V d := by
   rw [seam_closes_iff_factors]

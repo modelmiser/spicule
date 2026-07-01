@@ -2598,10 +2598,71 @@
       "outcome": "TRADEOFF",
       "cost_usd": 1.7935,
       "timestamp": "2026-07-01T02:31:37+00:00"
+    },
+    {
+      "round": 42,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_sync_cell.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 shared mutability across threads (the data-race / concurrency probe) (re-import rule under attack)\n\nThis is a **design proposal** for a thirty-fifth *seam*, the **fifth fourth-domain probe** \u2014 after `crdt` #21\n(convergence \u2192 folded into application-correctness), `wcet` #22 (real-time \u2192 broke unsound), and `divisor` #33\n(panic-freedom \u2192 folded into application-correctness). It probes **data-race freedom / concurrency** \u2014 the property\nRust's `Send`/`Sync` auto-traits enforce (\"fearless concurrency\"). The `secret` #13 panel named \"concurrency\nchannels\" as a distinct axis with no memory-safety analog; this asks whether data-race freedom is a genuine **fourth\nsoundness domain**, or memory-safety (a data race **is** UB) closed by a *different mechanism*. It is a deliberate\nstress-test of the \"3-domain map (memory / IFC / liveness) is complete\" claim the three prior deflations left\nstanding.\n\nYou are attacking a **text specification** backed by real `rustc`-checked code (`seam/src/sync_cell.rs`, default\n`no_std` build \u2014 `core` only; the seam concentrates `unsafe` in its `unsafe impl Sync`/`Send`, the consumer uses\nnone). Tests pass (default), including a `compile_fail` docte",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Value-adding sound concurrency seam exists (no_std spin mutex / lock-free queue via discharged unsafe impl); floor-closed classification is wrong.",
+          "strongest_point": "A no_std SpinMutex/MPSC-queue's `unsafe impl Send/Sync` is sound, value-adding, and concentrated exactly like the accepted MMIO seam \u2014 re-admitting sound cross-thread sharing the conservative auto-trait rejects \u2014 refuting 'no value-adding seam' and the unchecked-axiom-vs-checked-concentration asymmetry."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "A no_std spinlock Mutex/SPSC channel is a sound, non-vacuous concurrency seam, refuting the 'floor-closed, no value-adding seam' deliverable.",
+          "strongest_point": "SpinMutex<T: Send> over core atomics + UnsafeCell is sound, works for arbitrary compound T (not restating atomics), no_std, and concentrates unsafe in one dischargeable unsafe impl Sync \u2014 a value-adding concurrency seam the proposal claims cannot exist."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "SURVIVES",
+          "severity": "minor",
+          "summary": "Design compiles trivially; unsafe impl deletes the check rather than demanding an expensive/undecidable one \u2014 no pass to blow up.",
+          "strongest_point": "The break is runtime UB reached via an unchecked axiom, so the implied auto-trait pass is short-circuited to O(1); the only flaw in my lane is the imprecise 'decidable auto-trait' claim, which overflows on non-regular recursive generics but is marginal to the thesis."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "fatal",
+          "summary": "Mutex/RwLock/spinlocks are sound no_std value-adding concurrency seams; auto-trait propagates like borrowck, doesn't close the domain.",
+          "strongest_point": "A sound `unsafe impl<T: Send> Sync` discharged by locking (spin::Mutex, no_std) grants Sync over arbitrary non-atomic T \u2014 the exact value-adding seam the proposal claims cannot exist, refuting 'floor-closed.'"
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Classification 'data-race-freedom = memory-safety, not a fourth domain' is refuted by DRF-SC theory and memory-safe-but-racy Java.",
+          "strongest_point": "Java is memory-safe yet permits data races without UB, proving the two properties are separable \u2014 so data-race-freedom cannot be 'memory-safety closed by another mechanism,' and the proposal's own SC-RustBelt floor had to be extended by a separate logic (RBRlx/iGPS) to reason about races at all."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "genuine-flaw",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "tradeoff",
+          "attacker-expressiveness": "genuine-flaw",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Horn 2's 'decidable auto-trait' is imprecise: decidable on the regular fragment, overflows on non-regular recursive generics (recursion_limit) \u2014 correct the wording."
+        ],
+        "headline": "Floor-closed / no-value-adding-seam classification is false; spin-mutex refutes it \u2014 revise.",
+        "rationale": "Horn-1 break holds but is conceded folklore. The staked contribution fails: a sound no_std SpinMutex<T> via discharged unsafe impl Sync is a value-adding concurrency seam the floor doesn't vend, and Java/RBRlx show DRF is a separable domain with its own basis."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 2.5665,
+      "timestamp": "2026-07-01T04:20:31+00:00"
     }
   ],
   "settled": [],
   "incompatibilities": [],
   "blind_spot_flags": [],
-  "total_cost_usd": 89.2681
+  "total_cost_usd": 91.8346
 }

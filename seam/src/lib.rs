@@ -639,15 +639,22 @@ pub mod total_div;
 /// **already closed by the floor's auto-derived `Send`/`Sync`** (Rustbelt-verified; a `Cell<i32>` is `!Sync`
 /// precisely to forbid cross-thread sharing — CF1). So a re-import has nothing to add: the only SOUND interface
 /// bounds `T: Sync`/uses atomics (= the floor, vacuous), and the only NON-trivial re-import is the `unsafe impl`
-/// escape — an unchecked TCB axiom (MMIO-shaped). HYPOTHESIS VERDICT (cold panel, r42): predicted **SEAM-BREAKS
-/// [horn1]** — the unconditional `unsafe impl Sync` lets safe code race `&SyncCell` across `thread::scope` (a data
-/// race = UB), no consumer `unsafe` (the `no_run` doctest shows it compiling; CF1 shows the floor rejecting a
-/// shared `Cell`); if accepted, tally 8→9 (first concurrency break). THE FINDING: data-race freedom is NOT a fourth
-/// *seamable* domain — it is memory-safety (UB) closed by the auto-trait mechanism, so a seam only restates the
-/// floor or breaks; the 3-domain map SURVIVES. Pre-registered: the `unsafe impl Send` footgun is textbook (the
-/// contribution is the floor-closed *classification*); the witness is a type-level hole (real UB needs a thread —
-/// no_std single-threaded-witness limit); overlaps `mmio` (axiom) + `secret` #13 (horn-1 break). Tally 8→9 if a
-/// break; N stays 9. Lean `sync_cell_datarace_factors` (a `..._factors`, pending verdict). See `sync_cell`.
+/// escape — an unchecked TCB axiom (MMIO-shaped). VERDICT (cold panel, r42): **SEAM-BREAKS [horn1]** — the break is
+/// real (safe `thread::scope` races the non-atomic `set`, UB, no consumer `unsafe`), tally **8→9** (but a
+/// pre-CONCEDED folklore break, the probe's vehicle, not a discovery). **JUDGE → FAILED the CONTRIBUTION:** my
+/// staked classification — "no value-adding concurrency seam / DRF is floor-closed / a re-import is categorically an
+/// unchecked axiom" — is **REFUTED** by an obvious omitted seam: a sound `core`-only **`SpinMutex<T>`** whose
+/// `unsafe impl<T: Send> Sync` is **DISCHARGED by the lock invariant** (not false like `SyncCell`'s) — the
+/// concurrency **slab**. CORRECTION: distinguish *discharged* from *false* `unsafe impl`s; reclassify data-race
+/// freedom as **"floor-PROPAGATES-but-does-not-close," analogous to borrowck/memory-aliasing** — the auto-trait
+/// propagates `Send`/`Sync` but closure comes from concentrating seams (locks/channels/atomics). So my trichotomy
+/// (IFC / memory / concurrency-special) collapses to a **dichotomy** (concurrency = the memory-aliasing bucket).
+/// SURVIVES: DRF is NOT a fourth soundness domain (a data race IS UB) — the 5th fourth-domain probe also fails to
+/// open one, the map holds, but for the RIGHT reason (concentrate-behind-a-seam, not floor-closed). META: the same
+/// clean-framing tic as #33 (omitted `SpinMutex` like #33 omitted `checked_div`) — but a horn-deciding failure this
+/// time, the tic at full strength on fresh ground. Salvage **#36**: build the `SpinMutex<T>` (discharged `unsafe
+/// impl`). Tally 8→9; N stays 9; rejection-mode count STAYS 8 (a break). Lean `sync_cell_datarace_factors` (a
+/// `..._factors` — it breaks). See `sync_cell`.
 pub mod sync_cell;
 
 use core::cell::UnsafeCell;
