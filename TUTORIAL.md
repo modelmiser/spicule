@@ -1939,6 +1939,21 @@ already records — the **coarse** soundness verdict (holds-vs-breaks) was **sta
 land — it is done when a cold, independent instrument has tried to break the *write-up* and you have published what it
 found. The monoculture caveat is the one this project cannot yet close from inside itself.
 
+**A postscript that proves the point (2026-07-01).** After the paper had passed its cold review and been revised, a
+re-review under a **newer model generation** (same family — this is *not* the foreign-model control) reproduced the
+overall verdict tier exactly (weak-reject as a results paper), but found defects the first panel missed — including
+one factual one. **The broken-seam tally, carried as "ten" through every document including this tutorial's per-phase
+narratives, is an off-by-one: the true census is eleven** (ten discovered + the one conceded folklore `sync_cell`).
+The slip happened at the two information-flow seams — `secret` #13 and `labeled` #14 both broke, but the running count
+assigned them a single ordinal (`ordered_locks` was logged as "the THIRD broken seam" with three breaks already on
+disk) — and every later count inherited it. The per-seam reports and the Lean lemma names (`secret_..._factors` *and*
+`labeled_..._factors`) are unambiguous. The historical entries above keep their as-written tallies (that is what the
+count *was believed to be* at each phase); `PAPER.md` §5.4 and the SYNTHESIS coda carry the corrected census. Two
+lessons ride on it: a running count that is never re-derived from the artifacts can survive any number of
+same-provenance reviews (the paper and its reviewers both inherited the same wrong number from the same source — the
+monoculture failure mode in miniature); and "two clean review rounds → converged" is convergence *relative to a lens* —
+an upgraded adjudicator re-opened what looked settled.
+
 ---
 
 # Part 11 — The transferable meta-lessons

@@ -503,13 +503,21 @@ sharpened, in turn, what an `unsafe impl` *is*: not "just trust," but a proof ob
 unconditional `Sync`). That discharged-vs-false distinction is exactly RustBelt's semantic type soundness (POPL 2018),
 floor-relativized: a re-import inhabits the logical relation *iff* its invariant is provable.
 
-**The adjudication vocabulary closed at nine verdict modes, and the broken-seam count reached ten.** Distinct from the
-nine cost *axes*, the cold panel's *rulings* settled into **nine verdict modes** (SEAM-HOLDS [none]; SEAM-COSTS by
-horn; SEAM-BREAKS by horn; the sound-but-deliverable-rejected *rejection* mode; the real-but-inseparable mode; the
-projects-onto-basis mode; the tradeoff-survival; and so on) — a fixed taxonomy that absorbed every one of the last
-twenty seams without a tenth ever appearing. Ten seams **broke** a horn (nine *discovered* under adversarial pressure;
-one — `sync_cell` #35 — a *conceded folklore* strawman built as a probe vehicle), and each break, like each cost,
-mapped back to a missing precondition conjunct rather than to bad luck.
+**The adjudication vocabulary closed at nine verdict modes, and the broken-seam count reached eleven** *(corrected
+2026-07-01 — see the census note below)*. Distinct from the nine cost *axes*, the cold panel's *rulings* settled into
+**nine verdict modes** (SEAM-HOLDS [none]; SEAM-COSTS by horn; SEAM-BREAKS by horn; the sound-but-deliverable-rejected
+*rejection* mode; the real-but-inseparable mode; the projects-onto-basis mode; the tradeoff-survival; and so on — the
+crisp nine-item enumeration is REALIZABILITY's method-mode registry) — a fixed taxonomy that absorbed every one of the
+last twenty seams without a tenth ever appearing. **Eleven seams broke a horn (ten *discovered* under adversarial
+pressure; one — `sync_cell` #35 — a *conceded folklore* strawman built as a probe vehicle)**, and each break, like each
+cost, mapped back to a missing precondition conjunct rather than to bad luck. *Census correction (2026-07-01):* the
+running tally carried through this document and its downstream summaries was **ten** (nine discovered + one conceded),
+an off-by-one introduced when the two information-flow breaks (`secret` #13, `labeled` #14) were assigned a single
+ordinal — `ordered_locks` was logged as "the THIRD broken seam" with three breaks already on disk — and inherited by
+every later count. The per-seam reports are unambiguous: eleven seams carry a judge-FAILED break verdict (intrusive,
+secret, labeled, ordered_locks, lock_registry, linear, reseat, wcet, priority, sync_cell, spin_mutex); a twelfth
+break-styled classifier line (`crdt`) was ruled a deflation and survives as a TRADEOFF, outside the census. Historical
+phase entries below retain their as-written running tallies; this paragraph is the corrected total.
 
 **The genuinely new second-movement finding is about the *builder*, not the seams: a stateful builder has
 domain-local blind spots that a cold gauntlet measures and a salvage loop corrects.** Eight times the panel ruled a

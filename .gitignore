@@ -16,6 +16,7 @@ __pycache__/
 # Keep design/ tracked — DESIGN.md + state.json are the payload.
 runs_seamful2/
 runs_seam/
+runs_foreign/
 
 # Rust build artifacts (the seam crate)
 target/
