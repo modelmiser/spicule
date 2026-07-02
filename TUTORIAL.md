@@ -399,7 +399,14 @@ things; you can have any two:
 3. **Seam concentration** — ordinary code touches the seam *rarely* (ideally once, at
    construction), not on every operation. (The opposite is the ATS2 ergonomics cliff.)
 
-Why you can't have all three (the mechanized core, `proof/SeamGap.lean`): the foundational
+One piece of fine print the formalization forces into the open: the trilemma also assumes the
+seam actually *vends* the primitive. A seam that rejects every use is trivially sound, decidable,
+and concentrated — by vending nothing — so the Lean kernel carries an explicit fourth predicate,
+`Usable`, to block that escape. ("Drop the primitive" is the non-option hiding behind every
+too-good-to-be-true seam design.)
+
+Why you can't have all three (the core is machine-checked in `proof/SeamGap.lean` — though at a
+coarser grain than these three horns; Part 10 says exactly which claim the kernel checks): the foundational
 primitives' true preconditions are Iris/RustBelt-grade (undecidable, certificate-free). The safe
 fragment can only *receive* a witness that is simultaneously decidable, proof-free, and erasable
 — strictly weaker. So the re-import obligation is necessarily weaker than the precondition it
@@ -1902,7 +1909,13 @@ dictionary**, not the Lean kernel. Lifting that into the kernel is a RustBelt/Ir
 months-long effort. The integrity move is to **ship the adversary's verdict alongside the proof**
 and to never let the word "machine-checked" transfer more confidence than the *checked part*
 earns. This is a transferable habit: when you mechanize something, be precise about *which*
-claim the machine actually checked.
+claim the machine actually checked. And a second, subtler instance of the same habit, caught
+only by a later review round (see the postscript below): the kernel's `Concentrated` predicate
+**bundles horns 2 and 3** — both reduce to "the decision factors through the safe witness" — so
+the machine-checked statement is strictly a *dilemma* (sound ∧ usable ∧ factoring is impossible
+when the precondition does not factor), one grain coarser than the prose trilemma: it cannot
+distinguish the drop-decidability corner (Verus) from the drop-concentration corner (Rust).
+The checked part is real; naming its grain is part of not over-selling it.
 
 ### The write-up phase: the paper, its cold review, and the ceiling
 
