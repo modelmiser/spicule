@@ -7,184 +7,24 @@ this project rests on, from the ground up; (b) the state of the art in "safe sys
 languages"; and (c) what newlang discovered and *why it matters*.
 
 **What newlang is.** Not a language. It is a research project that asked "what would the
-perfect systems language look like?", listed seven properties such a language should have,
-and then **proved — adversarially — that the seven cannot coexist**, mapped exactly where the
-wall is, and then **built thirty-seven real things that live right up against the wall (twelve that close, plus twenty-five probes — ending by showing the closed basis is *per soundness domain*, that which seams close is *graded* by the *floor-precondition match* (full for memory safety, none for information flow, partial then none for liveness), that *upgrading the floor is non-monotone* — the granularity gap is a ladder — that a floor can be the *wrong structural logic* (affine vs linear) no upgrade fixes, and finally that the *same* danger is a soundness *break* or a mere concentration *cost* depending on how the re-import rule **packages** it — a dial that proves **real but bounded**: a controlled probe moved one identical danger across horns, yet the move only works where soundness can be *decoupled* from the un-compellable closure, and a clean single-variable follow-up confirmed the fence is *forced* — the same packaging over a borrowed slot breaks — and that a *fourth domain* (replicated convergence) need not even be one: the candidate **deflated** into the generic unchecked-typeclass-law gap, projecting onto an existing basis — and that a *second* fourth-domain try (real-time/WCET) **failed** too, its op-count an *unsound* proxy for cycles (a cost monad), so two candidates in a row open no new domain and the three confirmed domains look **special** — and finally that a *real binary session* **deepened** liveness: it held (removing #18's single-handle limit and confirming the grading transfers), but its "real session" framing deflated to *per-session-only* progress, global deadlock-freedom needing *multiparty* typing — and finally that **delegation** (channel-over-channel), built to add that very feature, *held* but had its deliverable **rejected**, opening **progress/deadlock-freedom** as a third liveness coordinate I had mislabeled as a leak — and finally that a *multiparty* session, assembled from those binary edges, made #23's asserted interleaved deadlock a *compiled* artifact (`ring()` type-checks a source-less three-party cycle the per-edge floor cannot range over), *held* (sound) yet had its deliverable **rejected a third time** when my "global progress lives only in a generative whole-protocol projection" claim proved a *false dichotomy* — per-channel priority typing (Kobayashi, Dardha–Gay) rejects the ring with no global type, restoring a three-rung taxonomy and the weaker truth that global progress is a *whole-program* (not per-call, not necessarily generative) obligation — and finally that a *priority-typed* session (Kobayashi/Dardha–Gay, the rung the multiparty rejection named), built to *confirm* that weaker thesis, instead **broke on soundness** — the public `role()` constructor lets three identically-priority-typed relays compile into a deadlocking ring (edge-priority consistency is a *trusted-constructor invariant*, not a type fact), the **eighth broken seam**, confirming the thesis by *breaking* not costing and unifying progress's lock face (ordered_locks #15/#16) and session face under one *wrong-granularity* break — and finally that the *salvage* of #26, sealing the public constructor whose hole *broke* #26 and vending only trusted builders that thread strictly-increasing `Nat`s per edge, **held soundly** (the deadlocking ring now *unconstructible* — no public mint, and a monotone chain cannot close) yet had its deliverable **rejected a fourth time**, because "deadlock-freedom by construction" is really "**schedulability** by construction": affine Rust proves a deadlock-free *schedule exists* (the static `Nat` witness) but never *forces* the consumer to follow it, so a run-all/in-order/no-drop **progress residue** stays on the caller — splitting the progress coordinate into *topology* (no cycle, which the trusted constructor carries — the #26 fix) and *completion/execution* (always carried by the consumer — the #17/#18/#23 residue at multiparty scale)) — and finally that **choice** (`offer`/`select`, the branching session connective — external `&`, internal `⊕`), the last unprobed *core* session feature, *held* (sound — worst case a starved/leaked but memory-safe session) yet had its deliverable **rejected a fifth time**, because §4's "handle every label" guarantee is **vacuous**: Rust exhaustiveness gives *scrutinee coverage*, not *run-to-End* — a safe `match offer() { …, _ => {} }` type-checks with no `unsafe` and *drops* the branch's `Chan<R>`, starving it, so "handle-all" has no content beyond the conceded completion residue and **collapses into it** (now fed by *two* safe paths — `mem::forget` and the dropped wildcard arm); branch-safety is **two-legged** (label–continuation correlation + branch-set duality), not the four §4 listed (order is the generic typestate guarantee #18, "handle-all" the false leg); and the deflation lands on **binary `Either` + exhaustiveness**, not n-ary *named* sums (labeled choice needs positional nesting that drops the names, or `offer!`/`choose!` macros — exactly what the `session_types` crate reached for), so choice opens **no new coordinate** — the branching connective opens no new ground, and the last core session feature deflates onto binary `Either` — and finally that **must-complete** (a `Session<P>` affine handle with a `Drop` *completion bomb*, cf. `take` #9 — drop a `live` mid-protocol session and it aborts, so the floor *appears* to compel run-to-`End`; built, after the session connectives were exhausted, to attack the *completion residue* itself, the leftover every session seam #17–#28 carries), *held* (sound — `mem::forget` skips the bomb and starves the peer, but no UB) yet had its deliverable **rejected a sixth time**, and the *most instructive* rejection of the arc because the gauntlet **REVERSED** my finding rather than relabelled it: my pre-registered "completion is an *irreducible* linear gap — the session face of `linear` #17's must-run break" is **refuted** by a *scoped-closure / CPS* combinator — `with_session(|s| { …; s.finish() })`, the `std::thread::scope` analogue — that **compels completion modulo divergence with no `unsafe`**, moving the obligation to the re-import/construction boundary so the consumer never holds a forgettable *free* handle ("return `End` or diverge"); the sting is the *sixth refutation from my own cited lineage* — I cited `thread::scoped`'s **removal** (RFC 1084) as proof completion can't be forced and ignored its actual **fix**, `thread::scope` (stable 1.63) — so the #17–#28 completion residue was the **price of the FREE-HANDLE API**, never an inherent gap (every prior session seam vended a forgettable `Chan`, so every one carried it), and sessions ≠ #17's cleanup: a *delimited* session **can** be scoped to force completion, an *open-ended* cleanup cannot; completion is therefore **not irreducible but *concentrable*** at a horn-3 API-locality cost (surrender the free movable handle; run the session inside a scope), the verdict landing **SEAM-COSTS** not a break (FAILED broken-seam tally **stays eight**, refuting my own 8→9 prediction), and inverting my usual error — across the prior rejections I overclaimed concentration *total*, here I overclaimed it *irreducible*, when the truth is a cost *in between*)** to show what
-you *can* do. The deliverables are an impossibility result, a theorem (the *Seam Trilemma*),
-a Lean proof, and a small Rust crate of worked examples.
+perfect systems language look like?", listed **seven properties** such a language should have,
+and then **argued — adversarially — that the seven cannot coexist**, mapped exactly where the
+wall is, and then **built thirty-seven real seams that live right up against that wall** to show
+what you *can* do. Twelve of the thirty-seven **close** (the seam holds); the rest are **probes**
+that map the boundary — recovering the trilemma's hidden axes, showing the cost-basis is *closed*
+(a small fixed set of already-named PL costs), that the result is *per soundness domain* (memory
+safety, information flow, liveness), that *which* seams close is **graded** by how well the floor
+matches the precondition (full for memory safety, none for information flow, partial for liveness),
+and that the grade cannot be *bought up* by upgrading the floor (the granularity gap is a ladder no
+floor tops out). The arc then **wound down into a paper** (`PAPER.md`) and — in the project's own
+spirit — put that paper through its **own cold review**. The deliverables: an impossibility
+*argument* (not a mechanized proof — see Part 10), the *Seam Trilemma*, a Lean skeleton, a
+thirty-seven-seam Rust crate of worked examples, and the paper.
 
 **How to read this.** Parts 1–5 are the PL bootstrap — the prerequisites, taught from
 scratch, with the state of the art woven in. Parts 6–10 are the project itself. Part 11 is
 the transferable meta-lessons. Each part stands alone; skip what you know. Code references
 point at real files in this repo (`seam/`, `proof/`, `design_seam/`).
-
-> **Catch-up note (2026-06-28) — what's new since the first version.** This tutorial originally
-> ended at the seven-property impossibility result and its first four worked seams. It has since
-> been carried through the project's *constructive* arc, and the story got materially deeper. Two
-> additions, both in Parts 9–11:
-> 1. **The trilemma turned out to be a *projection* — of a *closed* object.** Its three horns are a
->    low-dimensional shadow of an object with **nine clean axes** — each an *already-named* PL concern
->    (zero-cost abstraction, generativity, refinement-legibility, the `core`/`alloc` split,
->    exception-safety, leak-freedom) — plus an *inseparable category* and two *outside-the-axes* slots.
->    Eight more primitives (5–12) probed it one at a time, so the result is a **unification** of known
->    axes under one question — *what does the safe witness cost?* — a question with **finitely many
->    answers**. That honest deflation, and the *closure* of the basis, is the spine of the new material.
-> 2. **The method has *nine* verdict modes** — the fifth closes the basis; the last four step outside the
->    memory-safety frame (the ninth: the floor is the wrong *structural logic*). The probes past seven exercise all of them. (8) **rejected** — confounded. (9) **confirmed**
->    — *unwind-safety*. (10) **confirmed and ruled distinct** — *leak-freedom*. (11) **real but
->    structurally inseparable** — *move-stability*. (12, a validity read) **projects entirely onto the
->    basis** — *the cost-basis is closed*. (13, a constant-time secret) stepped **outside memory safety**:
->    information-flow is a *different soundness domain* with its own basis — closure is **per domain**.
->    (14, a capability-gated declassification) probed whether the IFC domain has a *closing* seam and found
->    it does **not** — both IFC seams break, because **Rust's affine floor carries none of the IFC
->    precondition** (it bounds resource *uses*, not information *bits*). And (15, a type-level lock ordering)
->    probed the **positive** half in a *third* domain — **liveness/deadlock-freedom** — and **broke** too,
->    but *partially*: a re-entrant root mints a second token lineage so safe code types a lock-order
->    *inversion* (wrong **granularity** — per-token, not per-thread), and even patched, the dynamic
->    fragment escapes the static floor (wrong **coverage**). And (16, a *runtime* lock registry) **upgraded
->    the floor** to fix that — a thread-local held-set of runtime ranks — and **broke too**, showing the
->    upgrade is **non-monotone**: it fixed *coverage* (dynamic orderings) but **granularity recurred one
->    rung finer** (the held-set is keyed on the *thread*, but async *tasks* are the control unit, so
->    work-stealing migration launders an undetected inversion). So the deepest result: **which seams close
->    is *graded* by the floor-domain match** — **full** (memory safety / affine floor), **none** (information
->    flow / affine floor), **partial** (liveness — and *no* floor lifts it to full, because *granularity is
->    a containment-scope ladder*, token < thread < task, and each ambient floor reaches one rung). And (17, a
->    must-run cleanup guard) went *sideways* — same liveness domain, a *different precondition* ("this
->    finalizer must run") — and **broke** in a *new mode*: a clean **none** (a safe `mem::forget` skips the
->    destructor — the affine floor cannot compel a *linear* obligation), the **wrong structural logic** (no
->    floor *upgrade* fixes it — every sound decidable fix needs linearity Rust rejected), which also sharpens
->    the unit of the match from *domain* to *precondition*. And finally (18, a *session-typed channel*) took
->    that *same* `mem::forget` linearity gap and — by **packaging** it differently — made it merely **cost**
->    instead of break: it is the **first** out-of-memory-safety probe to **hold** (SEAM-COSTS), because its
->    precondition *decomposes* and the floor matches it **component-wise** — the *order-safety* half **closes**
->    via affine typestate (no `root`-hole, unlike #15), while the *completion* half is the #17 gap again but
->    now only an undischargeable **horn-3 concentration cost** (it recurs at every `?`/early-exit) rather than
->    a soundness break, because completion is *one component beside a sound safety core* rather than the whole
->    promise. So **which horn a danger threatens is set by how the rule packages it** — the same gap unsounds
->    #17 and merely de-concentrates #18. (Honest deflations the panel forced: a single-handle typestate
->    *walk*, not a binary session; "usable" only for infallible straight-line protocols; and the split is
->    documented folklore — the contribution is *locating* it.) And finally (19, a *value-owning scope-restore
-> guard* — the real `scopeguard`) turned that packaging observation into a **controlled experiment**: it
-> carries #17's *identical* `mem::forget` danger but wraps it in #18's structure (a sound ownership core
-> beside which the restore is a side-obligation), and **held** (SEAM-COSTS, horn 3) — the same gap that
-> *broke* #17 only *costs* here. But the panel **bounded** the thesis, all accepted: the move is
-> **confounded** (to package the danger as a side-obligation, #19 also adds the value-ownership core #17
-> lacked, so the value-ownership model co-varies — a better-controlled probe than the incidental #17-vs-#18
-> pair, not a clean single variable); and the horn is **forceable** (the *same* skippable-`Drop` danger in a
-> *borrowed-slot/`take_mut`* packaging forces horn-1 UB, and `Pin`'s drop guarantee and the `thread::scope`
-> restructure exhibit un-repackageable horns), so *which* horn depends on **where safety rests** — partly
-> danger-intrinsic. The refined finding: the packaging dial is **real but bounded** — which horn a danger
-> threatens is a design choice *within a structural envelope* set by whether soundness can be **decoupled**
-> from the un-compellable closure (owned ⇒ costs; borrowed-across-unwind ⇒ forces). Not novel: `JoinGuard`
-> broke horn-1 and `scopeguard` cost horn-3 already in 2015 (RFC 1066); the contribution is the method and
-> *locating* the dial. And finally (20, the *borrowed-slot* counterpart — `take_mut` as a guard) ran the
-> clean single-variable experiment #19's confound forbade: keep #19's packaging byte-identical, change *only*
-> owned → borrowed, and it **broke** (SEAM-BREAKS, horn 1, the sixth break) — `into_inner`, sound for #19's
-> owned value, is a safe-code double-free over a borrowed slot. The flip cost-3 → break-1 is now attributable
-> to the decoupling property *alone*, and the panel rejected the "maybe-movable" hedge (the sound subset is
-> degenerate, dominated by `&mut T`), so the fence is **forced**, at the owned-vs-borrowed line — the
-> packaging trilogy closes with one law: the horn is movable **iff** the value-ownership model lets soundness
-> decouple from the un-compellable closure. And finally (21, a *state-based CRDT merge*) aimed at a **fourth
-> domain** — replicated convergence — and the candidate **deflated**: the supply-side break is real (a safe
-> lawless `join` diverges replicas) but it is the *generic unchecked-typeclass-law* gap (`Ord`/`Eq`/`Monoid`/
-> semilattice — signatures checked, laws not), projecting onto `restore`'s application-correctness basis, so
-> convergence opens no new domain and the map stays at three soundness domains plus application-correctness.
-> The Seam Trilemma is *domain-general*, the
->    cost-basis *per-domain*, the match *graded* along *granularity* and *coverage* and keyed to the
->    *precondition*, *upgrading the floor trades one gap for a finer one*, *a floor can be the wrong
->    structural logic*, and *the horn a danger threatens is a packaging choice*. A discovery procedure that
->    only confirms is measuring nothing; this one rejected, confirmed, distinguished, recognised the
->    inseparable, certified closure, recognised a new domain, diagnosed a floor-domain mismatch, graded a
->    partial match, showed the grade cannot be bought up by upgrading the floor, *and named a
->    wrong-structural-logic floor* — all **nine** verdict modes (the eighteenth through twenty-second seams add no new mode; they
->    *re-package* an existing one, turning #17's break into a cost — #19 then maps the *limit* of that re-packaging (the horn moves only where soundness decouples from the danger), and #20 *forces* the horn at that limit, confirming the fence under a clean single variable.)
->
-> If you read the earlier version, the genuinely new content is **Primitives 5–21** (Part 9), the
-> "un-bundlings" + the rejection + the inseparable ruling + the closed-basis capstone + the
-> domain-generalization + the floor-domain refinement + the **graded** (full/partial/none) match + the
-> **non-monotone floor-upgrade** (granularity is a ladder) + the **wrong-structural-logic** mode (affine vs
-> linear) + the **packaging** finding (the same gap breaks #17 but only *costs* #18 — the first
-> out-of-memory-safety probe to **hold**), and **meta-lessons 6–10** (Part 11). Everything in Parts 1–8 is
-> unchanged prerequisite material.
-
-> **Catch-up note (2026-07-01) — the arc completed at 37, and the write-up phase.** Since the 2026-06-28
-> note the constructive arc ran to its natural close at **thirty-seven seams** and then **wound down into a
-> paper and the paper's own cold review**. Two blocks are new: primitives **30–37**, and an entire
-> **write-up phase** the earlier tutorial knew nothing about.
->
-> **Primitives 30–37 — completion salvaged, recursion mapped, concurrency's three-seam arc.**
-> **#30 must_scoped** — the salvage of #29: completion is **concentrable** after all, via a scoped/CPS
-> combinator (`session_scope(a,b)`, the `thread::scope` analogue) that compels run-to-`End` with an
-> *unforgeable return-type* obligation, so `mem::forget` is defanged; **HELD** (SEAM-COSTS [horn 3], a
-> TRADEOFF) — but only **per-endpoint**, global completion still escapes via peer divergence, closing #29's
-> reversal without over-claiming. **#31 recursion** — recursive sessions (`Rec`/`Var`, env-threaded); SOUND
-> but deliverable **REJECTED** (the 7th rejection), over-conceding *guardedness* as undecidable; it also
-> **bounds #30** (single-level recursion has no reachable `End`, so #30's `Done`-forcing is vacuous). **#32
-> guarded** — a sealed `Guarded` marker rejecting the non-contractive `Rec<Var>` = µX.X; **SURVIVED [none]**,
-> the cleanest tier — guardedness/**productivity concentrates**; only **termination** is left as the
-> undecidable NONE (the salvage of #31). **#33 divisor** — integer division, the **first pivot off the
-> session family**: panic-freedom **FOLDS** onto the application-correctness basis (a panic is *defined*, not
-> UB) — the third fourth-domain probe to deflate; deliverable **REJECTED** (8th), over-conceding the
-> `i32::MIN / -1` overflow as undecidable when it is a decidable point-exclusion. **#34 total_div** — a
-> `TotalDivisor` (`d ∉ {0,-1}`) vending total `-> i32` division, the salvage of #33; recorded **SEAM-HOLDS
-> [none]** and originally billed "the cleanest verdict of the project" — **but the 2026-07-01 stability
-> re-run downgraded it to SEAM-COSTS [horn 3]** (see the write-up phase below). **#35 sync_cell** — the
-> **fourth** fourth-domain probe (data race / concurrency): it **BREAKS by design** and *refutes* the tempting
-> "DRF is floor-closed" claim, **reclassifying** data-race freedom as a *concentrate-behind-a-seam* domain;
-> broken tally 8→9 (a conceded-folklore break). **#36 spin_mutex** — the salvage of #35, a `core`-only
-> spinlock whose `unsafe impl` is *discharged* by the lock invariant — **but the salvage itself BROKE**
-> (it omitted the guard's `T: Sync` conjunct), the **10th** broken seam (9th discovered). **#37 spin_lock**
-> — the correctly-bounded salvage: **all four** of a mutex's auto-trait obligations enumerated and
-> discharged; **SEAM-HOLDS [none], SURVIVED** — the **#35→#36→#37 chain SETTLES**, proving a sound,
-> value-adding `core`-only concurrency seam *exists*, so data-race freedom is concentrate-behind-a-seam (its
-> **dynamic** end, like `RefCell`).
->
-> **The settled map (what 30–37 nailed down).** The old trichotomy **collapses to a dichotomy**: information
-> flow is the lone *floor-closes-nothing* domain, while **memory-aliasing and data-race freedom are the same**
-> floor-propagates-but-concentrating shape (a **static** end — SPSC, the slab — and a **dynamic** end —
-> `SpinLock`, `RefCell`), and an `unsafe impl` is a proof obligation either **discharged** or **false**. All
-> **four** fourth-domain probes (crdt #21 *fold*, wcet #22 *break*, divisor #33 *fold*, sync_cell #35
-> *reclassify*) deflate by four distinct mechanisms → **three soundness domains, closed**, plus an
-> application-correctness basis. Liveness has exactly **three coordinates** (completion, leak-freedom,
-> progress); completion turned out concentrable (#30); termination alone stays the undecidable NONE. Final
-> tallies: **N = 9 verdict modes**, **broken-seam tally 10** (9 discovered + 1 conceded folklore), **rejection
-> mode fired 8×**, **5 settled salvage lineages** — four one-step (#26→#27, #29→#30, #31→#32, #33→#34) plus the
-> **#35→#36→#37 two-step** chain (the only one that took two steps, because the salvage itself first broke).
->
-> **The write-up phase (all new).** The arc then **wound down** at 37 (a deliberate stop over a fifth
-> fourth-domain probe — four had already deflated). A **capstone synthesis** integrated seams 18–37, then a
-> full **paper draft** was written (`PAPER.md`, result-first framing — *"the seam is load-bearing"* —
-> stitching the impossibility write-up, the synthesis, and the realizability table). The paper was then run
-> through the project's *own* instrument: a **four-agent cold review** (fresh, no-context reviewers on
-> claim-fidelity, scientific merit, method/scholarship, and clarity). Verdicts: fidelity **minor-fixes** (no
-> number drift), skeptical **weak-reject *as a theorem paper***, method **sound-but-underreported**, clarity
-> **hard-to-follow**. The convergent corrections — now applied (a "Tier 1+2" revision) — are themselves worth
-> knowing as honest bounds: **"theorem/proven" was downgraded to a *structured impossibility argument***
-> (it rests on an *unproved empirical premise* — that a seamless/derived/zero-cost system must **accept** the
-> hard shared-mutable idioms rather than safely reject them as Rust does; soundness never requires
-> completeness); the reflexive builder-calibration finding was recast as a **hypothesis**; the one-gauntlet
-> bar and the unpinned model were disclosed; and the **ceiling was named**: every role ran on **one model
-> family**, so the result's biggest threat is *monoculture*, and a foreign-model replication is the single
-> highest-value missing control.
->
-> **Two follow-on experiments.** (a) The **foreign-model replication** — GPT/Gemini/open-weights as every cold
-> role, re-adjudicating the frozen seam specs to see whether a *foreign* panel reproduces the verdicts — is
-> **built and turnkey** (`orchestrator/foreign_replication.py`, reusing the identical role prompts so the only
-> changed variable is the model weights) but **blocked on a foreign API key**; until it runs, the honest
-> ceiling stays *weak-reject as a results paper*. (b) The **verdict-stability re-run** (key-free) re-ran the
-> three single-gauntlet `SEAM-HOLDS` seams to three consecutive fresh cold gauntlets: the **coarse** soundness
-> verdict (holds-vs-breaks) was **stable** for all three — the pivotal `spin_lock` reproduced `SEAM-HOLDS`
-> 3/3 — but the **fine** verdict *tier* **drifted** for `total_div` #34, which three fresh panels priced from a
-> clean HOLD down to **SEAM-COSTS [horn 3]**. So single-gauntlet *coarse* verdicts read as robust and *fine*
-> verdicts as provisional, and #34's "cleanest verdict" billing in the taxonomy table is downgraded
-> (`design_seam/STABILITY_3GAUNTLET.md`). Notably, the drift is itself an instance of the reflexive tic the
-> paper describes — "the cleanest verdict, no horn costed" was exactly the clean-extreme over-claim a cold
-> panel corrects, here reproduced by independent panels months after the original.
->
-> If you read the 2026-06-28 version, the genuinely new content is Primitives **30–37** (narrated in this
-> note; the per-primitive *sections* in Part 9 still walk 1–29 in detail, and the taxonomy table lists all
-> 37), the settled **dichotomy** and **three-domain** map, and the entire **write-up phase** (the paper, its
-> cold review, and the two follow-on experiments). Parts 1–8 are unchanged prerequisite material.
 
 > **One-paragraph spoiler.** A type system that is *decidable* (the compiler always halts with
 > yes/no and never asks you to write a proof) fundamentally cannot also be *expressive enough*
@@ -585,9 +425,9 @@ Theory in hand, the project stopped arguing and *built*. Crucial design of the e
 Demolition is coldness, so the cold harness is the **red team**, aimed *only* at the re-import
 rule. Each seam ships as a **text spec** (what the cold attackers attack) *and* a real,
 `rustc`-checked crate (`seam/`) whose consumer code is `#![forbid(unsafe_code)]` and whose UB-
-laundering attempts are `compile_fail` tests. Thirty-seven primitives in all (the per-primitive sections
-below walk **1–29** in detail; the **2026-07-01 catch-up note above** narrates **30–37**; the taxonomy table
-lists every one). The early arc set the pattern: the first four chosen because their
+laundering attempts are `compile_fail` tests. Thirty-seven primitives in all — the per-primitive sections
+below walk every one, and the taxonomy table at the end lists them at a glance. The early arc set the
+pattern: the first four chosen because their
 preconditions have four *different shapes*; the next three (5–7) because they reopened a deeper
 question — *how many axes is the trilemma actually a projection of?* — each recovering one; and **the
 probes past seven** (8 onward) — one *no* (rejected), two *yes* (unwind-safety at N ≥ 8, leak-freedom at N ≥ 9,
@@ -1758,6 +1598,168 @@ single-threaded run-`a`-then-`b` witness `a` can `finish` while `b` diverges, so
 via peer divergence — the #23/#27 per-session-vs-global gap one structural step on, the per-endpoint cost between
 the extremes.
 
+### Primitive 30 — must-scoped (the scoped session that *forces* completion) → SEAM-COSTS [horn 3], HELD (`seam/src/must_scoped.rs`)
+
+#29 *located* the completion gap and the panel reversed my "irreducible" claim by naming the fix; #30 **builds** it.
+`session_scope(a, b)` — the two-endpoint `std::thread::scope` analogue — vends two dual, brand-trapped endpoints,
+each of which **must return a `Done<'scope>`** mintable *only* by `finish()` at protocol `End`. The `'scope` brand
+is lifted verbatim from **branded #5** (generativity is `thread::scope`'s own trick), so a `Done` cannot be forged,
+smuggled out, or fabricated for the wrong session — and because the obligation is a **return type, not a
+destructor**, `mem::forget` is defanged: you cannot forget your way out of "return a value of this type."
+
+Verdict **SEAM-COSTS [horn 3], HELD** — a TRADEOFF survival like `restore` #19 and `binary_session` #23, *not* a
+rejection or a break. It **closes #29's reversal exactly as predicted**: the whole #17–#28 completion residue was
+the price of the *free movable handle*; surrender it and run the session inside the scope, and completion closes —
+at a horn-3 API-locality cost. This is the concentration #29 failed to predict it would find, so the broken tally
+**stays eight**. But the panel's sharpest point — which the builder hedged correctly, so *the caveat is the
+finding* — is that the concentration is **per-endpoint, not whole-session**: `session_scope` forces only each
+returning closure's *own* endpoint, so under the sequential run-`a`-then-`b` witness `a` can `finish` while `b`
+**diverges**, starving the peer, and *global* completion still escapes via peer divergence (the #23/#27
+per-session-vs-global gap one step on). Lean `must_scoped_completion_closes`; the meta-lesson is the calibration tic
+inverted again — #29 over-claimed the danger *irreducible*, and #30's truth is the **per-endpoint cost between the
+extremes**.
+
+### Primitive 31 — recursion (recursive session types) → SOUND, deliverable REJECTED (the 7th) (`seam/src/recursion.rs`)
+
+The last unbuilt *structural* session feature: unbounded-depth protocols, `Rec<P>`/`Var` over an env-threaded
+`Session<P, E>`, built to probe #30's boundary at arbitrary depth. What **held**: the encoding is sound (Horn 1) — a
+top-level `Var` is **inert** (the *branded-#5 analogue* again: an unbound recursion variable cannot step, no UB),
+decidable (Horn 2, Θ(type-size)), and it produced a genuine **bounding finding** — single-level recursion *without
+choice* has **no reachable `End`**, so #30's `Done`-forcing is **vacuous** there; recursion exposes #30's unstated
+precondition, a *reachable terminal*.
+
+But the deliverable was **REJECTED — the rejection mode's 7th firing** (after #8/#24/#25/#27/#28/#29). The
+over-concession, filed against myself: I parked **productivity / guardedness** at the *undecidable* extreme beside
+termination. That is wrong. `Rec<Var>` is the non-contractive `µX.X` that every cited system (Coq/Agda **guarded
+corecursion**, contractive recursive types) rejects **syntactically** — a *decidable* check. So guardedness does not
+belong with the halting problem; it concentrates. The meta-lesson is the project's unifying tic in its **inverse**
+form: prior rejections over-claimed concentration *total*, #29/#30 over-claimed the danger *irreducible/global*, and
+here I **over-conceded** — parked a decidable cost at the undecidable extreme — the same flight from the *middle*
+toward whichever extreme is cleaner. Lean `recursion_guarded_order_closes`; tally stays eight, N stays nine. The
+natural **#32 salvage** is the sealed `Guarded` marker the rejection named.
+
+### Primitive 32 — guarded (guarded recursion) → SEAM-COSTS [none], SURVIVED — the cleanest tier (`seam/src/guarded.rs`)
+
+The salvage of #31, and one of the cleanest results in the arc. A sealed **`Guarded` marker** (a `sealed::Sealed`
+supertrait; implemented for `Tx<C>`/`Rx<C>`/`End`, **not** for `Var`) bounds `enter()`/`recur()`, so the
+non-contractive `Rec<Var>` = `µX.X` **cannot unfold**. The panel confirmed exactly what #31's rejection prescribed:
+`Rec<Var>` is the loop every guarded-corecursion system rejects syntactically, and the `Guarded` bound rejects it in
+Θ(type-size) with no SMT. **SURVIVED [none]** — all three horns hold, no horn dropped, *stronger* than #30's
+[horn 3]: no safe unfold of `Rec<Var>`, no UB, zero-ceremony concentration, decidable and solver-free.
+
+It **closes #31's over-concession** (guardedness *concentrates* at horn 3, it is not the undecidable NONE), and it
+avoided the #27 salvage-over-claim trap by claiming **only productivity** and conceding **termination** up front. The
+marked tradeoff (not a horn-drop): the shallow head-check equals full contractivity *only* because the single-level
+choice-free grammar collapses "guarded" to "head ≠ `Var`"; richer grammar needs the real recursive walk — **scoped
+out, not escaped**. It buys **productivity, not termination**: `Rec<Tx<Var>>` is guarded and still infinite, so
+**halting stays the one conceded undecidable NONE**. The final split for the whole session family: **order + duality
++ guardedness/productivity all CLOSE; termination alone is the NONE.** Lean `guarded_recursion_productivity_closes`.
+
+### Primitive 33 — divisor (checked integer division) → SOUND, deliverable REJECTED (the 8th) — the probe *folds* (`seam/src/divisor.rs`)
+
+The **first pivot off the session family** (now fully mapped: connectives #18–#28, completion #29/#30, recursion
+#31/#32), and the **third** fourth-domain probe. A `Divisor(NonZeroI32)` — the one refinement type stock Rust ships —
+vends division on the real floor: `divide(10, 3)` where a raw integer *cannot coerce*, so div-by-zero is
+**unwritable** (Horn 1: a panic is *defined behaviour*, a clean abort, never UB; Horn 2: decidable Θ(1), no SMT). The
+headline domain finding: **panic-freedom folds into the application-correctness basis** (#19 restore / #21 crdt),
+*not* a fourth soundness domain. With crdt #21 (*fold*) and wcet #22 (*break*), that is **three fourth-domain probes
+deflated by three distinct mechanisms**, none opening a fourth domain — the confirmed three (memory safety /
+information flow / liveness) look increasingly special.
+
+The deliverable was **REJECTED — the 8th firing** — and it is the **same tic as #31, exactly inverted onto a new
+domain**. `divide` overflows on *exactly* `a == i32::MIN && d == -1`; the divisor-side conjunct `d ∉ {0, -1}` makes
+division **total for every `a`** via the same Θ(1) mechanism. My claim that the overflow residue "needs whole-program
+range analysis, undecidable" is **false for the primitive I chose**: it is a **decidable point-exclusion** I
+declined. Worse, returning `Result` forces `.unwrap()` on provably-total divisions, *reintroducing the very panic the
+seam exists to remove*. Refuted, again, from my own §2. Lean `divisor_nonzero_division_closes`; tally stays eight, N
+stays nine. The **#34 salvage** the rejection named: a `TotalDivisor` vending total `-> i32` division.
+
+### Primitive 34 — total-div (total integer division) → SEAM-COSTS [horn 3] *(downgraded on re-run — see below)* (`seam/src/total_div.rs`)
+
+The salvage of #33, and the fourth settled reject→salvage pair (#26→#27, #29→#30, #31→#32, #33→#34). A
+`TotalDivisor(i32)` carrying the finite point-exclusion `d ∉ {0, -1}` vends **total `-> i32`** division with *no panic
+path* — no `Result`, no `.unwrap()`. One Θ(1) constructor check closes **both** of division's panic sources at once
+(`d == 0`, and the `i32::MIN / -1` overflow's divisor conjunct `d == -1`), and excluding `-1` costs nothing safe:
+`a / -1 == -a`, whose sole overflow (`i32::MIN`) coincides with negation's own. It closes #33's over-concession — the
+overflow residue was a decidable point-exclusion, and total division is *realized*, not merely argued — leaving only
+arbitrary `+`/`*` range analysis as the genuine undecidable NONE.
+
+As originally adjudicated (r41) this was recorded **SEAM-HOLDS [none]** and billed "the cleanest verdict of the
+project — no horn even costed." **A later three-gauntlet stability re-run (2026-07-01) downgraded it.** Three fresh
+cold panels unanimously returned **SEAM-COSTS [horn 3]**: they *priced* the once-per-construction crossing the single
+r41 gauntlet had waived (a signed runtime divisor that may be `-1` re-tests per use; a constant divisor forces
+`TotalDivisor::new(n).unwrap()`, a defined-behaviour panic guarding a division that never panicked). The seam is
+still **sound** — a *tier* drift, not a horn-1 flip — but the "cleanest verdict" framing does not survive
+re-adjudication, and the drift is itself the reflexive tic in miniature: "cleanest verdict, no horn costed" was
+exactly the clean-extreme over-claim a cold panel corrects (`design_seam/STABILITY_3GAUNTLET.md`). Lean
+`total_div_both_sources_closes`.
+
+### Primitive 35 — sync-cell (a shared-mutable cell) → SEAM-BREAKS [horn 1], the ninth broken seam — DRF *reclassified* (`seam/src/sync_cell.rs`)
+
+The **fourth** fourth-domain probe, and the first into *concurrency / data-race freedom*. A strawman by design: a
+`SyncCell<T>` with an `unsafe impl Sync` whose obligation is **false** — safe `std::thread::scope` code races a
+non-atomic write into UB with **zero consumer `unsafe`**. It **BREAKS [horn 1]** (a data race *is* UB), the ninth
+broken seam — but a **conceded-folklore** break (a probe vehicle), so the rejection-count stays eight and the tally
+rises 8→9.
+
+The break is not the point; the **reclassification** is. The staked claim — "no value-adding concurrency seam
+exists; DRF is *floor-closed*; a re-import is *categorically* an unchecked axiom" — is **false**, and #35 refutes it
+by pointing at its own salvage: a `SpinMutex<T>` whose `unsafe impl Sync` is **discharged** by the lock's
+mutual-exclusion invariant is a sound `core`-only concurrency seam. So DRF is reclassified from "floor-closed" to
+**"floor-propagates-but-concentrates" — analogous to memory-aliasing**, closed via *concentrating seams* (locks,
+channels, atomics), not by the floor alone. This **collapses the old trichotomy to a dichotomy**: information flow is
+the lone floor-closes-*nothing* domain, while memory-aliasing **and** data-race freedom are the same shape. DRF is
+still **not** a fourth soundness domain — a data race is UB, inside memory safety — so the map stays at three. The
+meta: the *same omit-the-obvious-counterexample tic as #33* (there, `checked_div`; here, `SpinMutex`), but a
+**horn-deciding failure**, not a marked tradeoff — on a fresh domain the tic fires at full strength, so calibration
+is **not monotonic**. Lean `sync_cell_datarace_factors`. The owed **#36 salvage**: build the discharged `SpinMutex`.
+
+### Primitive 36 — spin-mutex (a core-only spinlock) → SEAM-BREAKS [horn 1], the tenth broken seam — the salvage *itself* broke (`seam/src/spin_mutex.rs`)
+
+The salvage owed for #35 — and the **first salvage to break**, the same omitted-conjunct way #35 did. A
+`SpinMutex<T>` = `AtomicBool` + `UnsafeCell<T>`, `lock()` spinning on `compare_exchange` (Acquire) → a `SpinGuard`
+releasing (Release) on `Drop`. The lock's exclusion obligation is genuinely **discharged**. But a concurrency
+`unsafe impl` has **two** conjuncts and I wrote only one: cross-thread exclusion (the lock — discharged) **and** the
+guard's no-`&T`-leak bound (`T: Sync` — **omitted**). With no manual guard impl, `SpinGuard` auto-derives `Sync` for
+every `T: Send` via my own `unsafe impl<T: Send> Sync for SpinMutex`, so `T = Cell<i32>` (`Send + !Sync`) lets safe
+`thread::scope` share `&guard` and race `set`/`get` into UB — **zero consumer `unsafe`, lock never even contended** —
+where `std` writes the stricter `unsafe impl<T: Sync> Sync for MutexGuard` (plus `!Send`).
+
+Verdict **SEAM-BREAKS [horn 1]**, the tenth broken seam (the ninth *discovered*; #35 was the lone conceded folklore).
+What **survives** the break is the #35-refuting existential: a *correctly-bounded* `SpinMutex<T: Sync>` **is** sound
+(`spin::Mutex`; RustBelt POPL 2018), so the concentrate-behind-a-seam **classification is not refuted** — the
+*artifact* had a hole, the *thesis* holds, DRF is still no fourth domain. The meta is the sharpest instance of the
+tic in the project: the **omit-a-conjunct** shape (as #33 omitted `checked_div`, #35 omitted `SpinMutex`) recurred
+**inside the very salvage meant to prove I'd corrected it**, so calibration is *not converging* on the fresh
+concurrency domain — the full obligation set only got mapped *under the gauntlet*. The #35→#36 pair does **not**
+settle; the chain extends to #37. Lean `spin_mutex_guard_sync_factors`; tally rises 9→10.
+
+### Primitive 37 — spin-lock (the correctly-bounded spinlock) → SEAM-HOLDS [none], SURVIVED — the chain settles (`seam/src/spin_lock.rs`)
+
+The salvage of #36's broken salvage — and **the first salvage of a broken salvage to hold**. Identical mechanics to
+#36 plus the **one line #36 dropped**: `unsafe impl<T: Sync> Sync for SpinLockGuard`. This time a mutex's **four**
+auto-trait obligations are enumerated in full and each discharged: (1) `SpinLock<T>: Send where T: Send`; (2)
+`SpinLock<T>: Sync where T: Send` (exclusive access ⇒ `T` migrates, like `std::Mutex`); (3) `SpinLockGuard<T>: Sync
+where T: Sync` (**the fix** — a shared `&guard` hands `&T` to many threads, sound only when `T: Sync`, opting the
+guard out of the too-weak auto-`Sync = T: Send`); (4) `SpinLockGuard<T>: Send where T: Send` (auto, and sound for a
+spinlock — the Release store is thread-agnostic, unlike an OS futex, so a migrated guard is sound: `spin::MutexGuard`'s
+reasoned choice vs `std::MutexGuard`'s `!Send`). **Verified**: the exact r43 laundering path that *compiled* against
+#36 is now **rejected** (`error[E0277]: Cell<i32> cannot be shared between threads safely`).
+
+Verdict **SEAM-HOLDS [none], SURVIVED** — the cleanest tier, no horn even costed (I predicted [horn 3] and
+under-claimed). It survived the pre-registered sharpest attack — a hunt for a **fifth** omitted conjunct (the #36
+failure mode) — which found none: six break attempts failed, three independent reconstructions converged. So the
+**#35→#36→#37 chain SETTLES**: a sound, value-adding, `core`-only concurrency seam **exists** (the thing #35 said
+could not), so DRF is concentrate-behind-a-seam — the **dynamic** end of the memory-aliasing bucket (a runtime
+witness, like `RefCell`, vs SPSC/slab's static discharge) — and a **discharged** `unsafe impl` is categorically
+distinct from a **false** one. It is the fifth settled reject/break→salvage lineage and the only **two-step** one
+(two steps because #36 broke). Two marked tradeoffs, not horn-drops: overstated `?Sized`/IRQ parity (`SpinLock<T>`,
+not `T: ?Sized`), and novelty ~nil (obligation 3 is *verbatim* Ralf Jung's June-2017 `MutexGuard`-`Sync` std bug and
+its shipped patch; RustBelt POPL 2018 proved the soundness). The calibration coda: concurrency took **three** seams
+to map (#35 break, #36 break, #37 hold); the tic fired full-strength twice then **receded** to marked-tradeoff on
+#37 — on a fresh domain it fires repeatedly until the gauntlet exhausts the obligation set, *then* recedes. The
+concurrency lineage is closed. Lean `spin_lock_guard_sync_closes`; tally **stays ten**.
+
 ### The taxonomy (the whole point, in one table)
 
 | Primitive | What the missing conjunct *is* | Fate | Pays with |
@@ -1901,6 +1903,41 @@ months-long effort. The integrity move is to **ship the adversary's verdict alon
 and to never let the word "machine-checked" transfer more confidence than the *checked part*
 earns. This is a transferable habit: when you mechanize something, be precise about *which*
 claim the machine actually checked.
+
+### The write-up phase: the paper, its cold review, and the ceiling
+
+With thirty-seven seams the constructive arc reached a natural stop (a deliberate wind-down over a fifth
+fourth-domain probe — four had already deflated). A **capstone synthesis** pulled seams 18–37 together, and the whole
+result was written up as a paper (`PAPER.md`), framed result-first — *"the seam is load-bearing"* — stitching the
+impossibility argument, the synthesis, and the realizability table. Then, in the project's own spirit, the paper was
+put through the **same instrument it describes**: a panel of **fresh, no-context cold reviewers** (claim-fidelity,
+scientific merit, method/scholarship, clarity). Their verdicts are the honest bounds, and they matter more than the
+findings:
+
+- **Fidelity: minor-fixes** — no number drifted between the source records and the paper (the one internal defect was
+  a self-contradictory verdict-taxonomy sentence, since fixed).
+- **Scientific merit: weak-reject *as a theorem paper*.** The reviewer's sharpest point is one this tutorial now
+  reflects throughout: the central claim is an **argument**, not a mechanized theorem, and it rests on an *unproved
+  empirical premise* — that a seamless/derived/zero-cost system must **accept** the hard shared-mutable idioms rather
+  than safely *reject* them as Rust does (soundness never requires completeness). "Theorem/proven" was accordingly
+  downgraded to *structured impossibility argument*, and the reflexive builder-calibration finding recast as a
+  **hypothesis**.
+- **Method: sound-but-underreported.** Two disclosures were owed and are now made: the seam map ran a **single**
+  cold gauntlet per seam (only SPSC ran the full three-consecutive streak), and the model was **intentionally
+  unpinned**. And the ceiling was named plainly: **every role ran on one model family**, so the result's biggest
+  threat is *monoculture* — a shared corpus prior could emit the same verdicts regardless of ground truth.
+
+Two follow-on experiments address that ceiling. The **foreign-model replication** — GPT/Gemini/open-weights as every
+cold role, re-adjudicating the frozen seam specs, so the *only* changed variable is the model weights — is **built and
+turnkey** (`orchestrator/foreign_replication.py`) but **blocked on a foreign API key**; until it runs, the honest
+ceiling stays *weak-reject as a results paper*. The **verdict-stability re-run** (key-free) *did* run: it re-ran the
+three single-gauntlet `SEAM-HOLDS` seams to three consecutive fresh gauntlets and found the honest split this tutorial
+already records — the **coarse** soundness verdict (holds-vs-breaks) was **stable** for all three (the pivotal
+`spin_lock` reproduced 3/3), but the **fine** tier **drifted** for `total_div` #34 (a clean HOLD → SEAM-COSTS
+[horn 3]). So single-gauntlet *coarse* verdicts read as robust and *fine* verdicts as provisional
+(`design_seam/STABILITY_3GAUNTLET.md`). The lesson worth carrying: a research artifact is not done when the findings
+land — it is done when a cold, independent instrument has tried to break the *write-up* and you have published what it
+found. The monoculture caveat is the one this project cannot yet close from inside itself.
 
 ---
 
