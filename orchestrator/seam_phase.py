@@ -12,7 +12,7 @@ It runs up to N CONSECUTIVE gauntlets on a FIXED spec and stops on the first FAI
 handing control back to the (stateful) builder to revise the spec and re-run — the
 human/stateful side owns revision; the cold side only demolishes.
 
-Usage (from newlang/):
+Usage (from spicule/):
   python3 -m orchestrator.seam_phase --spec design_seam/SEAM_SPEC_spsc.md --gauntlets 1
   python3 -m orchestrator.seam_phase --spec design_seam/SEAM_SPEC_spsc.md --gauntlets 3 --prior-art-web
 """

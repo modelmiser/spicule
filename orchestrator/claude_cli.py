@@ -40,7 +40,7 @@ class CallResult:
 
 def _emptyish_cwd() -> str:
     """A fresh temp dir guarantees no project CLAUDE.md leaks into the call."""
-    return tempfile.mkdtemp(prefix="newlang_cold_")
+    return tempfile.mkdtemp(prefix="spicule_cold_")
 
 
 def _one_call(prompt: str, system: str, model: str | None, timeout: int,

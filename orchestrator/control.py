@@ -63,8 +63,8 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
     expect, question = CASES[args.case]
 
-    design = Path(tempfile.mkdtemp(prefix=f"newlang_control_{args.case}_design_"))
-    runs = Path(tempfile.mkdtemp(prefix=f"newlang_control_{args.case}_runs_"))
+    design = Path(tempfile.mkdtemp(prefix=f"spicule_control_{args.case}_design_"))
+    runs = Path(tempfile.mkdtemp(prefix=f"spicule_control_{args.case}_runs_"))
     hist = Historian(design)
     run_round(hist, question, runs, max_revisions=3, survivals=3, prior_art_web=True)
     settled = hist.is_settled(question)

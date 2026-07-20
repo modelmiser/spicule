@@ -1,12 +1,12 @@
-# newlang — a tutorial on the impossible language, and the PL theory you need to read it
+# spicule — a tutorial on the impossible language, and the PL theory you need to read it
 
 **Audience.** A mid-level career developer: you write production code, you've used Rust or
 C++ or Go, you know what a segfault is and roughly why it happens, but you have not formally
 studied programming-language theory. By the end you will understand (a) the actual PL theory
 this project rests on, from the ground up; (b) the state of the art in "safe systems
-languages"; and (c) what newlang discovered and *why it matters*.
+languages"; and (c) what spicule discovered and *why it matters*.
 
-**What newlang is.** Not a language. It is a research project that asked "what would the
+**What spicule is.** Not a language. It is a research project that asked "what would the
 perfect systems language look like?", listed **seven properties** such a language should have,
 and then **argued — adversarially — that the seven cannot coexist**, mapped exactly where the
 wall is, and then **built thirty-seven real seams that live right up against that wall** to show
@@ -59,7 +59,7 @@ seven of these at once:
 7. **AI-legible semantics** — a model trained on the corpus can reconstruct the spec (a modern
    nice-to-have).
 
-Each one ships *somewhere* today. The conjecture newlang tested is whether they ship
+Each one ships *somewhere* today. The conjecture spicule tested is whether they ship
 *together*. They do not, and property #4 — decidability — is the antagonist in every conflict.
 To see why, you need to know what a type checker actually is.
 
@@ -83,7 +83,7 @@ lemmas: **progress** (a well-typed program never gets stuck — it can always ta
 or is a finished value) and **preservation** (taking a step keeps the program well-typed).
 Together: a well-typed program never reaches an undefined state. Soundness is what lets you
 trust `u32` actually holds a number and not a dangling pointer. An *unsound* type system is
-decoration. (newlang's calibration controls test exactly this — see Part 6.)
+decoration. (spicule's calibration controls test exactly this — see Part 6.)
 
 ### Decidability: the checker must halt
 
@@ -155,7 +155,7 @@ restrict that:
 
 The key property affinity buys you: **no duplication.** If a value cannot be copied, then there
 is only ever one of it, and "free it when the owner is done" is safe — there's no second owner
-to be surprised. Remember this; it is exactly the trick that makes one of newlang's four
+to be surprised. Remember this; it is exactly the trick that makes one of spicule's four
 primitives (the SPSC queue) work, and exactly the trick that *fails* for another (the slab,
 whose keys must be copyable).
 
@@ -184,7 +184,7 @@ The thing to internalize:
 
 This is the second fork. Rust gets memory-safety-without-GC by **hardcoding** an affine borrow
 checker. The dream wants the same guarantee *derived* from a unified, decidable, proof-erasing
-layer. newlang's calibration control (Part 6) proves that the hardcoded version settles cleanly
+layer. spicule's calibration control (Part 6) proves that the hardcoded version settles cleanly
 and the *derived* version is precisely the impossible part.
 
 ---
@@ -209,7 +209,7 @@ the static checker, and instead provides:
   trust me." Every safe interior-mutability type is built on it.
 
 Hold onto this: **the static checker is blind to a `Copy` handle's validity, and the standard
-escape is a runtime check (`RefCell`).** newlang's slab primitive is exactly this pattern, and
+escape is a runtime check (`RefCell`).** spicule's slab primitive is exactly this pattern, and
 its lesson — that you can recover soundness at *runtime cost* — is the project's deepest finding.
 
 ### Separation logic: reasoning about the heap and aliasing
@@ -228,7 +228,7 @@ Here is the deepest prerequisite. Rust's safe fragment is sound, but its standar
 full of `unsafe` (in `Vec`, `Arc`, `Mutex`, channels…). Why is *that* sound? **RustBelt**
 (Jung, Jourdan, Krebbers, Dreyer — POPL 2018) answered this: it built, in Iris, a *semantic
 model* of Rust types and proved that each `unsafe` abstraction, behind its safe interface,
-upholds the model. The profound consequence for newlang:
+upholds the model. The profound consequence for spicule:
 
 > The safety of an `unsafe` block is a theorem in undecidable concurrent separation logic. It
 > can be **proven once, by a human, with a proof assistant** — but it cannot be **decided by a
@@ -244,7 +244,7 @@ CompCert, and F\*/Low\* the TCB is explicit and minimized. A crucial distinction
 leans on: some facts are *unprovable in principle from inside the program* — e.g. "this memory
 address really is the UART register" is a fact about *physical hardware*, an axiom you discharge
 by reading a datasheet, not a theorem any checker in any language could decide. That is a
-*different kind* of trust than "this is provable but we didn't mechanize it." (newlang's MMIO
+*different kind* of trust than "this is provable but we didn't mechanize it." (spicule's MMIO
 primitive is exactly this case.)
 
 ### Weak memory: why concurrency is even harder
@@ -253,7 +253,7 @@ On real hardware (ARM, POWER, RISC-V), memory operations are *not* globally orde
 cores can observe writes in different orders. To write correct lock-free code you use
 **acquire/release** atomics to establish **happens-before** edges: a `Release` store
 "publishes" everything before it, and an `Acquire` load that reads it "sees" all of that. The
-safety of a lock-free queue *is* an argument in this weak-memory model. (newlang's SPSC queue
+safety of a lock-free queue *is* an argument in this weak-memory model. (spicule's SPSC queue
 puts exactly two such atomics at its core — see Part 9.)
 
 ---
@@ -281,14 +281,14 @@ trilemma the project later names. Knowing this landscape is most of being litera
 
 **The cautionary tales** (tried to have more, paid for it):
 - **ATS / ATS2** — extremely expressive linear+dependent types; the canonical *ergonomics
-  cliff*: theoretically capable, practically punishing to write. (newlang's attackers use "is
+  cliff*: theoretically capable, practically punishing to write. (spicule's attackers use "is
   this the ATS2 cliff?" as a standing test.)
 - **Cyclone**, **Mezzo** — research languages with rich region/permission systems; influential,
   not adopted.
 - **Linear Haskell**, **Austral**, **Cogent** — linear-types experiments, each conceding
   something (ergonomics, scope, or a restricted domain).
 
-**The specific tools newlang's primitives use:**
+**The specific tools spicule's primitives use:**
 - **GhostCell** (Yanovski, Dang, Jung, Dreyer — ICFP 2021) — a *branding* trick: an invariant
   lifetime `'brand` plus a token, letting you safely mutate aliased graph structures *if* you
   thread the token through every access. The soundness rests on RustBelt-style reasoning.
@@ -304,7 +304,7 @@ all three.* That observation, made rigorous, is the project.
 
 # Part 6 — The method: adversarial design with cold AI instances
 
-newlang's twist is *how* it established impossibility. You cannot prove "no language has all
+spicule's twist is *how* it established impossibility. You cannot prove "no language has all
 seven" by enumeration. So it ran an **adversarial design process** and watched it fail in a
 *structured, convergent* way.
 
@@ -637,7 +637,7 @@ caller-provided-bounded-storage*. **Keep the axis; drop the "undiscovered dimens
 
 That deflation — the second of two (solver-freedom was the first) — is the project's most honest
 result. *Every* axis the method recovers turns out to be an **already-named PL concern**: zero-cost
-abstraction, generativity, refinement-legibility, the `core`/`alloc` split. newlang did not discover
+abstraction, generativity, refinement-legibility, the `core`/`alloc` split. spicule did not discover
 new physics. It found that the trilemma's three horns silently *bundle a set of independently-known PL
 design axes*, and that one question — **"what does the safe witness cost?"** — unifies them. The
 contribution is the unification and the recovery method, not the dimensions.

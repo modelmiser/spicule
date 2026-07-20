@@ -1,6 +1,6 @@
 """Entry point: drive the adversarial design process.
 
-Usage (from the newlang/ directory):
+Usage (from the spicule/ directory):
   python3 -m orchestrator.run                  # run the next unsettled question
   python3 -m orchestrator.run --question N     # run question index N (0-based)
   python3 -m orchestrator.run --all            # run every unsettled question once
@@ -192,8 +192,8 @@ def main(argv: list[str] | None = None) -> int:
     roles.set_program(args.program)
 
     if args.scratch:
-        d = Path(tempfile.mkdtemp(prefix="newlang_scratch_design_"))
-        runs_dir = Path(tempfile.mkdtemp(prefix="newlang_scratch_runs_"))
+        d = Path(tempfile.mkdtemp(prefix="spicule_scratch_design_"))
+        runs_dir = Path(tempfile.mkdtemp(prefix="spicule_scratch_runs_"))
         print(f"[scratch] design={d} runs={runs_dir}", file=sys.stderr)
         hist = Historian(d)
     else:

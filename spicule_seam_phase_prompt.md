@@ -1,6 +1,6 @@
-# newlang — next phase: build-and-break the seam
+# spicule — next phase: build-and-break the seam
 
-You are the Claude Code instance running the `newlang` project — the same project
+You are the Claude Code instance running the `spicule` project — the same project
 that produced `WRITEUP.md` (the impossibility result for the unified language and the
 Seam Trilemma in §9). This prompt opens the **constructive phase**. It carries the
 conclusions of a design conversation held *about* that writeup, so you don't have to

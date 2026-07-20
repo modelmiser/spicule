@@ -22,7 +22,7 @@ Config via env (no secrets in code):
   FOREIGN_BASE_URL = for openai-compatible (Groq: https://api.groq.com/openai/v1,
                      OpenRouter: https://openrouter.ai/api/v1, default OpenAI)
 
-Usage (from newlang/):
+Usage (from spicule/):
   python3 -m orchestrator.foreign_replication --dry-run          # mock, no key, prove wiring
   python3 -m orchestrator.foreign_replication --list             # show the stratified sample + est. calls
   FOREIGN_PROVIDER=openai-compatible FOREIGN_BASE_URL=https://api.groq.com/openai/v1 \
