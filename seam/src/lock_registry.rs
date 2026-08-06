@@ -112,6 +112,18 @@
 //! *a -= 30; *b += 30;
 //! assert_eq!((*a, *b), (70, 30));
 //! ```
+//!
+//! ### CF1 — the r43 conjunct, enforced here too: a guard over a `Send + !Sync` `T` is not `Sync`:
+//! ```compile_fail
+//! # use seam_spsc::lock_registry::Guard;
+//! use core::cell::Cell;
+//! fn assert_sync<T: Sync>() {}
+//! assert_sync::<Guard<Cell<i32>>>();  // ERROR: `Cell<i32>: !Sync` ⇒ `Guard<Cell<i32>>: !Sync`
+//! // Before the guard's `Sync` bound was pinned to `T: Sync`, this compiled — the auto-derivation ran
+//! // through the `&OrderedMutex<T>` field and yielded the too-weak `T: Send`. Two threads could then
+//! // share `&guard`, deref into aliasing `&Cell<i32>`, and race non-atomic writes with no consumer
+//! // `unsafe`. That is #36's hole, in a third module; this is #37's fix, applied.
+//! ```
 
 extern crate std;
 
@@ -207,3 +219,14 @@ impl<T> DerefMut for Guard<'_, T> {
         unsafe { &mut *self.lock.data.get() }
     }
 }
+
+// THE r43 CONJUNCT, applied here (obligation 3). Identical in shape to `spin_lock.rs`'s fix and omitted here
+// for the same reason it was omitted in #36: the guard's auto-`Sync` is derived through its `&'a OrderedMutex<T>`
+// field, which yields the *too-weak* `T: Send`. A shared `&guard` hands `&T` to another thread, so the bound must
+// be `T: Sync` — the flag excludes guard *creation*, never guard *sharing*. Without this line
+// `Guard<'_, Cell<i32>>` is `Sync` and two threads deref it into aliasing `&Cell<i32>`, racing non-atomic writes
+// from `#![forbid(unsafe_code)]` consumer code. (Obligation 4 — `Guard: Send where T: Send` — is left
+// auto-derived, as in #37. Note that sending a guard is *thread-blind* w.r.t. the `HELD` registry: the rank pops
+// off the receiving thread's stack and the origin thread keeps it forever. That is not new — it is the same
+// per-thread-granularity hole this seam's verdict already records, enumerated in the module doc above.)
+unsafe impl<T: Sync> Sync for Guard<'_, T> {}

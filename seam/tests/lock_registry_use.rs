@@ -7,7 +7,7 @@
 #![cfg(feature = "lockdep")]
 #![forbid(unsafe_code)]
 
-use seam_spsc::lock_registry::OrderedMutex;
+use seam_spsc::lock_registry::{Guard, OrderedMutex};
 
 #[test]
 fn bank_transfer_same_kind_locks_in_runtime_index_order() {
@@ -109,4 +109,21 @@ fn the_registry_resets_per_scope_so_reordering_across_scopes_is_fine() {
     let va = *a.lock();
     let vb = *b.lock();
     assert_eq!(va + vb, 3);
+}
+
+/// Obligation 3 (the r43 conjunct), positive half. The negative half — that a `Send + !Sync` payload's guard is
+/// *not* `Sync` — is CF1 in the module doc, since a `compile_fail` cannot live in an integration test.
+#[test]
+fn guard_and_mutex_have_the_correct_bounds() {
+    fn assert_sync<T: Sync>() {}
+    fn assert_send<T: Send>() {}
+    // Obligation 3: `i32: Sync` ⇒ its guard is `Sync`.
+    assert_sync::<Guard<'static, i32>>();
+    // Obligation 4: the guard is `Send` when `T: Send` (auto-derived, as in #37 — but see the module doc on
+    // why sending one is thread-blind w.r.t. the `HELD` registry).
+    assert_send::<Guard<'static, i32>>();
+    // Obligations 1 & 2, unchanged: the mutex is `Sync` over a `Send` payload.
+    assert_sync::<OrderedMutex<i32>>();
+    // A composite `Sync` payload, matching #37's value-add case.
+    assert_sync::<Guard<'static, [i64; 4]>>();
 }
