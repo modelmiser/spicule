@@ -45,6 +45,18 @@
 //! ## The cold panel's verdict (REPORT_SEAM_SPEC_lock_registry, r22): the seam BREAKS — the floor-upgrade
 //! ## is NON-MONOTONE; granularity RECURS one rung finer.
 //!
+//! > **ADDENDUM 2026-08-06 — a SECOND break, never adjudicated.** Outside the gauntlet, a boundary
+//! > audit found this seam also carried the r43 conjunct: `Guard` had no `Sync` impl, so it
+//! > auto-derived through its `&OrderedMutex<T>` field to the too-weak `T: Send`, making
+//! > `Guard<'_, Cell<i32>>` `Sync` — safe code could share `&guard` across threads and race a
+//! > non-atomic write. That is a **horn-1 memory-safety** break, a different domain and cause from
+//! > the liveness/granularity break the panel ruled on below. Fixed the same day (`unsafe impl<T:
+//! > Sync> Sync for Guard`, plus CF1 and a bounds test). It is deliberately **not** folded into the
+//! > eleven-seam census: no cold panel ever ruled on it, and re-coding cold output warm is the
+//! > failure mode §5.5 is about. It IS a measured false negative of the gauntlet, and it is why
+//! > PAPER.md §5.5 now reads "held **for that lineage only**" — `spin_lock` #37 enumerated all four
+//! > obligations and holds, but the enumeration did not generalize to this module, one over.
+//!
 //! The hypothesis — "upgrading the floor lifts the match toward full" — is **false**, and *how* it fails
 //! is the result. The gauntlet ruled **SEAM-BREAKS [horn 1]** (FAILED), the **fourth** seam to drop a
 //! horn. The floor-upgrade did lift **coverage** (runtime-*chosen-but-fixed* ranks close — bank-transfer
