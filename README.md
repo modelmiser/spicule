@@ -7,7 +7,11 @@ Where [Corona](../corona) reduces an invariant to a compile-time error and
 [Sol](../sol) proves the reduction sound, Spicule stress-tests the **seams**:
 it constructs a seam, tries to break it, and records what survives. The
 37-seam build-and-break pass is closed; the writeup lives in `PAPER.md`
-(Tier 1+2). The open ceiling is the monoculture question.
+(Tier 1+2). The monoculture control has run (2026-08-12, GPT-5.6 Sol as every
+cold role): outcome-class agreement 6/8, all four BREAKS exact with identical
+horn labels; both divergences demote the flagship HOLDS to COSTS at the rubric
+boundary — see `design_seam/FOREIGN_REPLICATION.md`. Residual ceiling: a second
+foreign family, and the spsc P4 wording defect the foreign panel surfaced.
 
 ## Layout
 - `seam/`, `design*/`, `proof/` — the seam constructions and their analysis.
