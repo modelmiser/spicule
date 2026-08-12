@@ -16,11 +16,21 @@ Coldness is automatic here: a stateless API call carries only the role system pr
 + the proposal, no ambient context at all — strictly colder than the Claude subprocess.
 
 Config via env (no secrets in code):
-  FOREIGN_PROVIDER = openai | gemini | openai-compatible   (default openai-compatible)
-  FOREIGN_MODEL    = e.g. gpt-4o / gemini-2.0-flash / llama-3.3-70b-versatile
-  FOREIGN_API_KEY  = the key (required for a live run)
+  FOREIGN_PROVIDER = openai | gemini | openai-compatible | cursor-cli
+                     (default openai-compatible)
+  FOREIGN_MODEL    = e.g. gpt-4o / gemini-2.0-flash / llama-3.3-70b-versatile / gpt-5
+  FOREIGN_API_KEY  = the key (required for a live HTTP run; unused for cursor-cli,
+                     which authenticates via `cursor-agent login`)
   FOREIGN_BASE_URL = for openai-compatible (Groq: https://api.groq.com/openai/v1,
                      OpenRouter: https://openrouter.ai/api/v1, default OpenAI)
+
+cursor-cli transport (subscription-authenticated, no raw key) — two disclosed deltas
+vs the HTTP providers: (1) no separate system-message channel, so the role system
+prompt is PREPENDED to the user prompt; (2) no temperature control (HTTP path pins
+0.0). Coldness is preserved by running `cursor-agent --mode ask` (read-only) from an
+EMPTY working directory: even though print mode nominally has tool access, there is
+nothing to read and nothing writable in scope. The model MUST be non-Anthropic for
+the run to answer the monoculture threat — that is on the operator, not the code.
 
 Usage (from spicule/):
   python3 -m orchestrator.foreign_replication --dry-run          # mock, no key, prove wiring
@@ -35,6 +45,7 @@ import argparse
 import json
 import os
 import re
+import subprocess
 import sys
 import time
 import urllib.request
@@ -84,13 +95,15 @@ def foreign_call(prompt: str, system: str, *, label: str = "", timeout: int = 30
     provider = os.environ.get("FOREIGN_PROVIDER", "openai-compatible").lower()
     model = os.environ.get("FOREIGN_MODEL", "")
     key = os.environ.get("FOREIGN_API_KEY", "")
-    if not model or not key:
-        raise SystemExit("FOREIGN_MODEL and FOREIGN_API_KEY must be set for a live run "
-                         "(or pass --dry-run).")
+    if not model or (not key and provider != "cursor-cli"):
+        raise SystemExit("FOREIGN_MODEL must be set (plus FOREIGN_API_KEY for HTTP "
+                         "providers) for a live run — or pass --dry-run.")
     last: Exception | None = None
     for attempt in range(retries + 1):
         try:
-            if provider == "gemini":
+            if provider == "cursor-cli":
+                return _cursor_cli_call(prompt, system, model, timeout)
+            elif provider == "gemini":
                 base = os.environ.get("FOREIGN_BASE_URL",
                                       "https://generativelanguage.googleapis.com/v1beta")
                 url = f"{base}/models/{model}:generateContent?key={key}"
@@ -114,7 +127,8 @@ def foreign_call(prompt: str, system: str, *, label: str = "", timeout: int = 30
                            "Authorization": f"Bearer {key}"}
                 data = _http_post(url, headers, payload, timeout)
                 return data["choices"][0]["message"]["content"]
-        except (urllib.error.HTTPError, urllib.error.URLError, KeyError, TimeoutError) as e:
+        except (urllib.error.HTTPError, urllib.error.URLError, KeyError, TimeoutError,
+                subprocess.SubprocessError, RuntimeError) as e:
             last = e
             detail = ""
             if isinstance(e, urllib.error.HTTPError):
@@ -126,6 +140,26 @@ def foreign_call(prompt: str, system: str, *, label: str = "", timeout: int = 30
                       f"retry in {wait}s", file=sys.stderr, flush=True)
                 time.sleep(wait)
     raise RuntimeError(f"{label!r} failed after {retries+1} attempts: {last}")
+
+
+def _cursor_cli_call(prompt: str, system: str, model: str, timeout: int) -> str:
+    """One cold call via the Cursor CLI (subscription auth, no raw key).
+
+    Deltas vs the HTTP providers, both disclosed in the module docstring: the role
+    system prompt is prepended to the user prompt (no system channel), and there is
+    no temperature pin. Coldness: read-only ask mode, run from an empty directory.
+    """
+    empty_cwd = OUT_DIR / "_cursor_empty_cwd"
+    empty_cwd.mkdir(parents=True, exist_ok=True)
+    cmd = ["cursor-agent", "--print", "--output-format", "text", "--mode", "ask",
+           "--trust", "--model", model, f"{system}\n\n---\n\n{prompt}"]
+    r = subprocess.run(cmd, cwd=empty_cwd, capture_output=True, text=True,
+                       timeout=timeout)
+    if r.returncode != 0:
+        raise RuntimeError(f"cursor-agent exit {r.returncode}: {r.stderr[:300]}")
+    if not r.stdout.strip():
+        raise RuntimeError(f"cursor-agent returned empty output: {r.stderr[:300]}")
+    return r.stdout
 
 
 # ----------------------------------------------------------------------------- mock (dry-run wiring)
@@ -243,7 +277,15 @@ def main() -> None:
     print(f"\nAGREEMENT: {agreed}/{total} seams — a foreign panel reproduced the recorded "
           f"outcome class on {agreed} of {total} scored seams.")
     (OUT_DIR / "agreement.json").write_text(json.dumps(results, indent=2))
-    print(f"Per-seam transcripts + agreement.json under {OUT_DIR.relative_to(ROOT)}/")
+    # Provenance (the project's own lesson: transcripts don't record the model —
+    # write it down while it's still known). agreement.json keeps its list shape.
+    (OUT_DIR / "run_meta.json").write_text(json.dumps({
+        "provider": os.environ.get("FOREIGN_PROVIDER", "openai-compatible"),
+        "model": os.environ.get("FOREIGN_MODEL", ""),
+        "dry_run": args.dry_run,
+        "seams": stems,
+    }, indent=2))
+    print(f"Per-seam transcripts + agreement.json + run_meta.json under {OUT_DIR.relative_to(ROOT)}/")
 
 
 if __name__ == "__main__":
