@@ -2785,10 +2785,205 @@
       "outcome": "SURVIVED",
       "cost_usd": 1.9223,
       "timestamp": "2026-07-01T11:59:54+00:00"
+    },
+    {
+      "round": 45,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_spsc_p4v2.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 SPSC lock-free ring buffer (re-import rule under attack) \u2014 P4 v2\n\n> **Amendment provenance (2026-08-12).** This is `SEAM_SPEC_spsc.md` with exactly one\n> substantive change: **P4 restated** (plus one consistency touch in \u00a71). The frozen v1\n> spec said \"at most one producer *thread*, **ever**\" while \u00a74's own stopper argued\n> \"one producer thread *at a time*\" \u2014 an internal inconsistency surfaced by the\n> foreign-model replication (see `FOREIGN_REPLICATION.md`): under `Send`, a handle may\n> migrate between threads sequentially (e.g. via `Arc<Mutex<_>>`), so thread-affinity\n> never discharges the literal \"ever\" reading. v2 states what the atomics actually\n> require. The v1 spec remains frozen; this file re-enters the gauntlet as a new spec.\n\nThis is a **design proposal** for one *seam* in a hypothetical systems language. A seam\nis the boundary where a dangerous primitive \u2014 whose true safety precondition lives in a\nrich, undecidable concurrent separation logic \u2014 is implemented once by a *foundation\nauthor* behind an `unsafe` block, then **re-exported as a checked safe interface** that\nordinary code uses with no proofs and no `unsafe`. Your job is to attack the re-export\n(t",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "!Sync + &mut self makes the ISR/static producer case need a lock or per-site unsafe",
+          "strongest_point": "The canonical SPSC deployment puts the producer in an interrupt handler, which is not a thread and cannot be `Send`ed to, so safe code must park the `!Sync` handle in a `Mutex<RefCell<Option<Producer>>>` and take a global critical section on every push \u2014 servicing a lock-free ring under a lock \u2014 or write one `unsafe` per handler, breaking Horn 3."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Capacity N is safe-code-chosen, unconstrained, and erased from handle types; P3 is unsatisfiable at N=0.",
+          "strongest_point": "split(RingBuffer::<u8,0>::new()) then push type-checks under every stated rule, yet P3's 'modulo N' has no model at N=0, so the 'P1\u2013P3 hold by construction' escape clause is vacuous and the mask-based ring writes out of bounds."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "P4-v2's per-migration happens-before clause is checked by no compiler pass; building one is weak-memory reachability",
+          "strongest_point": "\u00a73 claims the floor expresses P4-v2's migration conjunct, but rustc computes no release/acquire edges \u2014 `Send` is a bare marker \u2014 so the clause is a trusted axiom about every unsafe library in the program, and mechanizing it is undecidable RA-reachability."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Horn 3: by-value split bars no-alloc/static rings; ISR and C-callback producers must lock or unsafe per push",
+          "strongest_point": "Every control-flow shape except `thread::spawn(move ||\u2026)` \u2014 ISR, foreign callback, thread_local, shared struct \u2014 must re-establish P4 dynamically via critical section, RefCell, or Mutex on every single `push`, reintroducing a lock once per use into a primitive whose sole purpose is being lock-free."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "P1-P5 omit reclamation; split's by-value/no-lifetime signature is the one no shipping SPSC uses.",
+          "strongest_point": "\u00a72 states no teardown precondition and \u00a75's 'atomics are correct' stipulation doesn't cover the destructor path \u2014 exactly where crossbeam-channel took a 2025 double-free advisory and where RustBelt-meets-relaxed-memory had to invent synchronized ghost state to reason about Arc's reclamation."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "tradeoff",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Deployment-shape restriction: roles hosted by non-thread contexts (ISR, foreign C callback, thread_local, static) need runtime exclusion or per-site unsafe; Horn 3 reads 'once per buffer per execution context that hosts a role', not 'once per buffer'.",
+          "The token is INCOMPARABLE to the P1-P5 precondition, not 'strictly weaker': it is weaker on P1-P3 (trusted) but strictly stronger on P4 (baton-passed multi-handle disciplines satisfy P4-v2 yet are unconstructible). v2 widens the precondition without widening the token, so it buys no new accepted programs.",
+          "P4-v2's per-migration happens-before conjunct is TRUSTED (inherited from the stipulated soundness of Send and every transfer primitive's unsafe impl), not floor-checked; withdraw \u00a73's 'expressible in the floor' and stop stating \u00a74's stopper as a closed enumeration (&mut Producer: Send crosses under thread::scope).",
+          "Horn 2/3 are verified only for the per-element push/pop API; the bulk and zero-copy grant APIs real SPSC users demand are known to push an uninitialized-slot obligation back onto the caller (rtrb's unsafe write_chunk_uninit), and \u00a73's 'exactly this, and nothing more' makes that omission binding."
+        ],
+        "headline": "Affine-handle P4 certificate holds; capacity domain and reclamation are unstated, so revise",
+        "rationale": "No attacker broke P4-v2; affinity + &mut self + !Sync is the right device. But \u00a72 is incomplete at both ends: N is caller-chosen and unsatisfiable at 0/1 (so 'P1-P3 by construction' is vacuous), and reclamation is absent where crossbeam took a 2025 double-free. Revise \u00a72/\u00a73, not \u00a74."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 3.9948,
+      "timestamp": "2026-08-13T00:39:29+00:00"
+    },
+    {
+      "round": 46,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_spsc_v3.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 SPSC lock-free ring buffer (re-import rule under attack) \u2014 v3\n\n> **Amendment provenance (2026-08-12, v3).** Lineage: v1 (frozen) \u2192 v2 (P4 restated as\n> role exclusivity after the foreign-model replication exposed the literal-\"ever\"\n> wording defect; P4-v2 then HELD under all five attacks in its gauntlet) \u2192 v3 (this\n> file), repairing the two completeness gaps the v2 gauntlet surfaced instead:\n> **(a)** `N` was safe-chosen, unbounded, and erased from the handle types \u2014 at `N=0`\n> P3's empty/full discipline has no model, making \"holds by construction\" vacuous;\n> repaired by a const-decidable `where N >= 2` bound at `split`. **(b)** \u00a72 stated no\n> teardown obligation; repaired by P6 (drop/teardown), discharged once inside the seam.\n> The v1/v2 specs and reports remain frozen; this file re-enters the gauntlet fresh.\n\nThis is a **design proposal** for one *seam* in a hypothetical systems language. A seam\nis the boundary where a dangerous primitive \u2014 whose true safety precondition lives in a\nrich, undecidable concurrent separation logic \u2014 is implemented once by a *foundation\nauthor* behind an `unsafe` block, then **re-exported as a checked safe interface** that\nordinary cod",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "P6's closed state is unobservable \u2014 canonical push/pop loops hang; const bound infects generic callers; no-alloc and callback deployments excluded",
+          "strongest_point": "P6 introduces a closed regime that `Result<(),T>`/`Option<T>` cannot distinguish from full/empty, so the two universal SPSC idioms spin forever on normal shutdown or consumer panic, with no safe-fragment escape."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Spec never fixes handle variance; covariant Producer<T> lets safe code publish a short-lived reference popped as 'static \u2014 use-after-free.",
+          "strongest_point": "Because \u00a73 enumerates Copy/Clone/Send/Sync but not variance, an admissible covariant `Producer<T>` permits the pure-subsumption coercion `Producer<&'static u32> <: Producer<&'a u32>`, letting single-threaded safe code push a borrow of a local and pop it back through an uncoerced `Consumer<&'static u32>` as a dangling reference."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "v3's `where [(); N-2]:` bound needs generic_const_exprs: unstable, syntactically incomplete, obligation propagates through consumer generics \u2014 Horns 2 and 3 fall.",
+          "strongest_point": "The const-obligation pass is either complete and \u03a0\u2070\u2081-hard (polynomial capacity expressions reduce to Hilbert's Tenth Problem) or decidable-but-syntactic, in which case rustc literally emits \"try adding a `where` bound\" and forces the safe consumer to thread a proof-carrying ghost clause through every generic definition reaching `split`."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Affine handle can't be placed in C callbacks, ISRs, statics; per-use unsafe re-proves P4 itself",
+          "strongest_point": "The token encodes P4 as affine ownership in Rust's object graph, so the primitive's flagship deployments (audio callback, ISR producer, cross-address-space ring) force per-use unsafe whose obligation is precisely P4 \u2014 and the only repairs falsify \u00a74's 'no other way to obtain a handle' (Horn 1's premise) or require an out-of-floor analysis (Horn 2)."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Consumer's T: Send bound never stated; Rc payload + Send consumer races refcount \u2014 exactly CVE-2020-36437",
+          "strongest_point": "\u00a73 asserts Consumer<T>: Send unconditionally while \u00a74 bounds only Producer, so safe code sends a Consumer<Rc<Cell<u64>>> to another thread and races the non-atomic refcount \u2014 the identical omission RUSTSEC-2020-0117 fixed by adding T: Send to both handle impls."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "genuine-flaw",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Seam concentration (Horn 3) holds only for handles owned as affine locals by a Rust thread; in C-callback, ISR/static, and cross-address-space deployments the consumer writes per-invocation unsafe whose obligation is precisely P4, or wraps a critical section around a lock-free queue \u2014 the spec must state this scope limit rather than assert 'no other way to obtain either handle' unconditionally",
+          "By-value split plus P6's two-handle teardown mandates an allocator, excluding the no_std/static-storage deployments; the borrowing variant would reintroduce N into the handle types and moot P6",
+          "P6 creates a closed regime that the emitted interface cannot observe: Err(x) conflates full-with-closed and None conflates empty-with-closed, so graceful shutdown and drain-to-completion are inexpressible and canonical loops hang",
+          "Element-at-a-time push/pop is the only reason push/pop are seam-free; a bulk/zero-copy chunk API is a new re-import obligation (borrowed commit-on-drop guard, mem::forget of a partial guard, interaction with P6) that \u00a74 does not currently cover",
+          "\u00a75's 'assume the atomics are written correctly' stipulates away the two empirically dominant failure classes for this library shape (unsafe-impl variance, panic-safety in drop paths), so part of Horn 3 is granted rather than earned"
+        ],
+        "headline": "Re-import rule fails: unspecified variance yields UB; const bound exports a proof obligation.",
+        "rationale": "Covariant handles admit a pure-subsumption coercion producing a dangling &'static from safe code \u2014 Horn 1. The where [(); N-2]: bound is off-floor and viral through consumer generics \u2014 Horn 2, by the rubric's own words. P6's no-leak conjunct is undischargeable on an affine floor."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 3.6602,
+      "timestamp": "2026-08-13T00:51:11+00:00"
+    },
+    {
+      "round": 47,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_spsc_v4.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 SPSC lock-free ring buffer (re-import rule under attack) \u2014 v4\n\n> **Amendment provenance (2026-08-12, v3).** Lineage: v1 (frozen) \u2192 v2 (P4 restated as\n> role exclusivity after the foreign-model replication exposed the literal-\"ever\"\n> wording defect; P4-v2 then HELD under all five attacks in its gauntlet) \u2192 v3 (this\n> file), repairing the two completeness gaps the v2 gauntlet surfaced instead:\n> **(a)** `N` was safe-chosen, unbounded, and erased from the handle types \u2014 at `N=0`\n> P3's empty/full discipline has no model, making \"holds by construction\" vacuous;\n> repaired by a const-decidable `where N >= 2` bound at `split`. **(b)** \u00a72 stated no\n> teardown obligation; repaired by P6 (drop/teardown), discharged once inside the seam.\n> The v1/v2 specs and reports remain frozen; this file re-enters the gauntlet fresh.\n> **v4 (same day):** the v3 gauntlet ruled SEAM-BREAKS[horn1] on an attack the v1\n> gauntlet had missed and the first foreign run had found (cross-family convergence):\n> \u00a73 never fixed VARIANCE, so an admissible covariant declaration lets\n> `Producer<&'static u32>` coerce to `Producer<&'a u32>` while the paired consumer\n> keeps the longer type \u2014 laundering a d",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "P6's closed regime is unreportable through Result<(),T>: safe code cannot terminate; by-value split forces allocation",
+          "strongest_point": "v3's P6 added a closed/abandoned state that \u00a73's `Err(x)` (\"if full\") cannot distinguish from transient fullness, so the canonical spin-on-full producer and spin-on-empty consumer loops hang forever after the peer drops \u2014 safe code using only \u00a73 cannot shut down, a straight regression against std/crossbeam/rtrb."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "Consumer's Send lacks T: Send \u2014 Rc laundered across threads; P6's leak-freedom is unenforceable",
+          "strongest_point": "P5 is violated by the split configuration, not by producer motion, so bounding only `impl<T: Send> Send for Producer<T>` leaves `Consumer<Rc<_>>: Send` admitting a non-atomic refcount race and use-after-free from pure safe code."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "where [(); N-2]: needs abstract-const unification: undecidable, viral through every generic caller, then erased",
+          "strongest_point": "The `N >= 2` gate is discharged by rustc's incomplete ConstEvaluatable pass, which forces every generic consumer function to restate the where-clause verbatim (undecidable once capacities are nonlinear or const-fn-computed) to certify a fact \u00a73 immediately erases from the handle types \u2014 a runtime check in `split` would give the identical guarantee at zero cost."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "By-value split with lifetime-free handles mandates heap allocation; no_std/RT/placement-controlled rings inexpressible, plus no batch, capacity, or close signal",
+          "strongest_point": "Both handles are owned and carry no region parameter, so the store must be refcounted heap memory (P6 says 'freed'), which excludes the ISR-to-main-loop, static-store, arena/DMA, and multi-megabyte ring cases that this primitive primarily exists for \u2014 and the repair requires adding a lifetime to the handle types, reopening variance and relocating P6's happens-before edge outside the seam."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "\u00a73 pins variance but not dropck; its PhantomData<*mut T> plus may_dangle yields safe-code use-after-free",
+          "strongest_point": "PhantomData<*mut T> gives invariance without ownership, so a may_dangle Drop impl \u2014 standard practice for every owning container in std \u2014 lets safe code enqueue a payload whose borrow dies before P6's drop glue reads it, reopening v4's laundering in the destructor dimension."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "genuine-flaw",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Emitted surface is a two-method toy: no disconnect/abandoned signal, so no terminating spin loop in safe code; fix is additive but must be specified.",
+          "Horn 3 holds per-buffer only for anticipated access patterns; peek/len/capacity/bulk/in-place each require a fresh trip to the foundation author.",
+          "Owned-store-only: by-value split with lifetime-free handles mandates a refcounted heap store, excluding no_std/ISR/static/arena/DMA/large rings; the borrowed-store variant reopens variance in 'a and moves P6's happens-before edge into client structure \u2014 needs its own decision.",
+          "Even with a properly-floored N>=2 gate, the obligation is restated at every generic binder reaching split: an abstraction-boundary cost, not a per-buffer one.",
+          "\u00a72 states only the producer->consumer happens-before edge; the consumer->producer edge is unspecified, so client flow-control wrappers cannot be verified against the spec.",
+          "P6 teardown work (up to N destructors plus the free) lands on whichever thread drops second \u2014 nondeterministic, possibly a real-time thread."
+        ],
+        "headline": "Re-import pins variance but not dropck; safe code still launders use-after-free",
+        "rationale": "PhantomData<*mut T> gives invariance without ownership; with may_dangle, dropck lets a payload's borrow die before P6's glue reads it \u2014 Horn 1 breaks in the destructor dimension. Also: P6's leak-freedom conjunct is unenforceable against safe mem::forget, and the N>=2 gate uses a mechanism \u00a70's floor excludes."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 4.2195,
+      "timestamp": "2026-08-13T01:04:37+00:00"
     }
   ],
   "settled": [],
   "incompatibilities": [],
   "blind_spot_flags": [],
-  "total_cost_usd": 96.6061
+  "total_cost_usd": 108.4806
 }

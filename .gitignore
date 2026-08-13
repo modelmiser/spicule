@@ -22,3 +22,6 @@ runs_foreign/
 target/
 **/target/
 Cargo.lock
+runs_foreign_gpt-5.6-sol-high/
+runs_foreign_gemini-3.1-pro/
+runs_foreign_gemini-3.1-pro.log
