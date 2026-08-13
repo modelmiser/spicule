@@ -17,14 +17,16 @@ HOLD a BREAKS outright and was later vindicated: the SPSC v1 spec never pinned
 variance/dropck — a covariance laundering path found by two families (one
 attested by the disclosed session record), so the recorded HOLD is contradicted
 as stated; the v2–v5 amendment lineage (`design_seam/FOREIGN_REPLICATION.md`)
-has SETTLED: v5 adjudicated SEAM-COSTS [horn2] — no UB path survives the
-completed declaration surface, but the `N >= 2` const bound is an off-floor
-per-generic-boundary price, so the clean HOLD is not recovered and the sample
-has no all-holds witness. The Gemini `refined` escalation was re-examined and
-adjudicated out-of-family: recorded COSTS [horn2] sustained (the claimed UB
-path targets an unvended configuration) —
-`design_seam/REFINED_ESCALATION_ADJUDICATION.md`. No open residuals beyond
-the standing single-gauntlet and transport-delta caveats.
+halted per its pre-registered stop rule: v5 adjudicated by ONE full panel at
+SEAM-COSTS [horn2] — no UB path found, but the `N >= 2` const bound is an
+off-floor per-generic-boundary price — so on present evidence the clean HOLD
+is not recovered and the realizability table has no all-holds row (the
+three-streak "settled" bar has not been run for v5; the verdict is bounded in
+both directions). The Gemini `refined` escalation was re-examined line-by-line
+and sustained at the recorded COSTS [horn2] (the claimed UB path targets an
+unvended configuration; the out-of-family corroboration is a disclosed single
+draw) — `design_seam/REFINED_ESCALATION_ADJUDICATION.md`. Standing caveats:
+single-gauntlet verdicts, transport deltas, v5 at one panel.
 
 ## Layout
 - `seam/`, `design*/`, `proof/` — the seam constructions and their analysis.

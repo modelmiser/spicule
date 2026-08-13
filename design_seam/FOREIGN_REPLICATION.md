@@ -61,16 +61,22 @@ simultaneously *brand-free* and *statically erased* — contradictory across fun
 boundaries ("an unparameterized value existentially hides its bound... impossible
 without a runtime check or a viral type parameter"). That is a realizability claim
 about the seam's central mechanism, not a severity dial; the recorded verdict priced
-the same defect region as a horn-2 cost. **Re-examined line-by-line and adjudicated
-out-of-family (2026-08-12, `REFINED_ESCALATION_ADJUDICATION.md`): the recorded
-COSTS [horn2] is SUSTAINED.** Gemini's UB path requires a configuration the spec
-does not vend (no-runtime-check AND no type-level relation; the spec discloses one
-of the two in each configuration), and a blind GPT-5.6 adjudicator ruled the
-mismatched call panics in the model and is ill-typed on the floor. The escalation's
-durable content is kept: the erasure dichotomy (runtime check XOR type-level
-relation) and the axis-#5 clarification that a shared structural length variable is
-not a generative brand. The earlier "foreign panels never upgrade" reading remains
-corrected — the upgrade happened; it just did not survive adjudication.
+the same defect region as a horn-2 cost. **Re-examined line-by-line and sustained
+(2026-08-12, `REFINED_ESCALATION_ADJUDICATION.md`): the recorded COSTS [horn2]
+stands.** The checkable core is the in-family textual analysis: Gemini's UB path
+requires a configuration the spec does not vend (no-runtime-check AND no type-level
+relation; the spec discloses one of the two in each configuration — verifiable
+against SEAM_SPEC_refined §2–§3). A blind out-of-family call (GPT-5.6, single
+ask-mode draw) corroborated: the mismatched call panics in the model and is
+ill-typed on the floor. Two independence caveats on that corroboration, disclosed:
+it is one draw, and it comes from the family whose own replication run had already
+ruled COSTS on this very seam (table above) — so it carries corroborative, not
+independent, weight; the disposition rests on the spec-text analysis. The
+escalation's durable content is kept: the erasure dichotomy (runtime check or
+type-level relation — at least one) and the axis-#5 clarification that a shared
+structural length variable is not a generative brand. The earlier "foreign panels
+never upgrade" reading remains corrected — the upgrade happened; it did not
+survive re-examination.
 
 **Horn-label accounting, symmetrically.** The break agreement is horn-exact (8/8
 cells [horn1]) — though all four recorded breaks share the modal label, so four-way
@@ -109,23 +115,27 @@ and surfaced the next:
 | v2 | P4 restated as role exclusivity (the GPT wording objection) | COSTS [horn1] | **P4-v2 held under all five attacks**; new: `N` unbounded+erased (P3 vacuous at N=0), teardown clause missing |
 | v3 | `N >= 2` const bound at split; P6 teardown | **BREAKS [horn1]** | **unspecified VARIANCE**: covariant handles launder a dangling reference — the run-1 GPT attack, independently rediscovered in-family |
 | v4 | invariance pinned in `T` | **BREAKS [horn1]** | **dropck ownership**: v4's own `PhantomData<*mut T>` marker gives invariance but not drop-ownership; under `#[may_dangle]`, P6's glue drops a payload whose borrow died |
-| v5 | plain `Drop` (no `#[may_dangle]`) + `PhantomData<T>` ownership marker | **SEAM-COSTS [horn2-decidability]** — SETTLED (fresh full panel; the stopped first attempt was rerun from scratch) | "All five attackers concede no UB from safe code; v5's five-tuple closes variance and dropck." Surviving price: `where [(); N-2]:` is off-floor, fires post-monomorphization, and syntactic abstract-const unification makes generic-over-N consumers restate the obligation per boundary. (Also: P6's stated invariant over-promises under `mem::forget`/cycles — a wording defect, ruled not-UB.) |
+| v5 | plain `Drop` (no `#[may_dangle]`) + `PhantomData<T>` ownership marker | **SEAM-COSTS [horn2-decidability]** — one full fresh panel (a first attempt was stopped externally at the judge stage BEFORE any adjudication existed — five attacker reports, no judge, so no outcome selection was possible; the rerun reused the round slot, so the stopped attempt is attested by the session record) | "All five attackers concede no UB from safe code; v5's five-tuple closes variance and dropck." Surviving price: `where [(); N-2]:` is off-floor, fires post-monomorphization, and syntactic abstract-const unification makes generic-over-N consumers restate the obligation per boundary. (Also: P6's stated invariant over-promises under `mem::forget`/cycles — a wording defect, ruled not-UB.) |
 
 **Two consequences.**
 
-1. **The recorded v1 HOLD is contradicted as stated, and the lineage has now
-   settled — at SEAM-COSTS [horn2], not back at HOLDS.** The covariance attack
-   applies to the v1 text (same token section, variance never fixed), was found by
-   two model families (GPT run 1 on v1 — per the disclosed session record — and the
-   Claude gauntlet on v3, on disk), and no stopper in §4 fires against it. Real
-   implementations dodge it via `UnsafeCell`-forced invariance in the shared core.
-   The v5 adjudication (fresh full panel) closed the enumeration — no UB path
-   survives the completed five-tuple — but the completion is *priced*: the `N >= 2`
-   const bound is an off-floor, per-generic-boundary obligation (horn-2). The
-   settled reading: **the repaired flagship is sound but costed; the recorded
-   "HOLDS [none]" tier is not recovered.** Single-gauntlet caveat applies to the
-   tier (COSTS-vs-HOLDS is exactly the fine distinction the measured 1-of-3 drift
-   base rate makes provisional); the no-UB coarse verdict is the load-bearing part.
+1. **The recorded v1 HOLD is contradicted as stated, and the lineage halted (per
+   the pre-registered stop rule) at SEAM-COSTS [horn2], not back at HOLDS.** The
+   covariance attack applies to the v1 text (same token section, variance never
+   fixed), was found by two model families (GPT run 1 on v1 — per the disclosed
+   session record — and the Claude gauntlet on v3, on disk), and no stopper in §4
+   fires against it. Real implementations dodge it via `UnsafeCell`-forced
+   invariance in the shared core. The v5 respec was adjudicated by ONE full fresh
+   panel: no UB path found in the five-tuple as stated, with the `N >= 2` const
+   bound priced as an off-floor, per-generic-boundary obligation (horn-2; the
+   API-locality alternative reading is noted in PAPER §6). The reading, bounded
+   bidirectionally: **on one panel, the repaired flagship is sound-but-costed and
+   the recorded "HOLDS [none]" tier is not recovered** — but a one-panel verdict
+   in this lineage licenses neither "the enumeration is complete" (twice a repair
+   surfaced the next defect, and v1's own three-streak coarse verdict was later
+   overturned) nor a stable tier (the measured 1-of-3 drift rate, and the one
+   repeated foreign cell flipped). The paper's defined "settled" bar (three
+   consecutive survivals) has not been run for v5.
 2. **The lineage's meta-finding:** the seam token must pin the ENTIRE auto-derived
    declaration surface — auto-traits (v1 did), **variance** (v3's break), **dropck
    ownership** (v4's break) — not just the auto-traits. Each is floor-checkable and
@@ -156,9 +166,12 @@ mechanized counterexample) can bear on it. What the control also does *not*
 establish: the flagship HOLDS at their recorded tiers. On this evidence the
 HOLDS/COSTS boundary is rubric-relative in every family tested, and the flagship
 HOLD itself carried a spec defect found by two families (one attested only by the
-disclosed session record); the v5 adjudication has now run and settled the lineage
-at SEAM-COSTS [horn2] — sound (no UB path survives the completed surface) but
-priced, so the recorded HOLDS tier is not recovered. Residuals: one gauntlet per
-seam per family; three transport deltas. (The refined escalation, formerly listed
-here, was re-examined and adjudicated out-of-family: recorded tier sustained —
-`REFINED_ESCALATION_ADJUDICATION.md`.)
+disclosed session record); the v5 respec was adjudicated by one full panel at
+SEAM-COSTS [horn2] — no UB path found, but priced — so on present evidence the
+recorded HOLDS tier is not recovered (one-panel bounds stated in the lineage
+section). Residuals: one gauntlet per seam per family; three transport deltas; the
+v5 verdict at one panel (the defined three-streak "settled" bar has not been run);
+and the refined re-examination's out-of-family corroboration being a single draw
+from a family with a prior COSTS commitment on that seam — the sustained
+disposition rests on the checkable spec-text analysis
+(`REFINED_ESCALATION_ADJUDICATION.md`).

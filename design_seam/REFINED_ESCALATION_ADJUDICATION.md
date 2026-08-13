@@ -19,8 +19,13 @@ classification of an unvended strawman.
 
 Adjudicator was shown the spec excerpt and both rulings, not this analysis.
 Transport: cursor-cli, same disclosed deltas as the replication runs. GPT-5.6 is
-foreign to both the recorded (Claude) and challenger (Gemini) families, though it
-produced the other full-sample replication. Prompt md5 `577d84524c2552f9ead8ee095c6d288d`,
+foreign to both the recorded (Claude) and challenger (Gemini) families — but two
+independence caveats bound its weight: it is a single draw, and its own family's
+full-sample replication had already ruled COSTS on this very seam (`refined`:
+COSTS [other] ✓ in the GPT run), a prior commitment consistent with its ruling
+here. Its concurrence is therefore corroborative, not independent; the SUSTAINED
+disposition rests primarily on the spec-text analysis above, which is checkable
+against `SEAM_SPEC_refined.md` §2–§3 by any reader. Prompt md5 `577d84524c2552f9ead8ee095c6d288d`,
 reply md5 `337ba4ce654f6628de6b41f4e823fe0b`. Verbatim reply:
 
 > 1. No. In the bare-NLL model, `at` detects `10 != 2` and panics before `get_unchecked`. On the refinement floor, `r` is tied to length `10`, while the slice has length `2`; the call cannot establish the shared `n` and is rejected. B instead assumes an unchecked, existentially erased configuration the spec does not vend.
@@ -34,8 +39,9 @@ reply md5 `337ba4ce654f6628de6b41f4e823fe0b`. Verbatim reply:
 ## Disposition
 
 **Recorded SEAM-COSTS [horn2] SUSTAINED.** Durable contributions from the
-escalation, kept: (1) the explicit dichotomy — static erasure of a relational
-bound requires a runtime equality check XOR a static type-level relation; (2) the
+escalation, kept: (1) the explicit requirement — static erasure of a relational
+bound requires a runtime equality check or a static type-level relation (at
+least one; both is also sound); (2) the
 axis-#5 clarification it forced — a shared structural length variable is not a
 brand (it denotes length, not generative slice identity; permits same-length
 cross-slice use; imposes no lifetime/closure/storability constraint), though it
