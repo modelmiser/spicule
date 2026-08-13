@@ -1,6 +1,6 @@
 # Seam spec — SPSC lock-free ring buffer (re-import rule under attack) — v6
 
-> **Amendment provenance (2026-08-12, v3).** Lineage: v1 (frozen) → v2 (P4 restated as
+> **Amendment provenance (v3→v6 chain, 2026-08-12; this file is v6).** Lineage: v1 (frozen) → v2 (P4 restated as
 > role exclusivity after the foreign-model replication exposed the literal-"ever"
 > wording defect; P4-v2 then HELD under all five attacks in its gauntlet) → v3 (this
 > file), repairing the two completeness gaps the v2 gauntlet surfaced instead:

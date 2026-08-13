@@ -116,7 +116,7 @@ and surfaced the next:
 | v3 | `N >= 2` const bound at split; P6 teardown | **BREAKS [horn1]** | **unspecified VARIANCE**: covariant handles launder a dangling reference — the run-1 GPT attack, independently rediscovered in-family |
 | v4 | invariance pinned in `T` | **BREAKS [horn1]** | **dropck ownership**: v4's own `PhantomData<*mut T>` marker gives invariance but not drop-ownership; under `#[may_dangle]`, P6's glue drops a payload whose borrow died |
 | v5 | plain `Drop` (no `#[may_dangle]`) + `PhantomData<T>` ownership marker | **SEAM-COSTS [horn2-decidability]** — panel 1 of three; panels 2–3 drew COSTS [horn1] and BREAKS [horn1], see the stability run below (a first attempt was stopped externally at the judge stage BEFORE any adjudication existed — five attacker reports, no judge, so no outcome selection was possible; the rerun reused the round slot, so the stopped attempt is attested by the session record) | "All five attackers concede no UB from safe code; v5's five-tuple closes variance and dropck." Surviving price: `where [(); N-2]:` is off-floor, fires post-monomorphization, and syntactic abstract-const unification makes generic-over-N consumers restate the obligation per boundary. (Also: P6's stated invariant over-promises under `mem::forget`/cycles — a wording defect, ruled not-UB.) |
-| v6 | input ELIMINATED (`channel<T,N>()`; RingBuffer unnameable; no-forgeable-input stopper) + stable-floor N-assert + P6 leak exclusion | **BREAKS [horn1] · COSTS [horn3] · BREAKS [horn1]** (three pre-registered panels) | panels 1+3 converge: §3's `Consumer<T>: Send` is UNBOUNDED while §4 bounds Producer only — latent since v1 (`SEAM_SPEC_spsc.md:71`); `Rc` payload → refcount race (RUSTSEC-2020-0150 class). Panel 2: no UB, but generic-`N` inline-const assert is unspellable on stable → concentration dented. |
+| v6 | input ELIMINATED (`channel<T,N>()`; RingBuffer unnameable; no-forgeable-input stopper) + stable-floor N-assert + P6 leak exclusion | **BREAKS [horn1] · COSTS [horn3] · BREAKS [horn1]** (three pre-registered panels) | panels 1+3 converge: §3's `Consumer<T>: Send` is UNBOUNDED while §4 bounds Producer only — latent since v1 (`SEAM_SPEC_spsc.md:71-72`); `Rc` payload → refcount race (RUSTSEC-2020-0150 class). Panel 2: no UB; horn-3 — no stable `where N >= 2`, so consumers re-paste the (stable, post-mono) const assert per boundary: repetition, not proof. |
 
 **v5 three-panel stability run (2026-08-12 evening, user-ordered).** Two further
 independent fresh panels (isolated scratch dirs; reports preserved as
@@ -144,29 +144,61 @@ description; the input-provenance repair was subsequently authored and run as v6
 form — the input is ELIMINATED (`channel<T,N>()` constructs the buffer inside the
 seam; `RingBuffer` unnameable; a "no forgeable input" stopper added) — plus the
 stable-floor N-bound restatement and the P6 leak exclusion. Protocol pre-registered
-in the spec header before any panel ran: three independent fresh panels, the
-distribution is the result, no v7 without another reopen. **Distribution: BREAKS
+in the spec header before any panel ran — verifiable at commit granularity: the
+spec with its protocol landed in `1d76363` and the panel reports in `4452299`,
+the spec byte-identical across the two. Three independent fresh panels, the
+distribution is the result, no v7 without another reopen. (No comparable
+in-artifact pre-registration exists for the earlier v5-era stopping decision;
+that rule lived only in the session record, and this report no longer cites
+it.) **Distribution: BREAKS
 [horn1] · COSTS [horn3] · BREAKS [horn1]** (reports:
 `REPORT_SEAM_SPEC_spsc_v6_panel{1,2,3}.md`). Panels 1 and 3 CONVERGE on a fifth
-surface defect, present verbatim since v1 (`SEAM_SPEC_spsc.md:71`): §3's normative
+surface defect, present verbatim since v1 (`SEAM_SPEC_spsc.md:71-72`): §3's normative
 enumeration asserts `Producer<T>: Send`, `Consumer<T>: Send` **unbounded**, while
 §4's stopper supplies `T: Send` for Producer only — safe code sends the consumer
 holding `Rc` payloads and races the non-atomic refcount (panel 1 cites
 RUSTSEC-2020-0150 as the bug class). Repair: one decidable bound — unwritten, per
-the protocol. Panel 2 found no UB but caught the v6 repair itself overclaiming:
-`const { assert!(N >= 2) }` with a generic `N` is unspellable in stable inline
-const, so the "stable-floor" restatement fails and the obligation dents
-concentration (horn 3). **Net: the surface enumeration has now yielded FIVE
-components in six specs (bounded auto-traits — i.e. the enumeration must carry
-its bounds — variance, dropck, input provenance, and the §3/§4 bound
-inconsistency), with no sign of exhaustion; six adversarial panels post-v1 have
-never rated the flagship clean; the flagship sits between COSTS and BREAKS and
-the lineage is CLOSED per the pre-registered protocol.**
+the protocol. Panel 2 found no UB and priced the `N` obligation as horn-3
+concentration: stable Rust has no `where N >= 2`, so generic-over-N consumers
+**re-paste the const assert at each boundary — "repetition, not proof"** (the
+`const { assert!(N >= 2) }` spelling itself is stable and fires
+post-monomorphization, exactly as the spec disclosed; the dent is the
+per-boundary repetition, not the assert's spellability). Cross-panel horn
+instability on this same price, for the record: v5 panel 1 filed it
+[horn2-decidability], v6 panel 2 [horn3-concentration], and PAPER §6 records
+the API-locality reading — three filings for one cost. **Net: the surface enumeration has yielded five
+distinct discoveries in six specs — the `N` bound + missing teardown (v2's
+gauntlet), variance (v3), dropck ownership (v4), input provenance (v5), and the
+§3/§4 Send-bound inconsistency (v6; a consistency defect in a component class
+already named, not a new kind) — and TWELVE post-v1 panels have never rated the
+flagship clean (in-family: the v2, v3, v4 gauntlets + three v5 panels + three
+v6 panels = 9; foreign: the GPT single-seam run + the GPT and Gemini
+full-sample spsc cells = 3). One partial exhaustion signal is on record: v6
+panel 2 surfaced no new component. The flagship sits between COSTS and BREAKS
+and the lineage is closed under its stop rule (owner-reopenable).**
+
+**The v6 horn-1 verdicts, adjudicated under the refined vend standard.** The
+refined escalation was demoted because its UB path required a configuration the
+spec does not vend. A hostile reader will ask whether the v6 breaks survive the
+same standard — a configuration in which §4's stopper is honored blocks the
+`Rc` path too. They survive, and the distinction is worth stating: refined's
+attack *assumed absent* a protection the spec affirmatively disclosed (the
+runtime check / the shared length variable), whereas §3 *affirmatively asserts*
+the unsound unbounded impl as the seam's normative emission ("emits exactly
+this, and nothing more"), with §4's bound appearing only in a Producer-side
+impl example — the spec vends the unbounded reading on its face. An internal
+§3-vs-§4 inconsistency whose normative side is the unsound one is a vended
+defect; the repair (one bound) is a change to the vended text, not a disclosed
+protection the attacker ignored. We also name the scrutiny asymmetry plainly:
+the one verdict that threatened a recorded COSTS (refined) received a
+line-by-line re-exam plus out-of-family corroboration, while the v6 breaks —
+which support this report's closing reading — received only this paragraph;
+the asymmetry is listed in the residuals.
 
 **Two consequences.**
 
-1. **The recorded v1 HOLD is contradicted as stated, and the lineage halted (per
-   the pre-registered stop rule) at SEAM-COSTS [horn2], not back at HOLDS.** The
+1. **The recorded v1 HOLD is contradicted as stated, and the lineage closed at
+   the v6 distribution (BREAKS · COSTS · BREAKS), not back at HOLDS.** The
    covariance attack applies to the v1 text (same token section, variance never
    fixed), was found by two model families (GPT run 1 on v1 — per the disclosed
    session record — and the Claude gauntlet on v3, on disk), and no stopper in §4
@@ -185,15 +217,22 @@ the lineage is CLOSED per the pre-registered protocol.**
    occur); the operative description is the three-panel distribution itself; the
    input-provenance repair became v6, whose own three-panel distribution (above)
    surfaced the fifth component.
-2. **The lineage's meta-finding, now five components deep:** the seam token must
-   pin the ENTIRE declaration surface — **bounded** auto-traits (v1 stated them
-   unbounded in §3 while §4 carried the bound: the v6 panels' convergent break),
-   **variance** (v3), **dropck ownership** (v4), **input-type provenance** (the
-   v5 panels), and the enumeration's own internal consistency with the stoppers.
-   Each is floor-checkable and decidable once named; each was invisible until an
-   adversarial panel needed it; and five discoveries in six specs, with the
-   latest latent in the frozen v1 text the whole time, is decisive internal
-   evidence that any such enumeration should be presumed open.
+2. **The lineage's meta-finding, five distinct discoveries deep:** the seam token
+   must pin the ENTIRE declaration surface — the **`N` bound and teardown** (v2's
+   gauntlet), **variance** (v3), **dropck ownership** (v4), **input-type
+   provenance** (v5), and **auto-trait bounds stated consistently between the
+   enumeration and its stoppers** (v6 — a consistency defect in a component
+   class the lineage had already named, not a new kind). Each is floor-checkable
+   and decidable once named; each was invisible until an adversarial panel
+   needed it. Five discoveries in six specs, the latest latent in the frozen v1
+   text throughout, is strong *internal* evidence that any such enumeration
+   should be presumed open — bounded by two confounds this lineage cannot
+   separate: a panel disposition that returned zero clean ratings on anything
+   in the lineage (a finds-something prior would produce this signature too),
+   and attention reallocation (v6's input elimination made §3 the principal
+   remaining attack surface, so the fifth discovery's location partly tracks
+   where the panels were pushed, not only what the seam hides). n = one seam,
+   one lineage.
 
 ## Disclosed deltas vs the recorded runs
 
@@ -228,7 +267,9 @@ evidence the recorded HOLDS tier is not recovered, the flagship sits between
 COSTS and BREAKS, and the lineage is CLOSED per its pre-registered protocol
 (both three-panel records in the lineage section). Residuals: one gauntlet per seam per
 family on the 8-seam sample; three transport deltas; the v5 tier distribution
-itself; and the refined re-examination's out-of-family corroboration being a
+itself; the refined re-examination's out-of-family corroboration being a
 single draw from a family with a prior COSTS commitment on that seam — the
 sustained disposition rests on the checkable spec-text analysis
-(`REFINED_ESCALATION_ADJUDICATION.md`).
+(`REFINED_ESCALATION_ADJUDICATION.md`); and the scrutiny asymmetry named in the
+v6 adjudication paragraph (re-exam effort was spent where a recorded verdict
+was threatened, not where the closing reading was supported).

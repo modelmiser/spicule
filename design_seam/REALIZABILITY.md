@@ -1,3 +1,11 @@
+> ⚠️ **AMENDMENT NOTICE (2026-08-13).** This file is a frozen phase record. Its SPSC
+> row ("the fully-encapsulable corner", all-✓; "SPSC is the only all-✓ row … 'Seamless'
+> is achievable") is **superseded**: the post-phase v2–v6 amendment lineage contradicted
+> the v1 HOLD and closed with the flagship unresolved between COSTS and BREAKS, so the
+> table currently has **no all-holds row** and the SPSC-involving dissociation witnesses
+> are replaced by substitutes. Authority: `FOREIGN_REPLICATION.md`,
+> `DISSOCIATION_REDERIVATION.md`, and PAPER §6/App B. The text below is kept as written.
+
 # The realizability table — the Seam Trilemma is a 3-of-N projection
 
 *Phases D–R. The constructive question the slab opened, the branded index extended, the refined index

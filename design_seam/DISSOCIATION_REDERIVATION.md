@@ -49,3 +49,23 @@ witnesses therefore rest on substitutes now: **slab-vs-drain** carries
 zero-cost ⟂ concentration (drain: #6 ✓, concentration ✓, pays only leak-freedom;
 slab: #6 ✗, concentration ✓), and unwind independence stands pairwise
 (take-vs-drain, take-vs-slab) as derived above. App B updated accordingly.
+
+
+## Corrections (2026-08-13, bracketed — original wording above kept)
+
+- [CORRECTION] The body's "#6 stays ✓ — the `N >= 2` bound is compile-time
+  (`const { assert! }` in v6)" cited a mechanism whose *cost* v6 panel 2 then
+  priced differently than assumed: the assert is stable and compile-time (so #6
+  is indeed untouched), but consumers re-paste it per generic boundary — and
+  panel 2 filed that repetition as a CONCENTRATION price [horn3], falsifying the
+  body's "concentration stays ✓" for the v6 reading. The conditional "their
+  outcome does not change the analysis above except by voiding or restoring the
+  row wholesale" was therefore WRONG: panel 2 produced a defined-row reading
+  that changes a cell the analysis relied on. The addendum's substitution
+  (slab-vs-drain) stands regardless.
+- [CORRECTION] "all seven other axes hold on both sides" for take-vs-SPSC
+  overstated even the pre-lineage table: take's zero-cost cell is ◐ ("runtime-
+  clean, codegen-dented", REALIZABILITY fn.12), so that pair varied on 2+
+  columns before the lineage. The same ◐ mildly weakens take-vs-slab as an
+  unwind ⟂ zero-cost witness. Conclusions unaffected (the strict form was
+  retired; pairwise coverage stands).
