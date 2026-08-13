@@ -20,8 +20,11 @@ as stated; the v2–v5 amendment lineage (`design_seam/FOREIGN_REPLICATION.md`)
 has SETTLED: v5 adjudicated SEAM-COSTS [horn2] — no UB path survives the
 completed declaration surface, but the `N >= 2` const bound is an off-floor
 per-generic-boundary price, so the clean HOLD is not recovered and the sample
-has no all-holds witness. Residual: the Gemini `refined` escalation (not yet
-re-examined line-by-line).
+has no all-holds witness. The Gemini `refined` escalation was re-examined and
+adjudicated out-of-family: recorded COSTS [horn2] sustained (the claimed UB
+path targets an unvended configuration) —
+`design_seam/REFINED_ESCALATION_ADJUDICATION.md`. No open residuals beyond
+the standing single-gauntlet and transport-delta caveats.
 
 ## Layout
 - `seam/`, `design*/`, `proof/` — the seam constructions and their analysis.

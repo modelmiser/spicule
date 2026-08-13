@@ -61,10 +61,16 @@ simultaneously *brand-free* and *statically erased* — contradictory across fun
 boundaries ("an unparameterized value existentially hides its bound... impossible
 without a runtime check or a viral type parameter"). That is a realizability claim
 about the seam's central mechanism, not a severity dial; the recorded verdict priced
-the same defect region as a horn-2 cost. **We have not re-adjudicated the substance**
-— until that line-by-line re-examination happens, this stands as an open foreign
-challenge to the recorded tier, and the earlier "foreign panels never upgrade"
-reading is corrected.
+the same defect region as a horn-2 cost. **Re-examined line-by-line and adjudicated
+out-of-family (2026-08-12, `REFINED_ESCALATION_ADJUDICATION.md`): the recorded
+COSTS [horn2] is SUSTAINED.** Gemini's UB path requires a configuration the spec
+does not vend (no-runtime-check AND no type-level relation; the spec discloses one
+of the two in each configuration), and a blind GPT-5.6 adjudicator ruled the
+mismatched call panics in the model and is ill-typed on the floor. The escalation's
+durable content is kept: the erasure dichotomy (runtime check XOR type-level
+relation) and the axis-#5 clarification that a shared structural length variable is
+not a generative brand. The earlier "foreign panels never upgrade" reading remains
+corrected — the upgrade happened; it just did not survive adjudication.
 
 **Horn-label accounting, symmetrically.** The break agreement is horn-exact (8/8
 cells [horn1]) — though all four recorded breaks share the modal label, so four-way
@@ -153,5 +159,6 @@ HOLD itself carried a spec defect found by two families (one attested only by th
 disclosed session record); the v5 adjudication has now run and settled the lineage
 at SEAM-COSTS [horn2] — sound (no UB path survives the completed surface) but
 priced, so the recorded HOLDS tier is not recovered. Residuals: one gauntlet per
-seam per family; three transport deltas; the refined escalation not re-examined
-line-by-line.
+seam per family; three transport deltas. (The refined escalation, formerly listed
+here, was re-examined and adjudicated out-of-family: recorded tier sustained —
+`REFINED_ESCALATION_ADJUDICATION.md`.)
