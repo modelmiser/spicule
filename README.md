@@ -11,10 +11,12 @@ it constructs a seam, tries to break it, and records what survives. The
 (2026-08-12, GPT-5.6 Sol 6/8 and Gemini 3.1 Pro 5/8, each as every cold role):
 all four BREAKS reproduced exactly by both, horn labels included; every HOLDS
 divergence is a rubric-boundary demotion. The control also caught a real miss:
-the flagship SPSC HOLD's spec never pinned variance/dropck — a cross-family-
-confirmed covariance laundering path, decidable repair, v2–v5 amendment lineage
-in `design_seam/FOREIGN_REPLICATION.md`. Residual: v5 adjudication (run was
-stopped mid-judge) and the Gemini `refined` escalation.
+the flagship SPSC HOLD's spec never pinned variance/dropck — a covariance
+laundering path found by two families (one attested by the disclosed session
+record), so the recorded HOLD is contradicted as stated; repair authored,
+v2–v5 amendment lineage in `design_seam/FOREIGN_REPLICATION.md`. Residual:
+v5 adjudication (run was stopped mid-judge) and the Gemini `refined`
+escalation (not yet re-examined line-by-line).
 
 ## Layout
 - `seam/`, `design*/`, `proof/` — the seam constructions and their analysis.
