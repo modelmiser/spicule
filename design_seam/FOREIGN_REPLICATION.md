@@ -103,20 +103,23 @@ and surfaced the next:
 | v2 | P4 restated as role exclusivity (the GPT wording objection) | COSTS [horn1] | **P4-v2 held under all five attacks**; new: `N` unbounded+erased (P3 vacuous at N=0), teardown clause missing |
 | v3 | `N >= 2` const bound at split; P6 teardown | **BREAKS [horn1]** | **unspecified VARIANCE**: covariant handles launder a dangling reference — the run-1 GPT attack, independently rediscovered in-family |
 | v4 | invariance pinned in `T` | **BREAKS [horn1]** | **dropck ownership**: v4's own `PhantomData<*mut T>` marker gives invariance but not drop-ownership; under `#[may_dangle]`, P6's glue drops a payload whose borrow died |
-| v5 | plain `Drop` (no `#[may_dangle]`) + `PhantomData<T>` ownership marker | **authored, attacked, UNADJUDICATED** (run stopped at the judge stage) | — |
+| v5 | plain `Drop` (no `#[may_dangle]`) + `PhantomData<T>` ownership marker | **SEAM-COSTS [horn2-decidability]** — SETTLED (fresh full panel; the stopped first attempt was rerun from scratch) | "All five attackers concede no UB from safe code; v5's five-tuple closes variance and dropck." Surviving price: `where [(); N-2]:` is off-floor, fires post-monomorphization, and syntactic abstract-const unification makes generic-over-N consumers restate the obligation per boundary. (Also: P6's stated invariant over-promises under `mem::forget`/cycles — a wording defect, ruled not-UB.) |
 
 **Two consequences.**
 
-1. **The recorded v1 HOLD is contradicted as stated:** the covariance attack applies
-   to the v1 text (same token section, variance never fixed), was found by two model
-   families (GPT run 1 on v1 — per the disclosed session record — and the Claude
-   gauntlet on v3, on disk), and no stopper in §4 fires against it. Real
+1. **The recorded v1 HOLD is contradicted as stated, and the lineage has now
+   settled — at SEAM-COSTS [horn2], not back at HOLDS.** The covariance attack
+   applies to the v1 text (same token section, variance never fixed), was found by
+   two model families (GPT run 1 on v1 — per the disclosed session record — and the
+   Claude gauntlet on v3, on disk), and no stopper in §4 fires against it. Real
    implementations dodge it via `UnsafeCell`-forced invariance in the shared core.
-   The repair *class* is decidable per named component — trilemma-shaped, not
-   trilemma-breaking — but whether v5 completes the declaration surface is exactly
-   what the pending adjudication tests: twice already in this lineage a repair
-   surfaced the next defect. "SPSC HOLDS [none]" must be read as contradicted-as-
-   stated until the v5 lineage settles.
+   The v5 adjudication (fresh full panel) closed the enumeration — no UB path
+   survives the completed five-tuple — but the completion is *priced*: the `N >= 2`
+   const bound is an off-floor, per-generic-boundary obligation (horn-2). The
+   settled reading: **the repaired flagship is sound but costed; the recorded
+   "HOLDS [none]" tier is not recovered.** Single-gauntlet caveat applies to the
+   tier (COSTS-vs-HOLDS is exactly the fine distinction the measured 1-of-3 drift
+   base rate makes provisional); the no-UB coarse verdict is the load-bearing part.
 2. **The lineage's meta-finding:** the seam token must pin the ENTIRE auto-derived
    declaration surface — auto-traits (v1 did), **variance** (v3's break), **dropck
    ownership** (v4's break) — not just the auto-traits. Each is floor-checkable and
@@ -146,7 +149,9 @@ remains open; only non-LLM evidence (the Lean skeleton, human adversaries, or a
 mechanized counterexample) can bear on it. What the control also does *not*
 establish: the flagship HOLDS at their recorded tiers. On this evidence the
 HOLDS/COSTS boundary is rubric-relative in every family tested, and the flagship
-HOLD itself carries a spec defect found by two families (one attested only by the
-disclosed session record) with repair pending v5 adjudication — the adjudication has
-not yet run. Residuals: one gauntlet per seam per family; three transport deltas;
-the refined escalation not re-examined line-by-line.
+HOLD itself carried a spec defect found by two families (one attested only by the
+disclosed session record); the v5 adjudication has now run and settled the lineage
+at SEAM-COSTS [horn2] — sound (no UB path survives the completed surface) but
+priced, so the recorded HOLDS tier is not recovered. Residuals: one gauntlet per
+seam per family; three transport deltas; the refined escalation not re-examined
+line-by-line.

@@ -16,9 +16,11 @@ one horn-1 spec-wording cell; an earlier single-seam run ruled the flagship
 HOLD a BREAKS outright and was later vindicated: the SPSC v1 spec never pinned
 variance/dropck — a covariance laundering path found by two families (one
 attested by the disclosed session record), so the recorded HOLD is contradicted
-as stated; repair authored, v2–v5 amendment lineage in
-`design_seam/FOREIGN_REPLICATION.md`. Residual: v5 adjudication (run stopped
-at the judge stage; not yet run) and the Gemini `refined` escalation (not yet
+as stated; the v2–v5 amendment lineage (`design_seam/FOREIGN_REPLICATION.md`)
+has SETTLED: v5 adjudicated SEAM-COSTS [horn2] — no UB path survives the
+completed declaration surface, but the `N >= 2` const bound is an off-floor
+per-generic-boundary price, so the clean HOLD is not recovered and the sample
+has no all-holds witness. Residual: the Gemini `refined` escalation (not yet
 re-examined line-by-line).
 
 ## Layout

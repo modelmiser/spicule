@@ -2980,10 +2980,76 @@
       "outcome": "FAILED",
       "cost_usd": 4.2195,
       "timestamp": "2026-08-13T01:04:37+00:00"
+    },
+    {
+      "round": 48,
+      "question": "Attack ONLY the re-import rule of this seam spec (SEAM_SPEC_spsc_v5.md); the NLL floor is stipulated sound and out of scope.",
+      "revision": 0,
+      "proposal_excerpt": "# Seam spec \u2014 SPSC lock-free ring buffer (re-import rule under attack) \u2014 v5\n\n> **Amendment provenance (2026-08-12, v3).** Lineage: v1 (frozen) \u2192 v2 (P4 restated as\n> role exclusivity after the foreign-model replication exposed the literal-\"ever\"\n> wording defect; P4-v2 then HELD under all five attacks in its gauntlet) \u2192 v3 (this\n> file), repairing the two completeness gaps the v2 gauntlet surfaced instead:\n> **(a)** `N` was safe-chosen, unbounded, and erased from the handle types \u2014 at `N=0`\n> P3's empty/full discipline has no model, making \"holds by construction\" vacuous;\n> repaired by a const-decidable `where N >= 2` bound at `split`. **(b)** \u00a72 stated no\n> teardown obligation; repaired by P6 (drop/teardown), discharged once inside the seam.\n> The v1/v2 specs and reports remain frozen; this file re-enters the gauntlet fresh.\n> **v4 (same day):** the v3 gauntlet ruled SEAM-BREAKS[horn1] on an attack the v1\n> gauntlet had missed and the first foreign run had found (cross-family convergence):\n> \u00a73 never fixed VARIANCE, so an admissible covariant declaration lets\n> `Producer<&'static u32>` coerce to `Producer<&'a u32>` while the paired consumer\n> keeps the longer type \u2014 laundering a d",
+      "attacks": [
+        {
+          "role": "attacker-ergonomics",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "By-value, N-erased split forces heap allocation, excluding embedded ISR rings; may_dangle ban is stricter than Vec",
+          "strongest_point": "`split` consuming the buffer by value with no lifetime in `Producer<T>` forces the seam to own and heap-allocate the store, making the primitive unimplementable on no-alloc targets \u2014 and the borrowing repair reopens variance, dropck, and P6, none of which \u00a73 has been written for."
+        },
+        {
+          "role": "attacker-soundness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "mem::forget falsifies P6's no-leak clause; !Sync asserted, not arranged; const bound off-floor",
+          "strongest_point": "Four lines of safe code (`mem::forget(c); drop(p);`) leave the second-handle drop unreachable, so P6's stated \"no payload is leaked, store freed exactly once\" is false of a program the rules accept \u2014 the floor is affine, not linear, so no token can discharge P6 as written."
+        },
+        {
+          "role": "attacker-implementation",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "N>=2 bound needs unshipped generic_const_exprs, is a post-mono error, and completing it needs nonlinear integer entailment",
+          "strongest_point": "v3's `where [(); N - 2]:` repair is not a bound at all \u2014 it is a post-monomorphization error outside the stipulated floor, and making it complete (deriving `2N >= 2` from `N >= 2`) requires deciding entailment in nonlinear integer arithmetic, so consumer code generic over capacity must transcribe a syntactically-exact const obligation at every abstraction boundary."
+        },
+        {
+          "role": "attacker-expressiveness",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "By-value split bans no_std/fixed placement; zero-copy production needs per-element unsafe or the copy it exists to avoid",
+          "strongest_point": "A reserve/commit API \u2014 the only thing distinguishing this from a mutex-backed bounded channel \u2014 makes 'slot is initialized' a caller proof obligation, forcing unsafe once per push (Horn 3) or forcing back the memcpy the lock-free ring exists to eliminate."
+        },
+        {
+          "role": "attacker-prior-art",
+          "verdict": "BREAKS",
+          "severity": "serious",
+          "summary": "P6 depends on destructors running; safe handle-cycle (T=Consumer) suppresses it \u2014 leakpocalypse repeated",
+          "strongest_point": "Rust deleted thread::scoped in 2015 for making a safety claim contingent on Drop running, yet P6 asserts exactly-once teardown and drop-glue-held happens-before, both defeatable from safe code by pushing each buffer's Consumer into the other buffer."
+        }
+      ],
+      "judge": {
+        "per_attack": {
+          "attacker-ergonomics": "tradeoff",
+          "attacker-soundness": "genuine-flaw",
+          "attacker-implementation": "genuine-flaw",
+          "attacker-expressiveness": "tradeoff",
+          "attacker-prior-art": "genuine-flaw"
+        },
+        "decision": "FAILED",
+        "tradeoffs": [
+          "Seam covers only an owned, allocating store: no_std, static/.bss, fixed-placement (DMA, hugepage, NUMA, cache-line-pinned), and stack/arena-scoped rings are excluded by construction; the borrowing repair would reopen variance in 'a, the dropck marker, and P6's close-vs-free split, none of which v5 has been written for.",
+          "Erasing N from the handle types costs a const-folded mask per push/pop and makes capacity, len, and a join/reclaim operation inexpressible.",
+          "Forbidding #[may_dangle] makes these handles strictly more restrictive than Vec/Box/VecDeque, rejecting plumbing-before-storage binding orders; the compensating gain is that the dropck stopper stays compiler-checked rather than becoming a trusted unsafe assertion.",
+          "By-value push/pop is a bounded channel a Mutex<VecDeque> would satisfy identically; the reserve/commit interface that would justify a lock-free ring makes 'slot is initialized' a caller obligation, forcing unsafe once per element (Horn 3) or forcing back the memcpy the primitive exists to eliminate.",
+          "The seam discharges P2 once and then de-concentrates synchronization by omission: with no Disconnected signal, pop()->None conflates empty with closed, so every user writes a second, unverified publication protocol beside the verified one.",
+          "Teardown runs wherever the second handle happens to die, with no close()/into_inner() to relocate N destructors and a free off a real-time thread."
+        ],
+        "headline": "P6 must not depend on Drop running; N>=2 bound must return to the stipulated floor",
+        "rationale": "No laundering path found \u2014 Horn 1 holds. But safe code (mem::forget, or a Consumer-in-Consumer cycle) falsifies P6, a condition \u00a72 declares necessary and \u00a73 claims discharged inside the seam, and it deletes the drop-glue edge \u00a72 names. The N>=2 bound is off-floor, post-mono, and incomplete."
+      },
+      "outcome": "FAILED",
+      "cost_usd": 3.5729,
+      "timestamp": "2026-08-13T01:49:33+00:00"
     }
   ],
   "settled": [],
   "incompatibilities": [],
   "blind_spot_flags": [],
-  "total_cost_usd": 108.4806
+  "total_cost_usd": 112.0535
 }
