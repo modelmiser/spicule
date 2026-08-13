@@ -43,4 +43,6 @@ foreign runs, and the v5/v6 tier distributions themselves.
 - `PAPER.md`, `WRITEUP.md`, `TUTORIAL.md`, `THE-SAME-WALL.md` — the writeups.
 - `orchestrator/` — run tooling.
 
-Private research repo.
+Public research repo (made public 2026-08-13, after the publish-gate cold round
+recorded in `DEVLOG`-adjacent project records). The paper is a repo-native
+artifact; nothing here is submitted to any venue.
