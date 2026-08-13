@@ -115,7 +115,29 @@ and surfaced the next:
 | v2 | P4 restated as role exclusivity (the GPT wording objection) | COSTS [horn1] | **P4-v2 held under all five attacks**; new: `N` unbounded+erased (P3 vacuous at N=0), teardown clause missing |
 | v3 | `N >= 2` const bound at split; P6 teardown | **BREAKS [horn1]** | **unspecified VARIANCE**: covariant handles launder a dangling reference — the run-1 GPT attack, independently rediscovered in-family |
 | v4 | invariance pinned in `T` | **BREAKS [horn1]** | **dropck ownership**: v4's own `PhantomData<*mut T>` marker gives invariance but not drop-ownership; under `#[may_dangle]`, P6's glue drops a payload whose borrow died |
-| v5 | plain `Drop` (no `#[may_dangle]`) + `PhantomData<T>` ownership marker | **SEAM-COSTS [horn2-decidability]** — one full fresh panel (a first attempt was stopped externally at the judge stage BEFORE any adjudication existed — five attacker reports, no judge, so no outcome selection was possible; the rerun reused the round slot, so the stopped attempt is attested by the session record) | "All five attackers concede no UB from safe code; v5's five-tuple closes variance and dropck." Surviving price: `where [(); N-2]:` is off-floor, fires post-monomorphization, and syntactic abstract-const unification makes generic-over-N consumers restate the obligation per boundary. (Also: P6's stated invariant over-promises under `mem::forget`/cycles — a wording defect, ruled not-UB.) |
+| v5 | plain `Drop` (no `#[may_dangle]`) + `PhantomData<T>` ownership marker | **SEAM-COSTS [horn2-decidability]** — panel 1 of three; panels 2–3 drew COSTS [horn1] and BREAKS [horn1], see the stability run below (a first attempt was stopped externally at the judge stage BEFORE any adjudication existed — five attacker reports, no judge, so no outcome selection was possible; the rerun reused the round slot, so the stopped attempt is attested by the session record) | "All five attackers concede no UB from safe code; v5's five-tuple closes variance and dropck." Surviving price: `where [(); N-2]:` is off-floor, fires post-monomorphization, and syntactic abstract-const unification makes generic-over-N consumers restate the obligation per boundary. (Also: P6's stated invariant over-promises under `mem::forget`/cycles — a wording defect, ruled not-UB.) |
+
+**v5 three-panel stability run (2026-08-12 evening, user-ordered).** Two further
+independent fresh panels (isolated scratch dirs; reports preserved as
+`REPORT_SEAM_SPEC_spsc_v5_panel2.md` / `_panel3.md`). Distribution across all
+three: **COSTS [horn2] · COSTS [horn1] · BREAKS [horn1]** — the tier is UNSTABLE
+at one-panel resolution. But the instability has structure: panels 2 and 3 found
+the SAME defect and differ only on an unwritten default. §3 says the seam "emits
+exactly this, and nothing more" yet enumerates only the handles — never the
+`RingBuffer` input, whose §1 representation is a plain record. Panel 2 presumes
+field privacy (no UB derivable → COSTS, with privacy silently load-bearing for
+horn 1); panel 3 does not (`head=1/tail=0` with an uninitialized slot satisfies
+P3, so correct atomics hand safe code a `Box<u8>` of never-written bytes →
+BREAKS). Both name the identical decidable, unwritten repair: pin the input's
+construction (private fields, or a `channel<T,N>()` constructor). Panel 2 also
+falsifies "decidable const bound" as stated: `generic_const_exprs` is unshipped,
+so the `N >= 2` obligation degrades to post-monomorphization errors. **Net: the
+declaration-surface enumeration is demonstrably open — a FOURTH component
+(input-type provenance) surfaced exactly as the bidirectional caveat allowed —
+and the one-panel "sound-but-priced" characterization is withdrawn as a stable
+description; on present evidence the flagship respec sits between COSTS and
+BREAKS pending an input-provenance repair, which the pre-registered stop rule
+leaves unauthored.**
 
 **Two consequences.**
 
@@ -125,21 +147,27 @@ and surfaced the next:
    fixed), was found by two model families (GPT run 1 on v1 — per the disclosed
    session record — and the Claude gauntlet on v3, on disk), and no stopper in §4
    fires against it. Real implementations dodge it via `UnsafeCell`-forced
-   invariance in the shared core. The v5 respec was adjudicated by ONE full fresh
-   panel: no UB path found in the five-tuple as stated, with the `N >= 2` const
-   bound priced as an off-floor, per-generic-boundary obligation (horn-2; the
-   API-locality alternative reading is noted in PAPER §6). The reading, bounded
-   bidirectionally: **on one panel, the repaired flagship is sound-but-costed and
-   the recorded "HOLDS [none]" tier is not recovered** — but a one-panel verdict
-   in this lineage licenses neither "the enumeration is complete" (twice a repair
-   surfaced the next defect, and v1's own three-streak coarse verdict was later
-   overturned) nor a stable tier (the measured 1-of-3 drift rate, and the one
-   repeated foreign cell flipped). The paper's defined "settled" bar (three
-   consecutive survivals) has not been run for v5.
-2. **The lineage's meta-finding:** the seam token must pin the ENTIRE auto-derived
-   declaration surface — auto-traits (v1 did), **variance** (v3's break), **dropck
-   ownership** (v4's break) — not just the auto-traits. Each is floor-checkable and
-   decidable once named; each was invisible until an adversarial panel needed it.
+   invariance in the shared core. The v5 respec has now run THREE independent
+   fresh panels (stability run above): **COSTS [horn2] · COSTS [horn1] · BREAKS
+   [horn1]** — the tier is unstable at one-panel resolution, the panel-1
+   "sound-but-priced" characterization is withdrawn as a stable description, and
+   the bidirectional bound stated after panel 1 (a further surface component
+   might exist, toward BREAKS) was realized by panel 3, with panels 2+3
+   unanimously naming the missing component (input-type provenance). What IS
+   stable across all panels and both families: **the recorded "HOLDS [none]"
+   tier is not recovered — no panel of any family has rated the flagship clean
+   since the surface enumeration began.** The defined "settled" bar (three
+   consecutive survivals) is unreachable for v5 as written (FAILED verdicts
+   occur); the operative description is the three-panel distribution itself, and
+   the input-provenance repair remains unauthored per the stop rule.
+2. **The lineage's meta-finding, now four components deep:** the seam token must
+   pin the ENTIRE declaration surface — auto-traits (v1 did), **variance** (v3's
+   break), **dropck ownership** (v4's break), and **input-type provenance** (the
+   v5 panels: the vended constructor's argument is itself a type whose
+   construction must be enumerated) — not just the auto-traits. Each is
+   floor-checkable and decidable once named; each was invisible until an
+   adversarial panel needed it; and four discoveries in five specs is the
+   strongest internal evidence that the enumeration should be presumed open.
 
 ## Disclosed deltas vs the recorded runs
 
@@ -166,12 +194,14 @@ mechanized counterexample) can bear on it. What the control also does *not*
 establish: the flagship HOLDS at their recorded tiers. On this evidence the
 HOLDS/COSTS boundary is rubric-relative in every family tested, and the flagship
 HOLD itself carried a spec defect found by two families (one attested only by the
-disclosed session record); the v5 respec was adjudicated by one full panel at
-SEAM-COSTS [horn2] — no UB path found, but priced — so on present evidence the
-recorded HOLDS tier is not recovered (one-panel bounds stated in the lineage
-section). Residuals: one gauntlet per seam per family; three transport deltas; the
-v5 verdict at one panel (the defined three-streak "settled" bar has not been run);
-and the refined re-examination's out-of-family corroboration being a single draw
-from a family with a prior COSTS commitment on that seam — the sustained
-disposition rests on the checkable spec-text analysis
+disclosed session record); the v5 respec drew COSTS [horn2] · COSTS [horn1] ·
+BREAKS [horn1] over three independent fresh panels — tier-unstable, with panels
+2+3 unanimously naming a fourth unpinned surface component (input-type
+provenance) — so on present evidence the recorded HOLDS tier is not recovered
+and the flagship sits between COSTS and BREAKS pending an unauthored repair
+(three-panel record in the lineage section). Residuals: one gauntlet per seam per
+family on the 8-seam sample; three transport deltas; the v5 tier distribution
+itself; and the refined re-examination's out-of-family corroboration being a
+single draw from a family with a prior COSTS commitment on that seam — the
+sustained disposition rests on the checkable spec-text analysis
 (`REFINED_ESCALATION_ADJUDICATION.md`).

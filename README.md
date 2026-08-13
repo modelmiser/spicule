@@ -17,16 +17,19 @@ HOLD a BREAKS outright and was later vindicated: the SPSC v1 spec never pinned
 variance/dropck — a covariance laundering path found by two families (one
 attested by the disclosed session record), so the recorded HOLD is contradicted
 as stated; the v2–v5 amendment lineage (`design_seam/FOREIGN_REPLICATION.md`)
-halted per its pre-registered stop rule: v5 adjudicated by ONE full panel at
-SEAM-COSTS [horn2] — no UB path found, but the `N >= 2` const bound is an
-off-floor per-generic-boundary price — so on present evidence the clean HOLD
-is not recovered and the realizability table has no all-holds row (the
-three-streak "settled" bar has not been run for v5; the verdict is bounded in
-both directions). The Gemini `refined` escalation was re-examined line-by-line
-and sustained at the recorded COSTS [horn2] (the claimed UB path targets an
-unvended configuration; the out-of-family corroboration is a disclosed single
-draw) — `design_seam/REFINED_ESCALATION_ADJUDICATION.md`. Standing caveats:
-single-gauntlet verdicts, transport deltas, v5 at one panel.
+halted per its pre-registered stop rule, and v5 then ran THREE independent
+fresh panels: COSTS [horn2] · COSTS [horn1] · BREAKS [horn1] — tier-unstable,
+with panels 2–3 unanimously naming a fourth unpinned surface component (the
+`RingBuffer` input's construction; field privacy silently load-bearing). On
+present evidence the clean HOLD is not recovered, the realizability table has
+no all-holds row, and the flagship sits between COSTS and BREAKS pending an
+unauthored input-provenance repair. The Gemini `refined` escalation was
+re-examined line-by-line and sustained at the recorded COSTS [horn2] (the
+claimed UB path targets an unvended configuration; the out-of-family
+corroboration is a disclosed single draw) —
+`design_seam/REFINED_ESCALATION_ADJUDICATION.md`. Standing caveats:
+single-gauntlet verdicts on the 8-seam sample, transport deltas, the v5 tier
+distribution itself.
 
 ## Layout
 - `seam/`, `design*/`, `proof/` — the seam constructions and their analysis.
