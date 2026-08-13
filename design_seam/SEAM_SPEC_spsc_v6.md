@@ -2,8 +2,8 @@
 
 > **Amendment provenance (v3→v6 chain, 2026-08-12; this file is v6).** Lineage: v1 (frozen) → v2 (P4 restated as
 > role exclusivity after the foreign-model replication exposed the literal-"ever"
-> wording defect; P4-v2 then HELD under all five attacks in its gauntlet) → v3 (this
-> file), repairing the two completeness gaps the v2 gauntlet surfaced instead:
+> wording defect; P4-v2 then HELD under all five attacks in its gauntlet) → v3 [sic — inherited v3-header wording; the v4–v6 blocks below continue the
+> chain], repairing the two completeness gaps the v2 gauntlet surfaced instead:
 > **(a)** `N` was safe-chosen, unbounded, and erased from the handle types — at `N=0`
 > P3's empty/full discipline has no model, making "holds by construction" vacuous;
 > repaired by a const-decidable `where N >= 2` bound at `split`. **(b)** §2 stated no

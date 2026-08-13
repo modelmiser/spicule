@@ -264,8 +264,8 @@ BREAKS [horn1], and the v6 respec (input eliminated) drew BREAKS [horn1] ·
 COSTS [horn3] · BREAKS [horn1] with panels 1+3 converging on a fifth surface
 defect latent since v1 (§3's unbounded Send enumeration) — so on present
 evidence the recorded HOLDS tier is not recovered, the flagship sits between
-COSTS and BREAKS, and the lineage is CLOSED per its pre-registered protocol
-(both three-panel records in the lineage section). Residuals: one gauntlet per seam per
+COSTS and BREAKS, and the lineage is closed under the v6 pre-registered protocol (owner-reopenable)
+(both three-panel records in the lineage section; only v6's protocol was pre-registered — the v5 stability run was owner-ordered). Residuals: one gauntlet per seam per
 family on the 8-seam sample; three transport deltas; the v5 tier distribution
 itself; the refined re-examination's out-of-family corroboration being a
 single draw from a family with a prior COSTS commitment on that seam — the

@@ -33,7 +33,7 @@ re-examined line-by-line and sustained at the recorded COSTS [horn2] (the
 claimed UB path targets an unvended configuration; the out-of-family
 corroboration is a disclosed single draw) —
 `design_seam/REFINED_ESCALATION_ADJUDICATION.md`. Standing caveats:
-36 of 37 seam verdicts are single-gauntlet (only SPSC-v1, `spin_lock`,
+33 of 37 seam verdicts are single-gauntlet (only SPSC-v1, `spin_lock`,
 `drain`, `total_div` ran the three-streak bar), transport deltas on the
 foreign runs, and the v5/v6 tier distributions themselves.
 
