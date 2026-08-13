@@ -8,15 +8,18 @@ Where [Corona](../corona) reduces an invariant to a compile-time error and
 it constructs a seam, tries to break it, and records what survives. The
 37-seam build-and-break pass is closed; the writeup lives in `PAPER.md`
 (Tier 1+2). The monoculture control has run under TWO foreign families
-(2026-08-12, GPT-5.6 Sol 6/8 and Gemini 3.1 Pro 5/8, each as every cold role):
-all four BREAKS reproduced exactly by both, horn labels included; every HOLDS
-divergence is a rubric-boundary demotion. The control also caught a real miss:
-the flagship SPSC HOLD's spec never pinned variance/dropck — a covariance
-laundering path found by two families (one attested by the disclosed session
-record), so the recorded HOLD is contradicted as stated; repair authored,
-v2–v5 amendment lineage in `design_seam/FOREIGN_REPLICATION.md`. Residual:
-v5 adjudication (run was stopped mid-judge) and the Gemini `refined`
-escalation (not yet re-examined line-by-line).
+(2026-08-12, GPT-5.6 Sol 6/8 and Gemini 3.1 Pro 5/8 outcome-class agreement,
+each as every cold role): all four BREAKS reproduced by both with horn-exact
+labels (all four share the modal horn; COSTS agreement cells are horn-inexact).
+On the full-sample runs the HOLDS demotions were three horn-3 cost cells plus
+one horn-1 spec-wording cell; an earlier single-seam run ruled the flagship
+HOLD a BREAKS outright and was later vindicated: the SPSC v1 spec never pinned
+variance/dropck — a covariance laundering path found by two families (one
+attested by the disclosed session record), so the recorded HOLD is contradicted
+as stated; repair authored, v2–v5 amendment lineage in
+`design_seam/FOREIGN_REPLICATION.md`. Residual: v5 adjudication (run stopped
+at the judge stage; not yet run) and the Gemini `refined` escalation (not yet
+re-examined line-by-line).
 
 ## Layout
 - `seam/`, `design*/`, `proof/` — the seam constructions and their analysis.
