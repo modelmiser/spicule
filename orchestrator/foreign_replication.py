@@ -244,7 +244,12 @@ def main() -> None:
     ap.add_argument("--dry-run", action="store_true", help="mock foreign calls; prove wiring, no key/spend")
     ap.add_argument("--list", action="store_true", help="list the sample + call estimate and exit")
     ap.add_argument("--prior-art-web", action="store_true", help="(no-op on foreign side; recorded delta)")
+    ap.add_argument("--out-dir", default="", help="output dir (default runs_foreign/; use a per-model "
+                    "dir so a second family's run never overwrites the first's transcripts)")
     args = ap.parse_args()
+    global OUT_DIR
+    if args.out_dir:
+        OUT_DIR = Path(args.out_dir).resolve()
 
     stems = [s.strip() for s in args.seams.split(",") if s.strip()] or list(STRATIFIED_SAMPLE)
     calls_per_seam = len(roles.ATTACKER_ROLES) + 2  # attackers + judge + classifier
