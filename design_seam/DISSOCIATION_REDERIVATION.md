@@ -40,3 +40,12 @@ phrasing is retired.**
   one, axis-independence must be argued pairwise-per-axis — which the remaining
   rows mostly support — and any future "⟂ all-N via one pair" claim should be
   read as contingent on its baseline row staying clean.
+
+## Addendum (same day, post-v6 panels)
+
+The gate resolved AGAINST a defined SPSC row: v6 drew BREAKS · COSTS · BREAKS
+(fifth latent defect, §3's unbounded Send enumeration). Both SPSC-involving
+witnesses therefore rest on substitutes now: **slab-vs-drain** carries
+zero-cost ⟂ concentration (drain: #6 ✓, concentration ✓, pays only leak-freedom;
+slab: #6 ✗, concentration ✓), and unwind independence stands pairwise
+(take-vs-drain, take-vs-slab) as derived above. App B updated accordingly.

@@ -16,20 +16,21 @@ one horn-1 spec-wording cell; an earlier single-seam run ruled the flagship
 HOLD a BREAKS outright and was later vindicated: the SPSC v1 spec never pinned
 variance/dropck — a covariance laundering path found by two families (one
 attested by the disclosed session record), so the recorded HOLD is contradicted
-as stated; the v2–v5 amendment lineage (`design_seam/FOREIGN_REPLICATION.md`)
-halted per its pre-registered stop rule, and v5 then ran THREE independent
-fresh panels: COSTS [horn2] · COSTS [horn1] · BREAKS [horn1] — tier-unstable,
-with panels 2–3 unanimously naming a fourth unpinned surface component (the
-`RingBuffer` input's construction; field privacy silently load-bearing). On
-present evidence the clean HOLD is not recovered, the realizability table has
-no all-holds row, and the flagship sits between COSTS and BREAKS pending an
-unauthored input-provenance repair. The Gemini `refined` escalation was
+as stated; the v2–v6 amendment lineage (`design_seam/FOREIGN_REPLICATION.md`)
+ran v5 to three independent panels (COSTS [horn2] · COSTS [horn1] · BREAKS
+[horn1]; fourth surface component: input provenance) and the v6 respec (input
+eliminated) to three pre-registered panels (BREAKS · COSTS · BREAKS; fifth
+component, latent since v1: §3's unbounded `Consumer<T>: Send` vs §4's bounded
+stopper — the RUSTSEC-2020-0150 class). Five components in six specs; twelve
+post-v1 panels never rated the flagship clean; the clean HOLD is not recovered,
+the realizability table has no all-holds row, and the lineage is CLOSED per its
+protocol. The Gemini `refined` escalation was
 re-examined line-by-line and sustained at the recorded COSTS [horn2] (the
 claimed UB path targets an unvended configuration; the out-of-family
 corroboration is a disclosed single draw) —
 `design_seam/REFINED_ESCALATION_ADJUDICATION.md`. Standing caveats:
-single-gauntlet verdicts on the 8-seam sample, transport deltas, the v5 tier
-distribution itself.
+single-gauntlet verdicts on the 8-seam sample, transport deltas, the v5/v6
+tier distributions themselves.
 
 ## Layout
 - `seam/`, `design*/`, `proof/` — the seam constructions and their analysis.
