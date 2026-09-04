@@ -130,11 +130,17 @@ compile and leave that baseline UNCHANGED, i.e. every one survives the entire su
 |---|---|---|
 | M1 | `Drain::drop`: `for i in self.idx..self.end` -> `self.idx..self.idx` | 206 passed, 0 failed — SURVIVES |
 | M10 | `Buffer::drop`: `for i in 0..self.len` -> `0..0usize` | 206 passed, 0 failed — SURVIVES |
-| M7 | `Slab::get_mut`: `Entry::Occupied if ...` -> `_ if ...` | 206 passed, 0 failed — SURVIVES |
+| M7 | `Slab::get_mut`: `Entry::Occupied if ...` -> `_ if ...` | **NOW KILLED** — see below |
 
 M7 is the serious one: that mutant makes `assume_init_mut()` return a reference to
 uninitialized storage for any key whose generation matches a vacant slot, reachable from safe
-code, and nothing in the suite notices. The sibling guard in `get` IS killed by a test.
+code, and nothing in the suite noticed. The sibling guard in `get` WAS killed by a test; the
+`get_mut` guard was not, and `// SAFETY: as in `get`` is what concealed the asymmetry.
+
+**M7 CLOSED 2026-09-04.** `tests/slab_use.rs::harness_exploit_fresh_slab_gen0_is_rejected_by_get_mut_too`
+aims the existing cross-slab exploit at the third accessor: a key from slab A (index 0,
+generation 0) against a fresh slab B whose slot 0 is vacant AT generation 0 — the generation
+matches, only occupancy rejects it. Verified to kill the mutant. **M1 and M10 remain open.**
 
 - `Drain::drop`'s element loop (drain.rs:150-154) — the module calls it "load-bearing" (:121) —
   survives being replaced with an empty range. The one partial-drain test uses `u32` (no `Drop`)
@@ -168,15 +174,31 @@ code, and nothing in the suite notices. The sibling guard in `get` IS killed by 
   S<Z> {}` (foreign `Self`, local parameter, RFC 2451). Both seams are still sound by a DIFFERENT
   argument (sealing forces both parameters foreign, and the all-foreign impl is then rejected by
   E0117) — the written argument is the wrong one.
-- `selfref.rs` argues the self-pointer's ADDRESS stability but never its PROVENANCE. The tag is a
-  shared reborrow of a transient `&mut Self`; `a.as_mut().init(); let _p = a.as_mut();
-  a.as_ref().get();` invalidates it under Stacked Borrows. UNPROVEN rather than unsound — Rust has
-  no ratified aliasing model, and the claim has never been machine-checked.
+- `selfref.rs` argues the self-pointer's ADDRESS stability but never its PROVENANCE.
+  **RESOLVED 2026-09-04 — no defect.** The sequence is now exercised by
+  `tests/selfref_provenance.rs` and is clean under BOTH Stacked Borrows and Tree Borrows. The
+  structural answer is the stronger one: the public surface is `new` / `init` / `get` / `value`,
+  and `init` is the ONLY safe route to a `Pin<&mut Self>` — and it necessarily re-mints `ptr`
+  from the fresh borrow. Every reborrow that could pop the old tag also replaces the pointer
+  carrying it, so the hazard is unreachable through the public API. That reasoning appears
+  nowhere in the module and is worth adding to it: the seam is sound for a better reason than
+  the one it gives.
 
-## Tooling gap
+## Tooling gap — **Miri now set up (2026-09-04)**
 
-No Miri, no sanitizers, no fuzzing anywhere in the repo (zero hits across *.toml/*.yml/*.yaml),
-and no `miri` component on any installed toolchain. For a crate whose entire subject is the
+`tools/miri.sh`; component installed on nightly. Whole suite is clean: 206 passed, 0 failed,
+zero UB across 40 binaries, under both Stacked Borrows and Tree Borrows.
+
+**Read that result narrowly.** Miri reports UB on paths the tests EXECUTE; it cannot invent a
+call. M7 was invisible to it for exactly that reason — no test called `get_mut` with a
+generation-matching vacant slot — and M1/M10 remain invisible for the same reason today. A clean
+Miri run over a suite with holes certifies the suite, not the code. Two flags matter and are
+documented in the script: `-Zmiri-ignore-leaks` (several seams leak deliberately and assert it, so
+leak-checking on would make Miri cry wolf), and `--features test-helpers` (without it the mmio
+tests compile to nothing). Cost: multi-minute; `spin_lock_use` alone takes ~5 minutes under
+interpretation. Not a per-commit check.
+
+Still absent: sanitizers, fuzzing. For a crate whose entire subject is the
 difference between a discharged and a merely-asserted `unsafe impl`, this is the highest-value
 addition available: findings 1, 6-8 and the `selfref` provenance question are all exactly what
 Miri checks. `[profile.test] opt-level = 0` additionally means the optimizer that exploits
