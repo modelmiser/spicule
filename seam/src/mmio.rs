@@ -11,6 +11,30 @@
 //! We cannot read real hardware in a unit test, so a static cell stands in for the physical
 //! MMIO region; the **affine + volatile + read-to-clear structure** is the real demonstration.
 //!
+//! ## The stand-in's one infidelity: `read_status` has a lost-event window
+//!
+//! Real read-to-clear hardware clears the pending bits **as an atomic side effect of the
+//! read** — one bus transaction. The stand-in cannot do that, so [`StatusReg::read_status`]
+//! models it as two operations: a volatile read, then a volatile store of `0`. Any bits the
+//! device raises *between* those two operations are destroyed by the store and never
+//! observed. In this crate that window is reachable — `__device_raise` (feature
+//! `test-helpers`) writes the region directly — but it is an artifact of the model, not of
+//! the design being demonstrated.
+//!
+//! **Do not carry the read-then-write-zero shape to real hardware without checking the
+//! datasheet's clear semantics.** The two common kinds want opposite things:
+//!
+//! - **Read-to-clear (RC):** the read alone clears. Drop the store entirely — it is
+//!   redundant, and it is exactly what opens the window above.
+//! - **Write-1-to-clear (W1C):** write back the value you *observed* (`v`), which clears
+//!   precisely the bits you are acknowledging and leaves later arrivals pending. Storing `0`
+//!   to a W1C register clears **nothing**, so the pattern below would silently never
+//!   acknowledge anything.
+//!
+//! The seam's subject — affine handle, encapsulated volatile access, M1/M4 as a named axiom
+//! — is unaffected either way. This note exists so the *access pattern* is not mistaken for
+//! part of what the seam is asserting.
+//!
 //! Affine handle cannot be cloned (would break single-owner M3):
 //! ```compile_fail
 //! # use seam_spsc::mmio::StatusReg;
@@ -61,13 +85,20 @@ impl StatusReg {
 
     /// Read-to-clear: return the current status **and** clear the pending bits in hardware.
     /// A plain safe method for the consumer — the volatile access is encapsulated (M2).
+    ///
+    /// **Model infidelity:** on real read-to-clear hardware the clear is an atomic side
+    /// effect of the read. Here it is a second operation, so bits raised between the read
+    /// and the store are lost. See the module docs — the shape is not portable as written.
     pub fn read_status(&mut self) -> Status {
         // SAFETY (M2): exactly one volatile read of the register width, then the hardware
         // clears the pending bits (modelled by the store). `&mut self` + the singleton give
         // exclusive access, so this is the only accessor. M1/M4 are the trusted axiom.
         let p = REGION.0.get();
         let v = unsafe { core::ptr::read_volatile(p) };
-        unsafe { core::ptr::write_volatile(p, 0) } // read-to-clear side effect
+        // NOT part of the demonstration: real RC hardware has already cleared by now, and a
+        // W1C register would need `v` written back, not 0. This store only emulates the
+        // side effect for the static stand-in, and it is what opens the lost-event window.
+        unsafe { core::ptr::write_volatile(p, 0) } // read-to-clear side effect (modelled)
         Status(v)
     }
 
