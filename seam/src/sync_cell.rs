@@ -79,6 +79,16 @@
 //! assert_sync::<Cell<i32>>();   // ERROR: `Cell<i32>` is not `Sync` — the floor forbids cross-thread sharing
 //! ```
 //!
+//! ### CF2 — the `Send` impl is BOUNDED, so a `Copy`-but-not-`Send` payload is still rejected:
+//! ```compile_fail
+//! # use seam_spsc::sync_cell::SyncCell;
+//! fn assert_send<T: Send>() {}
+//! assert_send::<SyncCell<*const u8>>();  // ERROR: `*const u8` is not `Send` — the bound holds the line
+//! ```
+//! (`*const u8` is `Copy`, so `new` accepts it; only the `T: Send` bound stops the value being sent. An
+//! unconditional `Send` — which this seam carried until 2026-09-04 — would have made this compile: a second
+//! soundness hole, unrelated to the `Sync` break the probe is actually about.)
+//!
 //! ### The BREAK — the seam's `unsafe impl Sync` lets safe code race across threads (compiles; `no_run`):
 //! ```no_run
 //! # use seam_spsc::sync_cell::SyncCell;
@@ -94,8 +104,9 @@ use core::cell::UnsafeCell;
 
 /// A cell with **non-atomic** interior mutability (`&self` get/set), like [`core::cell::Cell`] — but with the
 /// dangerous addition of `unsafe impl Sync`/`Send`, re-exporting the *capability to share it across threads*. The
-/// `unsafe impl`s are the concentrated `unsafe`; the consumer touches none. That the impls are **unconditional**
-/// (no `T: Sync` bound, no atomics) is exactly the unchecked axiom the seam re-imports.
+/// `unsafe impl`s are the concentrated `unsafe`; the consumer touches none. That the **`Sync`** impl is
+/// **unconditional** (no `T: Sync` bound, no atomics) is exactly the unchecked axiom the seam re-imports.
+/// `Send` is bounded `T: Send` — see the note above the impls.
 pub struct SyncCell<T> {
     inner: UnsafeCell<T>,
 }
@@ -122,8 +133,14 @@ impl<T: Copy> SyncCell<T> {
     }
 }
 
-// THE DANGEROUS RE-IMPORT — the foundation author's UNCHECKED AXIOM that `&SyncCell` is safe to share and to send
-// across threads. Unconditional (no `T: Sync`/`T: Send` bound): this is what makes it a re-import of an axiom rather
-// than a restatement of the floor's auto-trait. It is UNSOUND for any non-atomic `T` (the module BREAK races it).
+// THE DANGEROUS RE-IMPORT — the foundation author's UNCHECKED AXIOM that `&SyncCell` is safe to SHARE across
+// threads. `Sync` is unconditional (no `T: Sync` bound): this is what makes it a re-import of an axiom rather than
+// a restatement of the floor's auto-trait, and it is UNSOUND for any non-atomic `T` (the module BREAK races it).
+//
+// `Send`, by contrast, is BOUNDED `T: Send`, and deliberately so. The probe is about cross-thread SHARING; an
+// unbounded `Send` would have been a SECOND, unrelated hole — `Copy` does not imply `Send`, so `SyncCell<*const u8>`
+// was constructible via `new` and unsoundly sendable (CF2). Bounding it discharges that obligation the way
+// `spin_mutex` #36 discharges its own, and leaves the intended `Sync` break entirely intact. Keeping the seam's ONE
+// deliberate unsoundness deliberate is the point: a strawman with an accidental second hole tests nothing.
 unsafe impl<T> Sync for SyncCell<T> {}
-unsafe impl<T> Send for SyncCell<T> {}
+unsafe impl<T: Send> Send for SyncCell<T> {}

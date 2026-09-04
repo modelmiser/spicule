@@ -192,7 +192,7 @@ impl<T> Drop for SpinGuard<'_, T> {
     }
 }
 
-// THE DISCHARGED RE-IMPORT. Same shape as SyncCell #35's `unsafe impl Sync`/`Send` — but **bounded `T: Send`** and
+// THE DISCHARGED RE-IMPORT. Same shape as SyncCell #35's unconditional `unsafe impl Sync` — but **bounded `T: Send`** and
 // **earned**: the obligation (no concurrent non-exclusive access) is MET by the lock flag, not deleted. `Sync`
 // requires `T: Send` because the guard lets a `T` be touched from whichever thread holds the lock (the value
 // effectively migrates), so a non-`Send` `T` must not be shareable — CF1 confirms the floor enforces this.

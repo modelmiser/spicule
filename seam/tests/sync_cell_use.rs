@@ -4,8 +4,9 @@
 //! and race a non-atomic write — is the `no_run` doctest in the module (it needs `std`, which this `no_std` crate's
 //! integration harness cannot spawn; the point is that it *compiles*, i.e. the type system *accepts* the racing
 //! share). CF1 (also in the module) shows the floor correctly rejecting a shared `Cell`. These tests exhibit the
-//! single-threaded surface and the type-level soundness hole: `SyncCell<i32>` is (unsoundly) `Sync`/`Send`, whereas
-//! the floor's `Cell<i32>` is neither.
+//! single-threaded surface and the type-level soundness hole: `SyncCell<i32>` is (unsoundly) `Sync`, whereas the
+//! floor's `Cell<i32>` is not. `Send` is also granted but SOUNDLY — the impl is bounded `T: Send` (CF2 in the
+//! module); it is the `Sync` grant alone that is the break.
 //!
 //! No `unsafe` anywhere in consumer code.
 #![forbid(unsafe_code)]
@@ -21,16 +22,17 @@ fn single_threaded_get_set_works() {
     assert_eq!(c.get(), 42);
 }
 
-/// THE TYPE-LEVEL SOUNDNESS HOLE: the seam's `unsafe impl` makes `SyncCell<i32>` both `Sync` and `Send` — the
-/// unsound grant that CF1's `Cell<i32>` (correctly `!Sync`) is denied. This function only type-checks because the
-/// grant exists; it is the compile-time witness of the break (the runtime data race needs a spawned thread — see
-/// the module `no_run` doctest).
+/// THE TYPE-LEVEL SOUNDNESS HOLE: the seam's `unsafe impl Sync` makes `SyncCell<i32>` `Sync` — the unsound grant
+/// that CF1's `Cell<i32>` (correctly `!Sync`) is denied. This function only type-checks because the grant exists;
+/// it is the compile-time witness of the break (the runtime data race needs a spawned thread — see the module
+/// `no_run` doctest). The `Send` assertion below is NOT part of the break: that impl is bounded `T: Send`, so it
+/// holds soundly here and is refused for a non-`Send` payload (CF2).
 #[test]
-fn synccell_is_unsoundly_sync_and_send() {
+fn synccell_is_unsoundly_sync_and_soundly_send() {
     fn assert_sync<T: Sync>() {}
     fn assert_send<T: Send>() {}
     assert_sync::<SyncCell<i32>>(); // compiles ONLY because of the seam's unsound `unsafe impl Sync`
-    assert_send::<SyncCell<i32>>();
+    assert_send::<SyncCell<i32>>(); // sound: `i32: Send`, and the `Send` impl is bounded `T: Send`
 }
 
 /// Contrast made concrete: a genuinely thread-safe cross-thread integer needs an ATOMIC (`AtomicI32: Sync` by the

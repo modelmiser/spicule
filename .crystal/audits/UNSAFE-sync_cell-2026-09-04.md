@@ -2,15 +2,17 @@
 Date: 2026-09-04
 Mode: standard
 
-> **RESOLUTION — one finding still OPEN as of 2026-09-04.**
+> **RESOLUTION — SITE 4 closed 2026-09-04; the rest stand by design.**
 >
-> SITES 1-3 are the seam's deliberate, conceded break; no action intended or taken.
+> SITES 1-3 are the seam's deliberate, conceded break; no action intended or taken. This
+> report describes SITE 4 as it stood BEFORE the fix below.
 >
-> **SITE 4 (`unsafe impl<T> Send`, unbounded) is OPEN.** `Copy` does not imply `Send`, so
-> `SyncCell<*const u8>` is constructible and unsoundly `Send` — a hole the module prose does
-> not mention and that appears unintended, unlike the `Sync` break. Either bound it
-> `unsafe impl<T: Send> Send` (which leaves the intended break entirely intact) or document
-> it as a second deliberate hole. Silence is the one option that is wrong.
+> **SITE 4 (`unsafe impl<T> Send`, unbounded) — FIXED.** Bounded to
+> `unsafe impl<T: Send> Send` and witnessed by a new `compile_fail` doctest CF2
+> (`SyncCell<*const u8>` is `Copy` but not `Send`, so it is now rejected). The intended
+> `Sync` break is untouched — `unsafe impl<T> Sync` remains unconditional, which is the
+> axiom the probe exists to re-import. Dependent prose in `tests/sync_cell_use.rs` and
+> `spin_mutex.rs` corrected, since both described the pair as unconditional.
 
 ## Summary
 
