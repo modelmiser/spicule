@@ -93,3 +93,23 @@ fn harness_exploit_fresh_slab_gen0_is_rejected_by_impl() {
     assert_eq!(b.get(key), None, "impl rejects fresh-slab gen-0 key (occupancy guards assume_init)");
     assert_eq!(b.remove(key), None, "remove likewise rejects it");
 }
+
+#[test]
+fn harness_exploit_fresh_slab_gen0_is_rejected_by_get_mut_too() {
+    // The same exploit as above, aimed at the THIRD accessor. `get_mut` has its own separately
+    // written occupancy guard, and until this test existed nothing defended it: deleting
+    // `Entry::Occupied` from the match arm in `get_mut` (leaving only the generation compare)
+    // passed the entire suite, while the identical deletion in `get` was caught by the test
+    // above. That asymmetry is exactly what `// SAFETY: as in `get`` conceals — it delegates to
+    // a proof that is defended at the other site and was not defended here.
+    //
+    // With the guard removed this call reaches `assume_init_mut()` on a never-written slot and
+    // hands out `&mut` to uninitialized memory, from safe code.
+    let mut a = Slab::<u64, 4>::new();
+    let key = a.insert(123).ok().unwrap(); // {index: 0, generation: 0}
+    let mut b = Slab::<u64, 4>::new();     // fresh slab: slot 0 VACANT, also generation 0
+    assert_eq!(
+        b.get_mut(key), None,
+        "get_mut must reject a foreign gen-0 key; the generation matches but the slot is vacant"
+    );
+}
