@@ -80,6 +80,11 @@ impl StatusReg {
 }
 
 /// Test/demo helper: simulate the device asserting status bits between reads.
+///
+/// Feature-gated (`test-helpers`): this is a SAFE `pub fn` doing a non-atomic
+/// read-modify-write on `REGION` with no handle, so in the default build it would let
+/// safe code race the region that `unsafe impl Sync for Mmio` declares shareable.
+#[cfg(feature = "test-helpers")]
 #[doc(hidden)]
 pub fn __device_raise(bits: u32) {
     let p = REGION.0.get();
@@ -91,9 +96,19 @@ pub fn __device_raise(bits: u32) {
 }
 
 /// Test/demo helper: reset the singleton between tests.
+///
+/// Feature-gated (`test-helpers`): clearing `TAKEN` while a `StatusReg` is live lets a
+/// second `take()` succeed, producing two owners of one register. M3 is the sole
+/// discharge for `unsafe impl Sync for Mmio` (:30), so in the default build this
+/// function would revoke the seam's own soundness argument from safe code.
+#[cfg(feature = "test-helpers")]
 #[doc(hidden)]
 pub fn __reset_for_test() {
     TAKEN.store(false, Ordering::Release);
     let p = REGION.0.get();
+    // SAFETY: one aligned volatile write of the register width to the static region.
+    // Exclusivity is NOT established here — it rests on this function being reachable
+    // only from a single-threaded test build (`test-helpers`), not on M3, which the
+    // store above has just revoked.
     unsafe { core::ptr::write_volatile(p, 0) }
 }

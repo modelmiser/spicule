@@ -16,5 +16,14 @@ path = "src/lib.rs"
 # `cargo test --features lockdep`. The default build stays `no_std`.
 lockdep = []
 
+# The MMIO seam (#2) vends two `__`-prefixed test helpers. They must be `pub` for the
+# integration test (an external crate) to reach them, and being `pub` is exactly what
+# breaks the seam's soundness argument: `__reset_for_test` clears the `TAKEN` singleton
+# while a `StatusReg` may still be live, and M3 (at-most-one-owner) is the SOLE discharge
+# for `unsafe impl Sync for Mmio`. `__device_raise` races the region with no handle at all.
+# Gating them keeps the default build's public surface sound, and makes the test-only
+# escape hatch structural and visible in the build config, exactly as `lockdep` does.
+test-helpers = []
+
 [profile.test]
 opt-level = 0

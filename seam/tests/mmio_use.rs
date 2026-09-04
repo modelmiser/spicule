@@ -6,6 +6,7 @@
 //! Thereafter `read_status`/`configure` are ordinary safe calls — 0 crossings per access,
 //! identical to SPSC. The memory-safety seam closes; the *axiom* (M1/M4) is the honest gap.
 
+#![cfg(feature = "test-helpers")] // needs `__reset_for_test`/`__device_raise`; see seam/Cargo.toml
 #![forbid(unsafe_code)] // consumer code contains no unsafe whatsoever
 
 use seam_spsc::mmio::{Config, Status, StatusReg};
