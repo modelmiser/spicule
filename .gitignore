@@ -18,6 +18,11 @@ runs_seamful2/
 runs_seam/
 runs_foreign/
 
+# mm-rust:unsafe-audit scratch output. Curated audits are promoted to
+# .crystal/audits/ (tracked) with a resolution header; the raw per-run
+# directory is regenerable and not history.
+.rust-audit/
+
 # Rust build artifacts (the seam crate)
 target/
 **/target/
