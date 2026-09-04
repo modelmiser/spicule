@@ -755,10 +755,21 @@ impl<T, const N: usize> RingBuffer<T, N> {
     /// `'a`, so the buffer provably outlives them — this is the no-UAF guarantee, carried
     /// by the floor rather than trusted here.
     pub fn split<'a>(&'a mut self) -> (Producer<'a, T, N>, Consumer<'a, T, N>) {
+        // The caches MUST be seeded from the live indices, not from 0. `split` takes `&mut self`
+        // but does not consume it, and `head`/`tail` persist across calls, so a second `split`
+        // that hardcoded 0 would hand out handles whose caches disagree with reality. `pop`
+        // tests `head == self.cached_tail` to decide "possibly empty"; with a stale zero cache
+        // that test is false on a genuinely empty ring, the Acquire refresh is skipped, and
+        // `assume_init_read` runs on a slot that was never written. Reproduced before this fix:
+        // four values popped from an empty `RingBuffer<u64, 4>`, and SIGSEGV for `T = String`.
+        // Relaxed suffices here: `&mut self` proves no producer or consumer is live, so there
+        // is no concurrent writer to synchronize with.
+        let head = self.head.load(Ordering::Relaxed);
+        let tail = self.tail.load(Ordering::Relaxed);
         let shared: &'a RingBuffer<T, N> = self;
         (
-            Producer { rb: shared, cached_head: 0 },
-            Consumer { rb: shared, cached_tail: 0 },
+            Producer { rb: shared, cached_head: head },
+            Consumer { rb: shared, cached_tail: tail },
         )
     }
 }
