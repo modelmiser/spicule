@@ -22,6 +22,7 @@ Method: four parallel auditors, batched by hazard class; findings re-verified by
 ## Verification status
 
 Findings 1-4 were reproduced by the collator independently of the reporting agent.
+Findings 6-8 were re-verified by re-running the mutants (see that section).
 Everything else is single-source and marked as such.
 
 ---
@@ -119,10 +120,21 @@ Fix is safe code: `checked_add` + abort, as `Rc` does.
 
 ---
 
-## 6-8. Test force: three discharges no test defends. **OPEN. Single-source.**
+## 6-8. Test force: three discharges no test defends. **OPEN. VERIFIED.**
 
-Reported via mutation testing; NOT independently re-verified by the collator (an attempted
-re-run measured nothing because `cargo test -q` suppresses the lines the check counted).
+Reported via mutation testing and independently re-verified by the collator on 2026-09-04.
+Baseline is 206 passing / 0 failing with `--features test-helpers`; all three mutants below
+compile and leave that baseline UNCHANGED, i.e. every one survives the entire suite:
+
+| Mutant | Change | Result |
+|---|---|---|
+| M1 | `Drain::drop`: `for i in self.idx..self.end` -> `self.idx..self.idx` | 206 passed, 0 failed — SURVIVES |
+| M10 | `Buffer::drop`: `for i in 0..self.len` -> `0..0usize` | 206 passed, 0 failed — SURVIVES |
+| M7 | `Slab::get_mut`: `Entry::Occupied if ...` -> `_ if ...` | 206 passed, 0 failed — SURVIVES |
+
+M7 is the serious one: that mutant makes `assume_init_mut()` return a reference to
+uninitialized storage for any key whose generation matches a vacant slot, reachable from safe
+code, and nothing in the suite notices. The sibling guard in `get` IS killed by a test.
 
 - `Drain::drop`'s element loop (drain.rs:150-154) — the module calls it "load-bearing" (:121) —
   survives being replaced with an empty range. The one partial-drain test uses `u32` (no `Drop`)
