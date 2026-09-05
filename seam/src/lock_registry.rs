@@ -202,16 +202,26 @@ pub struct Guard<'a, T> {
 impl<T> Drop for Guard<'_, T> {
     #[inline]
     fn drop(&mut self) {
+        // ORDER MATTERS. Release the lock FIRST, then do the registry bookkeeping.
+        //
+        // Until 2026-09-04 this ran in the opposite order, and the comment claimed the destructor could
+        // "never panic". It could: `LocalKey::with` panics with `AccessError` if the thread's TLS has
+        // already been destroyed, which happens for a `Guard` held in a `thread_local!` — and a panic in
+        // a destructor during unwinding aborts the process. Worse, the flag was still `true` at that
+        // point, so the lock was also stranded. Releasing first means the mutual-exclusion invariant
+        // that discharges `unsafe impl Sync` (:164) is restored no matter what the bookkeeping does.
+        self.lock.flag.store(false, Ordering::Release);
+
         // Remove *this* lock's rank from the held-set by value (ranks held are distinct, since acquisition
-        // is strictly increasing), so guards may drop in any order without corrupting the registry — never
-        // panic in a destructor. `swap_remove` is O(1); the held-set is tiny.
-        HELD.with(|h| {
+        // is strictly increasing), so guards may drop in any order without corrupting the registry.
+        // `try_with` rather than `with`: during TLS teardown the registry is already gone, and losing a
+        // rank from a set that is about to be destroyed is harmless. `swap_remove` is O(1); the set is tiny.
+        let _ = HELD.try_with(|h| {
             let mut held = h.borrow_mut();
             if let Some(pos) = held.iter().position(|&r| r == self.lock.rank) {
                 held.swap_remove(pos);
             }
         });
-        self.lock.flag.store(false, Ordering::Release);
     }
 }
 

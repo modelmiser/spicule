@@ -104,7 +104,18 @@ impl<T> Clone for Shared<T> {
     #[inline]
     fn clone(&self) -> Self {
         let c = self.inner().strong.get();
-        self.inner().strong.set(c + 1);
+        // Overflow is a SOUNDNESS boundary, not a numeric nicety: `Drop` treats `strong == 1` as "I am
+        // the last owner" and frees. A wrapped count therefore frees while owners are still live, which
+        // is a use-after-free for every survivor. `std::rc::Rc` aborts here for exactly this reason;
+        // this seam dropped the check while describing itself as Rc's minimal faithful core. On a 32-bit
+        // target (`usize` = 32 bits — and the crate builds clean for wasm32-unknown-unknown) the safe
+        // loop `mem::forget(s.clone())` reaches 2^32 in seconds, not geological time.
+        //
+        // Panicking rather than aborting is sound here because the check happens BEFORE any state
+        // change: on this path `strong` is untouched and no `Shared` has been minted, so unwinding
+        // leaves the allocation exactly as it was.
+        let next = c.checked_add(1).expect("Shared: strong count overflow (would free while owners live)");
+        self.inner().strong.set(next);
         Shared { ptr: self.ptr }
     }
 }

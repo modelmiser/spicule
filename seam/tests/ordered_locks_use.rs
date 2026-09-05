@@ -63,3 +63,51 @@ fn skipping_ranks_is_allowed_only_strictly_below_matters() {
     });
     assert_eq!(prod, 35);
 }
+
+#[test]
+fn panic_in_body_releases_the_lock() {
+    // REGRESSION 2026-09-04. `with` used to release the flag with a straight-line store AFTER calling
+    // `body`. `body` is arbitrary caller code; if it panicked, the unwind skipped the store and the flag
+    // stayed `true` forever, hanging every later acquirer in a hot spin loop. This module was the only
+    // one of the four lock seams whose release was not RAII — `spin_lock`, `spin_mutex` and
+    // `lock_registry` all release from `Drop` and so always survived unwinding.
+    //
+    // Without the fix this test HANGS rather than failing, which is the honest shape of the defect:
+    // a stranded spinlock has no timeout.
+    let lock = OrderedLock::<u32, L4>::new(7);
+
+    let panicked = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        Floor::root(|mut top| {
+            lock.with(&mut top, |_v, _f| {
+                panic!("boom inside the critical section");
+            })
+        })
+    }));
+    assert!(panicked.is_err(), "the panic must propagate out of `with`");
+
+    // The lock must be acquirable again. Before the fix this never returns.
+    let seen = Floor::root(|mut top| lock.with(&mut top, |v, _f| *v));
+    assert_eq!(seen, 7, "lock was released despite the panic, and the value is intact");
+}
+
+#[test]
+fn panic_in_a_nested_body_releases_both_locks() {
+    // The same hazard one level down: an inner panic must unwind through two live critical sections
+    // and leave both flags clear.
+    let outer = OrderedLock::<u32, L6>::new(1);
+    let inner = OrderedLock::<u32, L4>::new(2);
+
+    let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        Floor::root(|mut top| {
+            outer.with(&mut top, |_o, f_outer| {
+                inner.with(f_outer, |_i, _f| panic!("boom, nested"))
+            })
+        })
+    }));
+    assert!(r.is_err());
+
+    let both = Floor::root(|mut top| {
+        outer.with(&mut top, |o, f| inner.with(f, |i, _| *o + *i))
+    });
+    assert_eq!(both, 3, "both locks released on the unwind path");
+}

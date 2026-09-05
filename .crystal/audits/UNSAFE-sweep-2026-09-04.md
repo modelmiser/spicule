@@ -3,10 +3,11 @@ Date: 2026-09-04
 Method: four parallel auditors, batched by hazard class; findings re-verified by the collator
         with independent witnesses before being recorded here.
 
-> **RESOLUTION.** Only finding 1 (SPSC re-split) is FIXED, in the commit that adds this file.
-> Findings 2-5 are left OPEN **deliberately**: each changes what this artifact CLAIMS, not just
-> what its code does, and finding 2 falsifies a conclusion a cold panel already blessed. Those
-> are research decisions for the owner. Findings 6-13 are hygiene, also open.
+> **RESOLUTION — findings 1-8 are now CLOSED (2026-09-04).**
+> 1 SPSC re-split: fixed. 2 reseat: the FINDING was revised rather than the code — the r27 verdict
+> stands and is strengthened (see design_seam/REPORT_SEAM_SPEC_reseat.md). 3 ordered_locks,
+> 4 lock_registry, 5 shared: fixed. 6-8 mutation gaps: closed with tests that kill their mutants.
+> Findings 9-13 (documentation that does not match the code) remain OPEN.
 
 ## Scope
 
@@ -86,7 +87,7 @@ passes with the defect present.
 
 ---
 
-## 3. MEDIUM — `ordered_locks::with` strands its lock on panic. **OPEN.**
+## 3. MEDIUM — `ordered_locks::with` strands its lock on panic. **FIXED.**
 
 The release is a straight-line `self.flag.store(false, Release)` after `body(...)`, and the file
 contains NO `Drop` impl (verified). If `body` unwinds, the store is skipped and every later
@@ -95,28 +96,47 @@ from `Drop` and survive unwinding; this module alone does not.
 
 The SAFETY comment (:255-257) says "we hold `flag` exclusively until the Release store below" and
 the doc (:241-242) promises release "when the body returns" — both assume a store the panic path
-never reaches. Logic, not UB. Fix: an RAII guard, as the three siblings already use.
+never reaches. Logic, not UB. FIXED with an RAII `Release` guard, as the three siblings already use. Regression:
+`tests/ordered_locks_use.rs::panic_in_body_releases_the_lock` and `::panic_in_a_nested_body_releases_both_locks`.
+Verified against the unfixed code — the test HANGS (timeout, SIGTERM) rather than failing, which is the
+honest shape of a stranded spinlock: there is no timeout to trip.
 
 ---
 
-## 4. MEDIUM — `lock_registry::Guard::drop` can abort before releasing. **OPEN.**
+## 4. MEDIUM — `lock_registry::Guard::drop` can abort before releasing. **FIXED.**
 
 `HELD.with(...)` (:208) runs BEFORE the release store (:214), and `LocalKey::with` panics if the
 thread's TLS is already torn down — a guard held in a `thread_local!` hits exactly that. The
 comment three lines above (:205-207) says the destructor will "never panic". The agent observed
 `fatal runtime error: thread local panicked on drop, aborting`, exit 134.
 
-Fix: release the flag first, then `try_with` for the bookkeeping.
+FIXED: the release store now runs FIRST, and the bookkeeping uses `try_with` so a dead registry is
+harmless. Regression: `tests/lock_registry_teardown.rs`, verified to reproduce
+`fatal runtime error: thread local panicked on drop, aborting` (SIGABRT) against the unfixed code.
+
+**Note on that test.** The first version of it PASSED against the unfixed code and proved nothing.
+TLS destructors run in reverse registration order, and calling `lock()` first registers the registry's
+`HELD` before the guard is parked — so `HELD` was still alive when the guard dropped. The test only
+bites when `PARKED` is touched BEFORE `lock()`, which puts `HELD` second and therefore destroyed first.
+That ordering is the entire test, and it is commented as such in the file.
 
 ---
 
-## 5. MEDIUM — `shared.rs` refcount has no overflow guard. **OPEN.**
+## 5. MEDIUM — `shared.rs` refcount has no overflow guard. **FIXED (untestable).**
 
 `Clone` does `strong.set(c + 1)` with no check. `std::rc::Rc` deliberately aborts here. `2^32`
 iterations of the safe loop `mem::forget(s.clone())` wrap the count to zero on a 32-bit target,
 after which the next `Drop` frees while owners are live. The crate builds clean for
 `wasm32-unknown-unknown`. The module's "Honest scope" lists only `Weak`, cycles and `RefCell`.
-Fix is safe code: `checked_add` + abort, as `Rc` does.
+FIXED with `checked_add` + panic. Panicking rather than aborting is sound here because the check runs
+BEFORE any state change: on the failing path `strong` is untouched and no `Shared` has been minted, so
+unwinding leaves the allocation exactly as it was. (`Rc` aborts because it increments first.)
+
+**NO REGRESSION TEST — and this should not be papered over.** Reaching the boundary needs 2^32
+iterations on a 32-bit target; it is not testable at `usize` width on this host, and a test that
+merely asserts `checked_add` was called would be testing the implementation, not the property. The
+guard is therefore defended by review only. If this crate ever gains a 32-bit CI target, an
+`#[ignore]`d long-running test becomes worth writing.
 
 ---
 

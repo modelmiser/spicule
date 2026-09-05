@@ -252,12 +252,25 @@ impl<T, L: Level> OrderedLock<T, L> {
             core::hint::spin_loop();
         }
         let mut inner = Floor(PhantomData);
-        // SAFETY: we hold `flag` exclusively until the Release store below, so no other reference to
-        // `data` exists for the duration of `body`. The `&mut` we hand out cannot outlive the borrow of
-        // `self` (its lifetime is tied to `&self`), so it cannot escape the critical section.
-        let r = body(unsafe { &mut *self.data.get() }, &mut inner);
-        self.flag.store(false, Ordering::Release);
-        r
+        // Release via RAII, not a straight-line store. `body` is arbitrary caller code and may panic;
+        // a bare store after the call is skipped by the unwind, stranding `flag` at `true` forever and
+        // hanging every later acquirer in a hot spin loop. The three sibling lock seams (`spin_lock`,
+        // `spin_mutex`, `lock_registry`) all release from `Drop` and so survive unwinding; this one did
+        // not until 2026-09-04. See `tests/ordered_locks_use.rs::panic_in_body_releases_the_lock`.
+        struct Release<'f>(&'f AtomicBool);
+        impl Drop for Release<'_> {
+            #[inline]
+            fn drop(&mut self) {
+                self.0.store(false, Ordering::Release);
+            }
+        }
+        let _release = Release(&self.flag);
+
+        // SAFETY: we hold `flag` exclusively for the whole of `body` — the guard above releases it on
+        // every exit path, normal or unwinding — so no other reference to `data` exists for the
+        // duration. The `&mut` we hand out cannot outlive the borrow of `self` (its lifetime is tied to
+        // `&self`), so it cannot escape the critical section.
+        body(unsafe { &mut *self.data.get() }, &mut inner)
     }
 }
 
