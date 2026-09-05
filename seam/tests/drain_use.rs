@@ -51,6 +51,55 @@ impl Drop for Counted<'_> {
 }
 
 #[test]
+fn partial_drain_then_drop_actually_drops_the_remainder() {
+    // M1 REGRESSION. `partial_drain_then_drop_runs_remainder_cleanup` above looks like it covers
+    // `Drain::drop`'s element loop, but it uses `u32` (no drop glue) and asserts only
+    // `is_empty()` — which `drain()`'s `len = 0` makes true no matter what the guard does.
+    // Replacing that loop's range with an empty one passed the ENTIRE suite. This test counts
+    // drops with a payload that has a destructor, so the loop has to run.
+    let drops = Cell::new(0);
+    {
+        let mut b = Buffer::<Counted, 4>::new();
+        for _ in 0..4 {
+            b.push(Counted { drops: &drops }).ok().expect("capacity");
+        }
+        {
+            let mut d = b.drain();
+            drop(d.next().expect("first"));  // yielded and dropped here: 1
+            drop(d.next().expect("second")); // 2
+            assert_eq!(drops.get(), 2, "the two yielded elements dropped as they were consumed");
+            // `d` dropped here — its Drop must drop the two un-yielded elements.
+        }
+        assert_eq!(
+            drops.get(), 4,
+            "M1: Drain::drop must drop the un-yielded remainder; got {} of 4", drops.get()
+        );
+        assert!(b.is_empty());
+    }
+    assert_eq!(drops.get(), 4, "no further drops when the emptied buffer goes out of scope");
+}
+
+#[test]
+fn an_undrained_buffer_drops_its_elements() {
+    // M10 REGRESSION. `Buffer::drop`'s own element loop never destroyed an observable value in
+    // any test: every buffer in this file is either `u32` or has been drained to `len == 0`
+    // before it drops, so gutting that loop passed the entire suite. Here the buffer is filled
+    // with a destructor-bearing payload and simply dropped, never drained.
+    let drops = Cell::new(0);
+    {
+        let mut b = Buffer::<Counted, 4>::new();
+        for _ in 0..3 {
+            b.push(Counted { drops: &drops }).ok().expect("capacity");
+        }
+        assert_eq!(drops.get(), 0, "nothing dropped while the buffer is alive");
+    } // `b` dropped here, still holding 3 elements
+    assert_eq!(
+        drops.get(), 3,
+        "M10: Buffer::drop must drop its occupied elements; got {} of 3", drops.get()
+    );
+}
+
+#[test]
 fn leaking_the_guard_is_sound_loses_the_tail_no_double_free() {
     let drops = Cell::new(0);
     let mut b = Buffer::<Counted, 4>::new();

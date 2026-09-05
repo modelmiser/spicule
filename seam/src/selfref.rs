@@ -91,8 +91,21 @@ impl SelfRef {
     /// is still valid. Panics (a caught logic error, never UB) if `init` was not called.
     pub fn get(self: Pin<&Self>) -> u64 {
         assert!(!self.ptr.is_null(), "SelfRef::get called before init");
-        // SAFETY: `ptr == &self.value` (set by `init`) and `self` is pinned, so `value` has not moved;
-        // `ptr` therefore still points at a live, initialized `u64` owned by `self`. The read is valid.
+        // SAFETY: two conjuncts, and the second one is the easy-to-miss half.
+        //
+        // WHERE it points: `ptr == &self.value` (set by `init`) and `self` is pinned, so `value`
+        // has not moved; `ptr` therefore still names a live, initialized `u64` owned by `self`.
+        //
+        // WHAT BORROW it derives from (provenance): `init` mints `ptr` from `&this.value`, a
+        // shared reborrow of the `&mut Self` that existed at that instant. A later mutable
+        // reborrow of the cell would pop that tag under Stacked Borrows and make this read UB.
+        // That cannot happen here: the public surface is `new` / `init` / `get` / `value`, and
+        // `init` is the ONLY safe route to a `Pin<&mut Self>` — and it re-mints `ptr` from the
+        // fresh borrow. Every reborrow that could invalidate the tag also replaces the pointer
+        // carrying it, so the hazard is unreachable through this API. Exercised by
+        // `tests/selfref_provenance.rs`; clean under both Stacked Borrows and Tree Borrows.
+        // (Adding any `pub fn ...(self: Pin<&mut Self>)` that writes `value` without re-running
+        // `init` would break this argument.)
         unsafe { *self.ptr }
     }
 

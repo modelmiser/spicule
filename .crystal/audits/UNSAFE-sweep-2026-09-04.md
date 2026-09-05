@@ -128,8 +128,8 @@ compile and leave that baseline UNCHANGED, i.e. every one survives the entire su
 
 | Mutant | Change | Result |
 |---|---|---|
-| M1 | `Drain::drop`: `for i in self.idx..self.end` -> `self.idx..self.idx` | 206 passed, 0 failed — SURVIVES |
-| M10 | `Buffer::drop`: `for i in 0..self.len` -> `0..0usize` | 206 passed, 0 failed — SURVIVES |
+| M1 | `Drain::drop`: `for i in self.idx..self.end` -> `self.idx..self.idx` | **NOW KILLED** |
+| M10 | `Buffer::drop`: `for i in 0..self.len` -> `0..0usize` | **NOW KILLED** |
 | M7 | `Slab::get_mut`: `Entry::Occupied if ...` -> `_ if ...` | **NOW KILLED** — see below |
 
 M7 is the serious one: that mutant makes `assume_init_mut()` return a reference to
@@ -140,7 +140,18 @@ code, and nothing in the suite noticed. The sibling guard in `get` WAS killed by
 **M7 CLOSED 2026-09-04.** `tests/slab_use.rs::harness_exploit_fresh_slab_gen0_is_rejected_by_get_mut_too`
 aims the existing cross-slab exploit at the third accessor: a key from slab A (index 0,
 generation 0) against a fresh slab B whose slot 0 is vacant AT generation 0 — the generation
-matches, only occupancy rejects it. Verified to kill the mutant. **M1 and M10 remain open.**
+matches, only occupancy rejects it. Verified to kill the mutant.
+
+**M1 and M10 CLOSED 2026-09-04.** `tests/drain_use.rs::partial_drain_then_drop_actually_drops_the_remainder`
+and `::an_undrained_buffer_drops_its_elements`. Both count drops with a destructor-bearing
+payload, which is precisely what the pre-existing tests did not: `partial_drain_then_drop_runs_remainder_cleanup`
+uses `u32` (no drop glue) and asserts only `is_empty()`, true from `drain()`'s `len = 0` however
+the guard behaves; and every other buffer in the file was drained to `len == 0` before dropping,
+so `Buffer::drop`'s loop never destroyed an observable value anywhere in the crate. Both verified
+to kill their mutants.
+
+**All three mutation findings are now closed.** Suite 210 native / 212 with `test-helpers`;
+clean under Miri (212 passed, 0 failed, zero UB).
 
 - `Drain::drop`'s element loop (drain.rs:150-154) — the module calls it "load-bearing" (:121) —
   survives being replaced with an empty range. The one partial-drain test uses `u32` (no `Drop`)
