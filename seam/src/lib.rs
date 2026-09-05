@@ -735,6 +735,14 @@ pub struct RingBuffer<T, const N: usize> {
 // producer thread and the consumer thread. That is sound exactly when a `T` may itself be
 // sent across threads, hence the `T: Send` bound. We never expose `&T` aliasing a live
 // `&mut T` to the same slot (P1), so `Sync` does not additionally require `T: Sync`.
+//
+// WHAT ACTUALLY DISCHARGES THIS (corrected 2026-09-04): the reason above is not the operative
+// one. `RingBuffer` has NO `&self` method — `new`, `split(&mut self)` and `Drop::drop(&mut self)`
+// are the whole surface, and all three fields are private. A bare `&RingBuffer` therefore conveys
+// no capability at all to safe code, which is why this impl is sound for any `T`. It is also
+// nearly inert: `Producer`/`Consumer` take their `Send` from the manual impls below, which do not
+// need `RingBuffer: Sync`. Its one observable effect is that both handles auto-derive `Sync`,
+// which is what falsifies the "We do NOT implement `Sync`" claim on those impls.
 unsafe impl<T: Send, const N: usize> Sync for RingBuffer<T, N> {}
 
 impl<T, const N: usize> RingBuffer<T, N> {
@@ -813,8 +821,18 @@ pub struct Consumer<'a, T, const N: usize> {
 }
 
 // SAFETY: a handle may be moved to another thread (that is the whole point of SPSC), so
-// long as the payload itself is sendable. We do NOT implement `Sync`: a shared `&Producer`
-// must never reach a second thread, or two producers could race `tail` (would break P4).
+// long as the payload itself is sendable.
+//
+// CORRECTED 2026-09-04. This comment used to continue "We do NOT implement `Sync`: a shared
+// `&Producer` must never reach a second thread, or two producers could race `tail`". That was
+// false twice over. `Sync` is an AUTO trait — not implementing it is not the same as not having
+// it — and `Producer`/`Consumer` ARE `Sync` for every `T: Send`, derived through their
+// `&'a RingBuffer<T, N>` field from the `unsafe impl Sync for RingBuffer` above.
+//
+// What actually prevents two threads racing `tail` is that `push` takes `&mut self` (and `pop`
+// likewise), so a shared `&Producer` cannot push at all. That is the real discharge and it was
+// nowhere written down. The doc lines on the two handle types said `!Sync` for the same reason
+// and have been corrected.
 unsafe impl<'a, T: Send, const N: usize> Send for Producer<'a, T, N> {}
 unsafe impl<'a, T: Send, const N: usize> Send for Consumer<'a, T, N> {}
 

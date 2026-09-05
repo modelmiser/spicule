@@ -7,7 +7,7 @@ Method: four parallel auditors, batched by hazard class; findings re-verified by
 > 1 SPSC re-split: fixed. 2 reseat: the FINDING was revised rather than the code — the r27 verdict
 > stands and is strengthened (see design_seam/REPORT_SEAM_SPEC_reseat.md). 3 ordered_locks,
 > 4 lock_registry, 5 shared: fixed. 6-8 mutation gaps: closed with tests that kill their mutants.
-> Findings 9-13 (documentation that does not match the code) remain OPEN.
+> 9-13 documentation-vs-code mismatches: CLOSED. **All 13 findings are now closed.**
 
 ## Scope
 
@@ -182,29 +182,38 @@ clean under Miri (212 passed, 0 failed, zero UB).
   exactly that asymmetry.
 - `Buffer::drop`'s loop (drain.rs:112-116) never destroys an observable value in any test.
 
-## 9-13. Documentation that does not match the code. **OPEN.**
+## 9-13. Documentation that does not match the code. **ALL CLOSED 2026-09-04.**
 
-- `lib.rs:804-806` asserts "We do NOT implement `Sync`" for the handles; `Sync` is an auto trait
-  and both handles ARE `Sync` for every `T: Send`, via `unsafe impl Sync for RingBuffer` at :738.
-  Harmless only because `push`/`pop` take `&mut self` — the real discharge, written nowhere.
+- `lib.rs` — **corrected.** The handles' SAFETY comment claimed "We do NOT implement `Sync`", which
+  was false twice: `Sync` is an auto trait (not implementing it is not the same as not having it),
+  and both handles ARE `Sync` for every `T: Send`, derived through their `&RingBuffer` field. The
+  real discharge — `push`/`pop` take `&mut self`, so a shared `&Producer` cannot push — is now
+  written down. The `unsafe impl Sync for RingBuffer` comment now also states its operative reason:
+  `RingBuffer` has no `&self` method at all, so `&RingBuffer` conveys no capability.
 - `validity.rs` — the witness is a hand-maintained `const VALID_DISCRIMINANTS`, not the "`match`
   pinned to the actual variants" the prose claims (:23), and "a new variant forces a matching
   update" (:65-66) is false: editing `C = 200` to `C = 201` compiles clean and `tag_at` hands out
   an invalid `Tag`. A `match` would need no `unsafe` at all.
-- `take.rs` — the abort-bomb rests on double-panic-aborts, a `std::panicking` guarantee this
-  `#![no_std]` crate does not link. Sound under `std` and under `panic = "abort"`; unproven in the
-  `no_std` + unwinding-handler configuration the crate advertises. Also, `f(old)` — arbitrary
-  consumer code — sits INSIDE the unsafe block.
-- `intrusive.rs:13-14` says the unsafe is "concentrated in the foundation (two blocks)"; there are
-  four sites. The two `unsafe impl`s are absent from that inventory, their only SAFETY text is
-  false ("the bounds mirror std::cell semantics" — every `core::cell` type is `!Sync`; this one is
-  `Sync`), and the real discharge (global read-XOR-write via token exclusivity, which does hold)
-  is nowhere on the page.
-- `typed_nat.rs:55-57` and `ordered_locks.rs:189-191` both claim the orphan rule stops a consumer
-  from forging a trait impl. False as stated — a downstream crate can write `impl Lt<MyLocal> for
-  S<Z> {}` (foreign `Self`, local parameter, RFC 2451). Both seams are still sound by a DIFFERENT
-  argument (sealing forces both parameters foreign, and the all-foreign impl is then rejected by
-  E0117) — the written argument is the wrong one.
+- `take.rs` — **documented.** The dependency is now stated at the claim: double-panic-aborts is a
+  `std::panicking` guarantee this `#![no_std]` crate does not link, so the seam is sound under `std`
+  and under `panic = "abort"` but is a stated ASSUMPTION, not a discharge, under `no_std` +
+  unwinding handler. NOT fixed, because fixing it means changing the primitive (the `T: Default`
+  sentinel the module already sketches). The `f(old)`-inside-the-unsafe-block point stands and is
+  also unfixed — narrowing it is a real edit to the seam's shape.
+- `intrusive.rs` — **corrected.** The inventory now says four sites, not two. The SAFETY text is
+  rewritten: the old one was false in both clauses ("mirrors std::cell semantics" — every
+  `core::cell` type is `!Sync` and this one is `Sync`; "for this single-threaded demonstration" is
+  not a discharge for a cross-thread trait). The real argument — global read-XOR-write via token
+  exclusivity, one token per brand, invariant brand — is now on the page, along with the ratchet
+  hazard: writing either auto-trait impl by hand suppresses the auto-impl, so a future change to the
+  brand marker would leave both traits asserted rather than correctly withdrawn.
+- `typed_nat.rs` and `ordered_locks.rs` — **both corrected.** Each now states the argument that
+  actually holds instead of the one that does not. `typed_nat`: sealing and the orphan rule close it
+  TOGETHER (a usable forgery needs both parameters `Nat`, hence both foreign, and the all-foreign
+  impl is rejected by E0117); sealing alone does not. `ordered_locks`: the dangerous direction is
+  all-foreign and E0117-rejected, and a `Below<Rogue>` impl is inert because `Floor<F>` has a private
+  field and is only minted at `TopRank` or a sealed `L` — the private-field half was never stated and
+  is the load-bearing part.
 - `selfref.rs` argues the self-pointer's ADDRESS stability but never its PROVENANCE.
   **RESOLVED 2026-09-04 — no defect.** The sequence is now exercised by
   `tests/selfref_provenance.rs` and is clean under BOTH Stacked Borrows and Tree Borrows. The

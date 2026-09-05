@@ -62,9 +62,34 @@ pub enum Tag {
     C = 200,
 }
 
-/// The exhaustive set of valid discriminants — the witness is membership in *this set*, kept beside the
-/// enum so a new variant forces a matching update. A *range* over these (`b <= 200`) would be unsound.
+/// The exhaustive set of valid discriminants — the witness is membership in *this set*. A *range* over
+/// these (`b <= 200`) would be unsound.
 const VALID_DISCRIMINANTS: [u8; 3] = [0, 5, 200];
+
+/// The compile-time link between [`Tag`] and [`VALID_DISCRIMINANTS`].
+///
+/// **Added 2026-09-04.** The doc above used to claim the array was "kept beside the enum so a new
+/// variant forces a matching update". Nothing forced anything: the array was a hand-written duplicate
+/// of the discriminants with no link to them, and editing `C = 200` to `C = 201` compiled clean, after
+/// which `tag_at` handed out a `Tag` with an invalid discriminant that `Debug`-printed as `B` and took
+/// the `B` arm of an exhaustive match. That is the audit reference's "the check is in a different
+/// module" anti-pattern, with the extra hazard that the two copies can drift silently.
+///
+/// This makes the claim true on both axes. The `match` is exhaustive, so ADDING a variant fails to
+/// compile here; and each arm asserts the array entry equals that variant's discriminant, so CHANGING
+/// one fails const-evaluation. Neither costs anything at run time.
+const fn _discriminant_is_pinned(t: Tag) -> u8 {
+    match t {
+        Tag::A => VALID_DISCRIMINANTS[0],
+        Tag::B => VALID_DISCRIMINANTS[1],
+        Tag::C => VALID_DISCRIMINANTS[2],
+    }
+}
+const _: () = {
+    assert!(_discriminant_is_pinned(Tag::A) == Tag::A as u8);
+    assert!(_discriminant_is_pinned(Tag::B) == Tag::B as u8);
+    assert!(_discriminant_is_pinned(Tag::C) == Tag::C as u8);
+};
 
 /// A buffer of raw bytes some of which are meant to be read back as [`Tag`]s — e.g. a deserialization
 /// buffer, a wire format, a memory-mapped table.

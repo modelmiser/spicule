@@ -11,7 +11,9 @@
 //!
 //! This module is the minimal faithful core of `ghost-cell` (Yanovski et al., ICFP 2021),
 //! reduced to exactly what the contrast needs. The `unsafe` is, again, concentrated in the
-//! foundation (two blocks); but unlike SPSC the *token* leaks into the caller.
+//! foundation — **four sites, not two** (corrected 2026-09-04): the two projection blocks in
+//! `borrow`/`borrow_mut`, plus the two `unsafe impl`s for `Send`/`Sync`, which this inventory
+//! used to omit entirely; but unlike SPSC the *token* leaks into the caller.
 //!
 //! ## Honest scope — this is "design A", and the cold gauntlet found why that matters
 //!
@@ -78,8 +80,26 @@ pub struct GhostCell<'brand, T: ?Sized> {
     value: UnsafeCell<T>,
 }
 
-// SAFETY: a GhostCell is Sync when its contents could be shared across threads under a token
-// protocol; for this single-threaded demonstration the bounds mirror std::cell semantics.
+// SAFETY (rewritten 2026-09-04 — the previous text was false in both of its clauses).
+//
+// It said the bounds "mirror std::cell semantics". They are the opposite: every `core::cell` type
+// is `!Sync`, and this one is `Sync`. It also waved the obligation away as "for this
+// single-threaded demonstration", which is not a discharge for a trait whose entire content is
+// cross-thread. The real argument was nowhere on the page, and it does hold:
+//
+// `Sync`: every route from `&GhostCell` to `&T`/`&mut T` goes through `borrow`/`borrow_mut`, which
+// demand `&GhostToken<'brand>` and `&mut GhostToken<'brand>` respectively. Borrowck makes those
+// mutually exclusive GLOBALLY, across threads, because there is exactly one token per brand:
+// `GhostToken::new` mints it under a `for<'new>` HRTB, the field is private so it cannot be forged,
+// and the brand is invariant so one brand's token cannot open another's cell. `T: Sync` is required
+// because two threads holding `&token` can both `borrow()`; `T: Send` because a thread holding
+// `&GhostCell` plus `&mut token` can `mem::replace` the `T` out.
+//
+// `Send`: this impl grants nothing the compiler would not derive — the field-wise bound is already
+// `T: Send`. It is kept only for symmetry with `Sync`, and that is a HAZARD worth naming: writing
+// either impl by hand suppresses the auto-impl, so a future change to the brand marker (say to
+// `PhantomData<*mut &'brand ()>`, which is neither `Send` nor `Sync`) would leave both traits
+// asserted here instead of correctly withdrawn. If that marker ever changes, revisit these two lines.
 unsafe impl<'brand, T: ?Sized + Send> Send for GhostCell<'brand, T> {}
 unsafe impl<'brand, T: ?Sized + Send + Sync> Sync for GhostCell<'brand, T> {}
 

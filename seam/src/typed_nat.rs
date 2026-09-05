@@ -53,7 +53,13 @@
 //!
 //! `Nat` is a **sealed** trait: `Nat: sealed::Sealed`, and `Sealed` is implemented *only in this
 //! crate*, for `Z` and `S<N>`. A consumer can impl the (public) `Lt` trait for their own local type
-//! — the orphan rule permits `impl ForeignTrait for LocalType` — but that type can **never be `Nat`**,
+//! — the orphan rule permits `impl ForeignTrait for LocalType`, and note it permits MORE than that:
+//! `impl Lt<MyLocal> for S<Z> {}` also compiles downstream (foreign `Self`, local type parameter,
+//! RFC 2451) — **corrected 2026-09-04, the original text claimed a consumer impl is legal only for a
+//! local `Self`, which is false**. The seam is still sound, by a different route: a USABLE forgery
+//! needs `I` and `Len` both `Nat`, hence both foreign, and the all-foreign `impl Lt<Z> for S<Z> {}` is
+//! rejected by E0117. Sealing and the orphan rule close this TOGETHER; sealing alone does not, and the
+//! argument as written was the wrong one. The forged type can **never be `Nat`**,
 //! so [`get`]'s bound `I: Nat + Lt<Len>` rejects it, and there is no other way to supply `I::VALUE`.
 //! Forging `impl Nat for Evil { const VALUE = 999; }` is a compile error (cannot impl the sealed
 //! supertrait). The two `Lt` impls are the *only* ones reachable for `Nat` indices, and they encode

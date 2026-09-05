@@ -28,6 +28,18 @@
 //! so the caller never drops the duplicate: the broken slot is *never observed*. On the happy path the
 //! bomb is `mem::forget`-ten and nothing residual runs.
 //!
+//! **WHERE THAT GUARANTEE COMES FROM (added 2026-09-04 — it was cited as if unconditional).**
+//! Double-panic-aborts is implemented by `std::panicking`'s panic counter. **This crate is
+//! `#![no_std]`** (see `lib.rs`), so it does not link that counter: `core::panic!` calls the
+//! consumer's `#[panic_handler]`, and `core` has no double-panic rule. The seam is sound in both
+//! mainstream configurations — under `std` the abort holds, and under `panic = "abort"` (the norm for
+//! bare-metal, and the axis `lib.rs` sells) the FIRST panic in the closure aborts and the bomb is never
+//! reached. The uncovered configuration is `no_std` + `panic = "unwind"` + a handler that genuinely
+//! unwinds: there, nothing forces the abort, the caller observes the duplicated slot, and it
+//! double-drops. No test covers it (the test harness is always `std`), so this is a stated
+//! assumption, not a discharge. The `T: Default` sentinel variant sketched below needs no abort at all
+//! and is the escape if that configuration ever matters.
+//!
 //! ## The axis it isolates — and how the cold panel sharpened it (REPORT_SEAM_SPEC_take)
 //!
 //! The cold gauntlet ruled this a **real, independent eighth axis (N ≥ 8)** — but with two corrections

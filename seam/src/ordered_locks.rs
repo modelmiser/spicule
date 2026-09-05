@@ -186,9 +186,16 @@ impl<L: Level> Level for Up<L> {}
 /// order; it is **irreflexive** (no `Below<Bottom>` impl, and `Up<L>: Below<Up<H>>` only via `L:
 /// Below<H>`), which is exactly why two equal ranks cannot be co-held (CF2).
 ///
-/// Public so it can appear in `where` clauses; it cannot be abused, because a consumer impl is only
-/// legal for a *local* type (orphan rule), which can never be the sealed [`Level`] that [`with`] also
-/// requires.
+/// Public so it can appear in `where` clauses; it cannot be abused — but **not for the reason this
+/// doc used to give** (corrected 2026-09-04). It said a consumer impl "is only legal for a *local*
+/// type (orphan rule)". That is false: `impl Below<MyLocal> for L2 {}` compiles downstream, with a
+/// foreign `Self` and a local type parameter (RFC 2451).
+///
+/// What actually closes it is twofold. The dangerous direction — `impl Below<L2> for L5 {}`, which
+/// would launder a rank inversion — is all-foreign and rejected by E0117. And a `Below<Rogue>` impl
+/// for a local `Rogue` is inert because [`with`] additionally requires the sealed [`Level`], and
+/// because `Floor<F>` has a private field and is only ever minted at `TopRank` or at a sealed `L`.
+/// The private-field half is the load-bearing part and was never stated.
 pub trait Below<H> {}
 // Bottom is below anything that sits above the bottom.
 impl<H: Level> Below<Up<H>> for Bottom {}
