@@ -57,7 +57,7 @@ owned → borrowed. It **broke** (SEAM-BREAKS [horn 1], FAILED — the *sixth* b
 was *sound* for #19's owned value is a safe-code **double-free** over a borrowed slot (a 4-line `String`
 witness — it returns the owned value while the slot keeps the `ptr::read` duplicate). All five attackers
 confirmed the flip is clean (cost-3 → break-1, co-varying *neither* variable), so Phase R's confound is
-**repaired**; and the panel ruled the fence **FORCED, not movable** — the `into_inner`-less "sound" subset is
+**repaired**; and the panel ruled the fence **FORCED, not movable** — the `into_inner`-less subset is **[CORR. 2026-09-04: the subset is NOT sound — `new`/`DerefMut`/`mem::forget` double-frees without `into_inner`; the fence is forced by SOUNDNESS, which strengthens the verdict. See design_seam/REPORT_SEAM_SPEC_reseat.md.]**
 *degenerate* (it deletes the by-value move-out that defines `take_mut`, strictly dominated by `&mut T`), so
 every *usable* packaging breaks. The trilogy closes: *the horn is movable iff the value-ownership model lets
 soundness **decouple** from the un-compellable closure* — owned can (⇒ cost), borrowed cannot (⇒ forced
@@ -815,7 +815,7 @@ The adversarial process earned its keep eighteen times:
     findings: (a) **the horn flip is clean** — all five attackers agreed #19 (owned + `into_inner`) *cost*
     horn 3 and this (borrowed + `into_inner`) *breaks* horn 1 with byte-identical packaging, so the flip is
     attributable to the decoupling property **alone**; (b) **the fence is FORCED, not movable** — the spec's
-    *movable* hedge (that the `into_inner`-less subset holds) was **rejected**: that subset is **degenerate** (it
+    *movable* hedge (that the `into_inner`-less subset holds) was **rejected**: that subset is **degenerate** (it **[CORRECTED 2026-09-04: that subset is NOT sound — `new`/`DerefMut`/`mem::forget` double-frees with no `into_inner`; the fence is forced by SOUNDNESS, not by degeneracy, which strengthens the verdict. See design_seam/REPORT_SEAM_SPEC_reseat.md and .crystal/audits/UNSAFE-sweep-2026-09-04.md finding 2.]**
     deletes the by-value move-out that *defines* `take_mut`, strictly dominated by plain `&mut T`), so every
     *usable* packaging breaks, and the fence sits at the **owned-vs-borrowed** line. Deflation (pre-registered,
     a flag not a kill): no novel mechanism — `take_mut` `ptr::read`/`write` + `scopeguard`'s `into_inner` defuse

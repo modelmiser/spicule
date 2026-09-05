@@ -1108,7 +1108,7 @@ ruled against the builder's hedge*: the twentieth seam kept the restore guard's 
 flipped only owned → borrowed, and the panel confirmed the horn flip is now a **clean single variable** (the
 same `into_inner` that *cost* horn 3 over an owned value is a safe-code double-free over a borrowed slot, the
 *sixth* broken seam) **and** rejected the spec's *movable*-fence framing as the defect — the `into_inner`-less
-"sound" subset is degenerate (dominated by `&mut T`), so every *usable* packaging breaks and the fence is
+subset is degenerate (dominated by `&mut T`), so every *usable* packaging breaks and the fence is **[CORR. 2026-09-04: the subset is NOT sound — `new`/`DerefMut`/`mem::forget` double-frees without `into_inner`; the fence is forced by SOUNDNESS, which strengthens the verdict. See design_seam/REPORT_SEAM_SPEC_reseat.md.]**
 **FORCED** at owned-vs-borrowed, not movable. Confirm, confound-repair, and a ruling against the proposal's
 own hedge in one verdict. And on the **state-based CRDT merge** it did the thirteenth thing — it **refuted
 the builder's fourth-domain hypothesis**: the supply-side break is conceded floor-relatively (the
@@ -1132,7 +1132,7 @@ bounded by whether soundness can be decoupled from the un-compellable closure, t
 horn forceable), and one *confound-repairing single-variable break that ruled the fence FORCED* (the
 borrowed-slot reseat guard — the same `into_inner` that cost horn 3 over an owned value double-frees over a
 borrowed slot, the sixth broken seam, the prior verdict's confound repaired and its *movable* hedge rejected
-because the only sound subset is degenerate) — exactly what build/break separation exists to surface. A
+because the only sound subset is degenerate) [CORR. 2026-09-04: the subset is unsound, not merely degenerate — the fence is forced by soundness] — exactly what build/break separation exists to surface. A
 discovery procedure that can say "no", "the right name", "why it doesn't merge", "real but unmeasurable",
 "real but adds nothing — the basis is closed", "this is a *different domain* entirely", "this floor is the
 wrong floor for that domain", "this floor *partly* fits that domain — and a better floor trades the gap,

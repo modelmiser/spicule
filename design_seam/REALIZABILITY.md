@@ -77,7 +77,7 @@ keeps #19's packaging **byte-identical** and flips **only** owned → borrowed, 
 value while the slot keeps the `ptr::read` duplicate — two owners). **Two findings, both decisive:** the
 horn flip is *clean* (#19 owned+`into_inner` cost-3 → #20 borrowed+`into_inner` break-1, packaging
 byte-identical — so Phase R's confound is **repaired** and the flip is attributable to the decoupling
-property *alone*); and the fence is **FORCED, not movable** — the `into_inner`-less "sound" subset is
+property *alone*); and the fence is **FORCED, not movable** — the `into_inner`-less subset is **[CORR. 2026-09-04: the subset is NOT sound — `new`/`DerefMut`/`mem::forget` double-frees without `into_inner`; the fence is forced by SOUNDNESS, which strengthens the verdict. See design_seam/REPORT_SEAM_SPEC_reseat.md.]**
 *degenerate* (it deletes the by-value move-out that *defines* `take_mut`, strictly dominated by plain
 `&mut T`), so every *usable* packaging breaks, and the fence sits exactly at the **owned-vs-borrowed** line.
 (Deflation, pre-registered: no novel mechanism — `take_mut` + `scopeguard`-`into_inner` + RFC 1066,
@@ -821,7 +821,7 @@ The cold panel (r27) ruled **SEAM-BREAKS [horn 1], FAILED — the *sixth* broken
 > cost-3 → break-1 flip is attributable to the **decoupling property alone**. (2) **The fence is FORCED, not
 > movable.** The spec posed forced-vs-movable and leaned *movable* (the `into_inner`-less subset holds — it is
 > unwind-safe, and `mem::forget` is a leak not a double-free); the ergonomics and expressiveness attackers
-> **rejected** this: the sound subset is **degenerate** — it deletes the *by-value move-out* that *defines*
+> **rejected** this: the subset handed to them is **degenerate** — it deletes the *by-value move-out* that *defines* **[CORRECTED 2026-09-04: that subset is NOT sound — `new`/`DerefMut`/`mem::forget` double-frees with no `into_inner`; the fence is forced by SOUNDNESS, not by degeneracy, which strengthens the verdict. See design_seam/REPORT_SEAM_SPEC_reseat.md and .crystal/audits/UNSAFE-sweep-2026-09-04.md finding 2.]**
 > `take_mut`/`replace_with` (the `T → T`-through-a-non-`T` transform), leaving a primitive **strictly
 > dominated by plain `&mut T`**. So every *usable* packaging of the borrowed-slot take breaks horn 1; the
 > fence sits exactly at Phase R's **owned-vs-borrowed** line — not pushed inward. (Deflation, pre-registered:
@@ -929,7 +929,7 @@ restore │  CONTROLLED PACKAGING probe  ⇒ HOLDS WITH COST: SEAM-COSTS [horn3]
         │                              findings: (1) the horn flip is CLEAN — #19 owned+into_inner cost-3 → #20
         │                              borrowed+into_inner break-1, packaging byte-identical → Phase R's confound
         │                              REPAIRED, flip attributable to the decoupling property ALONE; (2) the fence is
-        │                              FORCED not movable — the into_inner-less "sound" subset is DEGENERATE (deletes
+        │                              FORCED not movable — the into_inner-less subset is UNSOUND [corr. 2026-09-04;
         │                              the by-value move-out that DEFINES take_mut, dominated by plain &mut T), so
         │                              every USABLE packaging breaks; the fence sits at the owned-vs-borrowed line.
         │                              Deflation (pre-registered): no new mechanism (take_mut + scopeguard-into_inner

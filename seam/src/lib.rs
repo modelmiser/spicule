@@ -271,7 +271,7 @@ pub mod restore;
 /// (`new`/`push_str`/`into_inner`) double-frees with no `unsafe` in user code. Two findings: (a) the
 /// single-variable horn flip is **clean** (cost 3 → break 1, packaging byte-identical) — Phase R's confound
 /// is **repaired**, the flip is attributable to the decoupling property alone; (b) the fence is **FORCED, not
-/// movable** — my spec's *movable* hedge was rejected: the `into_inner`-less "sound" subset is **degenerate**
+/// movable** — my spec's *movable* hedge was rejected: the `into_inner`-less subset is **degenerate** **[CORR. 2026-09-04: the subset is NOT sound — `new`/`DerefMut`/`mem::forget` double-frees without `into_inner`; the fence is forced by SOUNDNESS, which strengthens the verdict. See design_seam/REPORT_SEAM_SPEC_reseat.md.]**
 /// (it deletes the by-value move-out that defines `take_mut`, strictly dominated by plain `&mut T`), so every
 /// *usable* packaging breaks, and the fence sits at Phase R's **owned-vs-borrowed** line. Deflation
 /// (pre-registered): no novel mechanism (`take_mut` + `scopeguard`-`into_inner` + RFC 1066); contribution is
