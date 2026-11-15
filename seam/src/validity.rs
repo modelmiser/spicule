@@ -105,7 +105,7 @@ impl<const N: usize> TaggedBuf<N> {
 
     /// Read the byte at `i` *as a `Tag`*, the dangerous primitive (`transmute`) re-exported safe.
     /// Returns `None` if the byte is not a valid discriminant (the runtime **set-membership validity
-    /// check**) or `i` is out of range. Sound because membership in [`VALID_DISCRIMINANTS`] precedes
+    /// check**) or `i` is out of range. Sound because membership in `VALID_DISCRIMINANTS` precedes
     /// the `transmute`.
     pub fn tag_at(&self, i: usize) -> Option<Tag> {
         let b = *self.bytes.get(i)?;

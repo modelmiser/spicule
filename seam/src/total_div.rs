@@ -42,11 +42,11 @@
 //!   *threaded by value* through [`TotalDivisor`]; a divisor proven `∉ {0, -1}` only by a **path condition** (a
 //!   computed value) still forces a runtime `Option` or a prover.
 //!
-//! ## VERDICT (cold panel, REPORT_SEAM_SPEC_total_div.md, r41): SEAM-HOLDS [none], SURVIVED — the salvage HELD.
+//! ## VERDICT (cold panel, REPORT_SEAM_SPEC_total_div.md, r41): SEAM-HOLDS \[none\], SURVIVED — the salvage HELD.
 //!
-//! Horn-classifier: **SEAM-HOLDS [none]** — *"Total division holds: both panic sources concentrate at a Θ(1)
+//! Horn-classifier: **SEAM-HOLDS \[none\]** — *"Total division holds: both panic sources concentrate at a Θ(1)
 //! exclusion, no safe capability lost."* Judge: **TRADEOFF, survival 1/1.** This is the cleanest verdict in the
-//! project — a full **SEAM-HOLDS** (no horn even *costed*, stronger than #32's SEAM-COSTS [none]). Three of the four
+//! project — a full **SEAM-HOLDS** (no horn even *costed*, stronger than #32's SEAM-COSTS \[none\]). Three of the four
 //! genuine-flaw attackers (soundness, implementation, expressiveness) **argued-past** — conceded the rule holds:
 //! `div`/`rem` panic only on `d==0` or `d==-1 ∧ a==i32::MIN`, both divisor conjuncts sit in the excluded `{0,-1}`,
 //! so a `Θ(1)` type-carried witness makes them total for all `a` — sound, decidable, concentrated, no panic path.

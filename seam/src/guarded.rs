@@ -39,9 +39,9 @@
 //!   genuine undecidable NONE #31 correctly isolated (and #30 cannot force completion on a terminal-less protocol).
 //!   The marker concentrates productivity and leaves termination exactly where #31 left it.
 //!
-//! ## VERDICT (cold panel, REPORT_SEAM_SPEC_guarded.md, r39): SEAM-COSTS [none], SURVIVED — the salvage HELD
+//! ## VERDICT (cold panel, REPORT_SEAM_SPEC_guarded.md, r39): SEAM-COSTS \[none\], SURVIVED — the salvage HELD
 //!
-//! Horn-classifier: **SEAM-COSTS [none]** — *"Sound, decidable, concentrated — but 'full contractivity' is
+//! Horn-classifier: **SEAM-COSTS \[none\]** — *"Sound, decidable, concentrated — but 'full contractivity' is
 //! single-level-only; completeness bought by restriction."* Judge: **SURVIVED (1/1)** — *"No safe unfold of
 //! `Rec<Var>`, no undecidability, no in-scope false positive; head-check = contractivity holds for the unary-guard
 //! fragment."* **`[none]` is the cleanest result in the arc** — all three horns hold, no horn dropped (stronger than

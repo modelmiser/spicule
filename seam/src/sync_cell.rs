@@ -28,7 +28,7 @@
 //!   (or uses atomics) — which **is** the auto-trait, i.e. vacuously the floor — and the only **non-trivial**
 //!   re-import is the `unsafe impl` escape, which is an **unchecked TCB axiom** (MMIO-shaped), not a checkable rule.
 //!
-//! ## VERDICT (cold panel, REPORT_SEAM_SPEC_sync_cell.md, r42): SEAM-BREAKS [horn1] — but the CONTRIBUTION FAILED:
+//! ## VERDICT (cold panel, REPORT_SEAM_SPEC_sync_cell.md, r42): SEAM-BREAKS \[horn1\] — but the CONTRIBUTION FAILED:
 //! ## my "floor-closed / no value-adding seam" classification is REFUTED by `SpinMutex` (the calibration tic again).
 //!
 //! Horn-classifier: **SEAM-BREAKS [horn1-sound-reimport]** — *"the unconditional `unsafe impl Sync` is an

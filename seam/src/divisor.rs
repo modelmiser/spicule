@@ -35,7 +35,7 @@
 //!   (zero is already excluded), so the second panic source is relocated to a **runtime `Result`**, not carried by
 //!   the type. That `Err` arm *is* the conceded residue.
 //!
-//! ## VERDICT (cold panel, REPORT_SEAM_SPEC_divisor.md, r40): SEAM-COSTS [horn3], SOUND — but the DELIVERABLE is
+//! ## VERDICT (cold panel, REPORT_SEAM_SPEC_divisor.md, r40): SEAM-COSTS \[horn3\], SOUND — but the DELIVERABLE is
 //! ## REJECTED (the rejection mode's 8th firing): I OVER-CONCEDED — the `MIN/-1` overflow is DECIDABLE, not
 //! ## undecidable range-analysis, so "one source closes, one escapes" is WRONG for division — BOTH close.
 //!

@@ -151,7 +151,7 @@ where
 
 /// Mint a deadlock-free **3-party** relay `A→B→C`, threading one strictly-increasing `Nat` per edge
 /// (`p_AB = N0 < p_BC = N1`). A source exists and the priority order is monotone, so a terminating schedule
-/// exists *by construction*. Because [`worker`] is sealed, no caller can replace `B` with a role that would
+/// exists *by construction*. Because `worker` is sealed, no caller can replace `B` with a role that would
 /// close a cycle.
 #[inline]
 pub fn relay() -> (Source<N0>, Worker<N0, N1>, Sink<N1>) {

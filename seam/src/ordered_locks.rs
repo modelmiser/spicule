@@ -193,7 +193,7 @@ impl<L: Level> Level for Up<L> {}
 ///
 /// What actually closes it is twofold. The dangerous direction — `impl Below<L2> for L5 {}`, which
 /// would launder a rank inversion — is all-foreign and rejected by E0117. And a `Below<Rogue>` impl
-/// for a local `Rogue` is inert because [`with`] additionally requires the sealed [`Level`], and
+/// for a local `Rogue` is inert because [`with`](OrderedLock::with) additionally requires the sealed [`Level`], and
 /// because `Floor<F>` has a private field and is only ever minted at `TopRank` or at a sealed `L`.
 /// The private-field half is the load-bearing part and was never stated.
 pub trait Below<H> {}

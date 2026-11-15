@@ -36,8 +36,8 @@
 //! invariant (the CAS) discharges cross-thread *exclusion*; the `T: Sync` bound discharges the guard's *sharing*;
 //! together they discharge the `unsafe impl` in full. This is the **discharged** re-import #35 claimed impossible.
 //!
-//! ## VERDICT (cold panel, REPORT_SEAM_SPEC_spin_lock.md, r44): SEAM-HOLDS [none], SURVIVED (1/1) — the salvage
-//! ## HELD, the cleanest verdict tier (a full HOLD, no horn even costed; I predicted [horn3] and UNDER-claimed).
+//! ## VERDICT (cold panel, REPORT_SEAM_SPEC_spin_lock.md, r44): SEAM-HOLDS \[none\], SURVIVED (1/1) — the salvage
+//! ## HELD, the cleanest verdict tier (a full HOLD, no horn even costed; I predicted \[horn3\] and UNDER-claimed).
 //!
 //! The **#35→#36→#37 chain SETTLES.** Three independent hand-reconstructions (soundness, expressiveness, prior-art)
 //! converged, and the pre-registered sharpest attack — hunt for a **fifth omitted conjunct** (the #36 failure mode)

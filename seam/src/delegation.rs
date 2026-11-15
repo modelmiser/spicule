@@ -10,7 +10,7 @@
 //! ## The primitive — a channel as a payload
 //!
 //! Built on the twenty-third seam's shape ([`Rc<RefCell<Transport>>`]-backed dual endpoints), but the wire's
-//! slot now carries **either** an `i32` **or** a whole delegated endpoint ([`Slot`]). Two new protocol
+//! slot now carries **either** an `i32` **or** a whole delegated endpoint (`Slot`). Two new protocol
 //! markers extend `Tx`/`Rx`/`End`:
 //! - [`TxChan`]`<Q, Cont>` — **delegate** a [`Chan`]`<Q>` (hand off a live session at protocol `Q`), then
 //!   continue as `Cont`. [`Chan::send_chan`] consumes the delegated handle and advances.
