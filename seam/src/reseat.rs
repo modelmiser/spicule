@@ -214,11 +214,15 @@ impl<'a, T> Drop for Reseat<'a, T> {
     fn drop(&mut self) {
         // Reseat: move `owned` back into `slot`, overwriting the duplicate bits **without dropping them**
         // (they are a bitwise duplicate; dropping them would double-free). Runs on normal exit AND during a
-        // panic unwind, so the guard is unwind-safe. `mem::forget(guard)` skips this entirely → `owned`
-        // leaks and `slot` keeps its original bits: a leak, never a double-free.
+        // panic unwind, so the guard is unwind-safe. `mem::forget(guard)` skips this entirely, so `slot`
+        // keeps its duplicate bits. [CORRECTED 2026-11-14, cross-vendor panel: this line still said "a
+        // leak, never a double-free" after the 2026-09-04 correction above. It is a leak ONLY if `DerefMut`
+        // was not used destructively; otherwise the slot's owner drops a dangling `T` — see the module doc.]
         // SAFETY: `owned` is live here on every path that reaches `Drop` (only `into_inner` takes it, and it
-        // forgets `self` to skip this); `ptr::write` does not drop the duplicate already in `slot`.
+        // forgets `self` to skip this).
         let owned = unsafe { ManuallyDrop::take(&mut self.owned) };
+        // SAFETY: `slot` is the exclusive `&'a mut T` taken in `new`; `ptr::write` overwrites the
+        // duplicate bits there without dropping them, which is what makes the value single-owned again.
         unsafe { ptr::write(self.slot, owned) };
     }
 }

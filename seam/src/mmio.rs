@@ -64,7 +64,9 @@ pub struct Status(pub u32);
 #[derive(Debug, Clone, Copy)]
 pub struct Config(pub u32);
 
-/// Affine singleton handle to the status register. No `Clone`/`Copy`; not `Sync`.
+/// Affine singleton handle to the status register. No `Clone`/`Copy`. It IS `Send` and `Sync` (a
+/// field-less struct, auto-derived — this line used to say "not `Sync`"; corrected 2026-11-14,
+/// cross-vendor panel); exclusivity comes from its methods taking `&mut self`, not from `!Sync`.
 /// Holding one is the certificate that you are the unique owner of a real, datasheet-correct
 /// register (M1/M3/M4) — the parts the floor cannot check are folded into `take`.
 pub struct StatusReg {

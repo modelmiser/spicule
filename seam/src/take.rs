@@ -112,7 +112,12 @@ where
     // SAFETY: `ptr::read` produces a duplicate `old`; for the duration of `f`, `slot` holds a bitwise
     // copy that must not be dropped or read. The `&mut T` we hold proves no *other* code can touch
     // `slot` (no aliasing — see CF1), so the only hazard is unwinding, and `bomb` converts a panic in
-    // `f` into an abort before the caller can drop the duplicate. On success, `ptr::write` restores a
+    // `f` into an abort before the caller can drop the duplicate — UNDER `std`, OR UNDER
+    // `panic = "abort"`. It does NOT hold for `no_std` + `panic = "unwind"` with a handler that really
+    // unwinds: there the caller double-drops (module doc, "WHERE THAT GUARANTEE COMES FROM"). That
+    // configuration is an undischarged precondition of this function, not something this block
+    // establishes. [Carried down from the module doc 2026-11-14, cross-vendor panel: this comment read
+    // as unconditional.] On success, `ptr::write` restores a
     // valid `T` and the bomb is defused; `slot` is well-formed again for the caller.
     unsafe {
         let old = ptr::read(slot);

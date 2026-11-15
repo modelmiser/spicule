@@ -34,11 +34,12 @@ fn read_through_self_pointer_after_an_intervening_mutable_reborrow() {
 
 #[test]
 fn re_init_writes_through_a_fresh_mutable_borrow_then_reads() {
-    // The strongest probe the public API admits. `init` is the ONLY safe route to a
-    // `Pin<&mut Self>`, and it necessarily re-mints `ptr` from the fresh borrow — so every
-    // mutable reborrow that could pop the old tag also replaces the pointer that carried it.
-    // That is why the provenance hazard is not reachable here: not because the tag survives,
-    // but because no public API can invalidate it without re-establishing it.
+    // Re-running `init` re-mints `ptr` from a fresh borrow. [CORRECTED 2026-11-14: this comment
+    // used to claim `init` is the ONLY safe route to a `Pin<&mut Self>` and that the hazard is
+    // unreachable for that reason. `as_mut` is another route — the first test in this file uses
+    // it — and that test passes under Miri: under Stacked Borrows because a `&mut` to a `!Unpin`
+    // type is not treated as unique, under Tree Borrows because an unwritten reborrow does not
+    // invalidate a read-only pointer. See the SAFETY comment on `SelfRef::get`.]
     let mut cell = pin!(SelfRef::new(99));
     cell.as_mut().init();
     let first = cell.as_ref().get();

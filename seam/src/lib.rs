@@ -1,7 +1,10 @@
 //! # One seam — an SPSC lock-free ring buffer
 //!
-//! This crate is the **foundation-author side** of a single seam. It contains the
-//! *only* `unsafe` block in the design. It re-exports a dangerous lock-free primitive
+//! This crate is the **foundation-author side** of a single seam. *(This introduction describes the
+//! FIRST seam, the SPSC ring buffer in this file, as it was written. "The only `unsafe` block in the
+//! design" was true of that seam alone; the crate has since grown to dozens of seams, each with its
+//! own `unsafe` sites in its own module — corrected 2026-11-14, cross-vendor panel.)* This file
+//! contains the `unsafe` of the SPSC seam. It re-exports a dangerous lock-free primitive
 //! (a single-producer / single-consumer ring buffer) as a **checked safe interface**:
 //! [`RingBuffer::split`] hands out two affine endpoint handles, and *safe* consumer code
 //! uses [`Producer::push`] / [`Consumer::pop`] with no `unsafe` and no proofs.
@@ -806,14 +809,16 @@ impl<T, const N: usize> Drop for RingBuffer<T, N> {
     }
 }
 
-/// The unique producer endpoint. Affine (`!Clone`, `!Copy`); `Send` iff `T: Send`; `!Sync`.
+/// The unique producer endpoint. Affine (`!Clone`, `!Copy`); `Send` and `Sync` iff `T: Send` (auto-derived;
+/// see the corrected comment below). What keeps it single-producer is that `push` takes `&mut self`.
 pub struct Producer<'a, T, const N: usize> {
     rb: &'a RingBuffer<T, N>,
     /// A cache of `head` to avoid an atomic load on the fast path; refreshed on a full miss.
     cached_head: usize,
 }
 
-/// The unique consumer endpoint. Affine (`!Clone`, `!Copy`); `Send` iff `T: Send`; `!Sync`.
+/// The unique consumer endpoint. Affine (`!Clone`, `!Copy`); `Send` and `Sync` iff `T: Send` (auto-derived;
+/// see the corrected comment below). What keeps it single-consumer is that `pop` takes `&mut self`.
 pub struct Consumer<'a, T, const N: usize> {
     rb: &'a RingBuffer<T, N>,
     /// A cache of `tail` to avoid an atomic load on the fast path; refreshed on an empty miss.

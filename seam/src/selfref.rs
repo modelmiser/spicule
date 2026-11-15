@@ -97,15 +97,31 @@ impl SelfRef {
         // has not moved; `ptr` therefore still names a live, initialized `u64` owned by `self`.
         //
         // WHAT BORROW it derives from (provenance): `init` mints `ptr` from `&this.value`, a
-        // shared reborrow of the `&mut Self` that existed at that instant. A later mutable
-        // reborrow of the cell would pop that tag under Stacked Borrows and make this read UB.
-        // That cannot happen here: the public surface is `new` / `init` / `get` / `value`, and
-        // `init` is the ONLY safe route to a `Pin<&mut Self>` — and it re-mints `ptr` from the
-        // fresh borrow. Every reborrow that could invalidate the tag also replaces the pointer
-        // carrying it, so the hazard is unreachable through this API. Exercised by
-        // `tests/selfref_provenance.rs`; clean under both Stacked Borrows and Tree Borrows.
-        // (Adding any `pub fn ...(self: Pin<&mut Self>)` that writes `value` without re-running
-        // `init` would break this argument.)
+        // shared reborrow of the `&mut Self` that existed at that instant.
+        //
+        // CORRECTED 2026-11-14 (cross-vendor panel, Grok 4.7). This comment used to say that a
+        // later mutable reborrow of the cell would pop that tag and make this read UB, and that
+        // this "cannot happen" because `init` is the ONLY safe route to a `Pin<&mut Self>`. Both
+        // halves were wrong. `Pin::as_mut` is a safe route to a `Pin<&mut Self>` that does not
+        // go through `init`, and `tests/selfref_provenance.rs` performs exactly that reborrow
+        // between `init` and `get`. The read is nevertheless accepted by Miri under BOTH Stacked
+        // Borrows and Tree Borrows (rerun 2026-11-14). The reason is in the aliasing models, not
+        // in this API, and it differs between them — measured the same day with a two-type probe
+        // (the identical struct with and without `PhantomPinned`; init, a `&mut` reborrow passed
+        // to a function, then the read):
+        //   - Stacked Borrows: the `!Unpin` copy passes, the `Unpin` copy is UB. So under SB the
+        //     `PhantomPinned` field is LOAD-BEARING for provenance, not only for address
+        //     stability: Miri does not treat a `&mut` to a `!Unpin` type as unique, which is
+        //     what lets pinned self-referential values exist at all.
+        //   - Tree Borrows: both copies pass. A reborrow that is never written through does not
+        //     invalidate the read-only `ptr`, with or without the marker.
+        // What this API contributes is narrower: no safe method WRITES `value` after `init`, so
+        // no write through a fresh reference ever conflicts with `ptr`.
+        //
+        // This is an argument from what Miri implements, not from a ratified rule: Rust has no
+        // settled aliasing model, and the `!Unpin` carve-out is the part most likely to be
+        // restated (`UnsafePinned`). (Adding any `pub fn ...(self: Pin<&mut Self>)` that writes
+        // `value` without re-running `init` would break the narrower argument too.)
         unsafe { *self.ptr }
     }
 
