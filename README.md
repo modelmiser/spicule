@@ -46,3 +46,7 @@ foreign runs, and the v5/v6 tier distributions themselves.
 Public research repo (made public 2026-08-13, after the publish-gate cold round
 recorded in `DEVLOG`-adjacent project records). The paper is a repo-native
 artifact; nothing here is submitted to any venue.
+
+## License
+
+MIT. Copyright (c) ModelMiser. The full text is in [LICENSE](LICENSE).

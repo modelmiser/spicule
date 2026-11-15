@@ -1,5 +1,6 @@
 [package]
 name = "seam-spsc"
+license = "MIT"
 version = "0.1.0"
 edition = "2021"
 description = "One seam: an SPSC lock-free ring buffer re-exported as a checked safe interface, built on the stipulated NLL floor (real rustc)."
